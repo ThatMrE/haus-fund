@@ -1,0 +1,21 @@
+# Haus — static site deploy config
+[build]
+  publish = "."
+
+# Pretty URLs: /global → expansion.html
+[[redirects]]
+  from = "/global"
+  to = "/expansion.html"
+  status = 200
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "SAMEORIGIN"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"

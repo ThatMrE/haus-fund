@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Haus — Global Nodes</title>
+<link rel="icon" type="image/svg+xml" href="assets/logo-mark.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700;800;900&family=Barlow+Condensed:wght@600;700;800;900&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600&family=DM+Mono:wght@400;500&display=swap">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html{scroll-behavior:smooth;}
+body{font-family:'DM Sans',sans-serif;background:#F8F7F3;color:#0D0D0D;line-height:1.6;}
+a{color:inherit;text-decoration:none;}
+img{display:block;}
+nav{position:fixed;top:0;left:0;right:0;z-index:200;transition:background 200ms,border-color 200ms;border-bottom:1px solid transparent;}
+nav.scrolled{background:#F8F7F3;border-bottom-color:#E5E1D9;}
+.nav-inner{max-width:1440px;margin:0 auto;padding:0 56px;height:72px;display:flex;align-items:center;justify-content:space-between;}
+.nav-logo{height:28px;object-fit:contain;filter:invert(1) brightness(100);transition:filter 200ms;}
+nav.scrolled .nav-logo{filter:none;}
+.nav-links{display:flex;align-items:center;gap:32px;}
+.nav-links a{font-size:14px;font-weight:500;color:rgba(255,255,255,0.65);transition:color 150ms;}
+.nav-links a:hover{color:white;}
+nav.scrolled .nav-links a{color:#3A3A3A;}
+nav.scrolled .nav-links a:hover{color:#1C3B2D;}
+.nav-apply{background:rgba(255,255,255,0.12);color:white;padding:8px 18px;border-radius:6px;font-size:13px;font-weight:600;border:1.5px solid rgba(255,255,255,0.3);transition:all 200ms;}
+nav.scrolled .nav-apply{background:#1C3B2D;border-color:#1C3B2D;color:white;}
+.wrap{max-width:1440px;margin:0 auto;padding:100px 80px;}
+.over{font-size:12px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:#727272;margin-bottom:12px;}
+.over-w{color:rgba(255,255,255,0.4);}
+.h2{font-family:'Barlow',sans-serif;font-size:56px;font-weight:700;line-height:1.08;letter-spacing:-0.01em;color:#0D0D0D;margin-bottom:40px;}
+.h2-w{color:white;}
+.h3{font-family:'Barlow',sans-serif;font-size:26px;font-weight:700;color:#0D0D0D;line-height:1.2;margin-bottom:8px;}
+.body{font-size:18px;line-height:1.65;color:#3A3A3A;}
+.sm{font-size:15px;line-height:1.55;color:#727272;}
+.xs{font-size:12px;color:#B0ADA6;}
+.mono{font-family:'DM Mono',monospace;}
+.card{background:#fff;border:1px solid #E5E1D9;border-radius:10px;padding:28px 32px;}
+.btn-f{display:inline-flex;align-items:center;gap:8px;background:#1C3B2D;color:white;padding:14px 28px;border-radius:6px;font-size:15px;font-weight:600;border:none;cursor:pointer;transition:background 150ms;}
+.btn-f:hover{background:#2A5C46;}
+.btn-ol{display:inline-flex;align-items:center;gap:8px;background:transparent;color:rgba(255,255,255,0.7);padding:14px 28px;border-radius:6px;font-size:15px;font-weight:500;border:1.5px solid rgba(255,255,255,0.3);cursor:pointer;transition:all 150ms;}
+.g3{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;}
+.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:20px;}
+.tag{display:inline-flex;align-items:center;padding:3px 9px;border-radius:4px;font-size:11px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;background:#F0EDE6;color:#727272;}
+.tag-f{background:#BDDDD3;color:#1C3B2D;}
+.req{display:grid;grid-template-columns:200px 1fr;border-top:1px solid #E5E1D9;padding:28px 0;}
+.req-code{font-family:'DM Mono',monospace;font-size:11px;color:#B0ADA6;letter-spacing:0.10em;text-transform:uppercase;margin-bottom:5px;}
+.req-tag{font-family:'Barlow',sans-serif;font-size:14px;font-weight:700;color:#0D0D0D;letter-spacing:0.04em;text-transform:uppercase;}
+.req-body{padding-left:48px;border-left:1px solid #E5E1D9;}
+.node-wm{font-family:'Barlow',sans-serif;font-size:26px;line-height:1;}
+.node-wm .pre{font-weight:900;}
+.node-wm .sfx{font-weight:400;}
+@keyframes tick{0%{transform:translateX(0);}100%{transform:translateX(-50%);}}
+.ticker{overflow:hidden;background:#0D0D0D;height:44px;display:flex;align-items:center;}
+.ticker-inner{display:flex;white-space:nowrap;animation:tick 28s linear infinite;}
+.ti{font-family:'DM Mono',monospace;font-size:11px;letter-spacing:0.06em;padding:0 16px;color:rgba(255,255,255,0.25);}
+.ti-b{font-weight:600;letter-spacing:0.12em;color:rgba(255,255,255,0.65);}
+.rule{border:none;border-top:1px solid #E5E1D9;}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav id="nav">
+  <div class="nav-inner">
+    <a href="index.html"><img src="assets/logo-mark.svg" class="nav-logo" alt="Haus"></a>
+    <div class="nav-links">
+      <a href="#protocol">Node Protocol</a>
+      <a href="#active">Active Nodes</a>
+      <a href="#prospects">Candidates</a>
+      <a href="index.html">← Back to the House</a>
+    </div>
+    <a href="https://tally.so/r/LZYZJj" class="nav-apply">Apply</a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section id="top" style="background:#0D0D0D;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:120px 80px 80px;position:relative;overflow:hidden;">
+  <div style="position:absolute;top:96px;left:0;right:0;display:flex;justify-content:space-between;padding:0 80px;">
+    <div class="mono xs" style="color:rgba(255,255,255,0.25);letter-spacing:0.08em;text-transform:uppercase;">EXPANSION NETWORK · 1 ACTIVE · 3 IN DEVELOPMENT · 10 CANDIDATES</div>
+    <div class="mono xs" style="color:rgba(255,255,255,0.25);letter-spacing:0.08em;text-transform:uppercase;">STATUS // IN DEVELOPMENT</div>
+  </div>
+  <img src="assets/logo-white.svg" style="height:70px;object-fit:contain;margin-bottom:36px;" alt="Haus">
+  <div style="font-family:'Barlow Condensed',sans-serif;font-size:88px;font-weight:900;color:white;letter-spacing:0.03em;line-height:0.95;text-transform:uppercase;max-width:1000px;margin-bottom:28px;">
+    Global<br>Nodes.
+  </div>
+  <div class="body" style="color:rgba(255,255,255,0.55);max-width:600px;margin-bottom:48px;">
+    The model that works in San Francisco — house + lab + capital + cohort — replicates wherever biology and ambition concentrate. One organism, many habitats.
+  </div>
+  <div style="display:flex;gap:16px;justify-content:center;margin-bottom:64px;">
+    <a href="mailto:elliot@biopunk.house?subject=Global%20Node%20Partnership" class="btn-f">Partner With Us →</a>
+    <a href="#protocol" class="btn-ol">See the protocol ↓</a>
+  </div>
+  <div style="font-family:'DM Mono',monospace;font-size:12px;letter-spacing:0.16em;color:rgba(255,255,255,0.2);text-transform:uppercase;">REPLICATE &nbsp;// &nbsp;ADAPT &nbsp;// &nbsp;SPECIATE</div>
+  <div style="position:absolute;right:-60px;bottom:-80px;font-family:'Barlow Condensed',sans-serif;font-size:320px;font-weight:900;color:rgba(255,255,255,0.03);line-height:1;pointer-events:none;">12</div>
+</section>
+
+<!-- TICKER (cities) -->
+<div class="ticker">
+  <div class="ticker-inner">
+    <span class="ti">ATGCCATTGGACCTTAAGCG</span><span class="ti ti-b">SAN JUAN</span>
+    <span class="ti">TTAGGCATCC</span><span class="ti ti-b">KOBE</span>
+    <span class="ti">CCGTAATGGCAA</span><span class="ti ti-b">MELBOURNE</span>
+    <span class="ti">GGATCCTTAACG</span><span class="ti ti-b">MONTERREY</span>
+    <span class="ti">AATGGCCATTAG</span><span class="ti ti-b">BOSTON</span>
+    <span class="ti">TTCCGGAATTAG</span><span class="ti ti-b">NYC</span>
+    <span class="ti">CCGGATCATTGA</span><span class="ti ti-b">LONDON</span>
+    <span class="ti">TTGGCCAATCGA</span><span class="ti ti-b">PARIS</span>
+    <span class="ti">GATTACAGGCTA</span><span class="ti ti-b">SHENZHEN</span>
+    <span class="ti">TTAACCGGATCC</span><span class="ti ti-b">SHANGHAI</span>
+    <span class="ti">GGCATTACCGAT</span><span class="ti ti-b">BUENOS AIRES</span>
+    <span class="ti">ATGCCATTGGACCTTAAGCG</span><span class="ti ti-b">SAN JUAN</span>
+    <span class="ti">TTAGGCATCC</span><span class="ti ti-b">KOBE</span>
+    <span class="ti">CCGTAATGGCAA</span><span class="ti ti-b">MELBOURNE</span>
+    <span class="ti">GGATCCTTAACG</span><span class="ti ti-b">MONTERREY</span>
+    <span class="ti">AATGGCCATTAG</span><span class="ti ti-b">BOSTON</span>
+    <span class="ti">TTCCGGAATTAG</span><span class="ti ti-b">NYC</span>
+    <span class="ti">CCGGATCATTGA</span><span class="ti ti-b">LONDON</span>
+    <span class="ti">TTGGCCAATCGA</span><span class="ti ti-b">PARIS</span>
+    <span class="ti">GATTACAGGCTA</span><span class="ti ti-b">SHENZHEN</span>
+    <span class="ti">TTAACCGGATCC</span><span class="ti ti-b">SHANGHAI</span>
+    <span class="ti">GGCATTACCGAT</span><span class="ti ti-b">BUENOS AIRES</span>
+  </div>
+</div>
+
+<!-- NODE PROTOCOL -->
+<section id="protocol" style="background:#FFFFFF;">
+  <div class="wrap">
+    <div class="over">00 / Node Protocol</div>
+    <div class="h2">What it takes to open a node.</div>
+    <div class="body" style="max-width:640px;margin-bottom:56px;">A node is not a house with a logo on it. Every location must pass the same five-part specification before the organism commits — each requirement load-bearing, none optional.</div>
+
+    <div class="req"><div><div class="req-code">REQ_01</div><div class="req-tag">Terrain</div></div><div class="req-body"><div class="h3">Location-Specific Advantage</div><div class="body">The city itself must be the accelerant: a vertical where local infrastructure, regulation, talent, or industry gives founders an edge they cannot get anywhere else.</div><div style="margin-top:12px;"><span class="tag" style="background:#0D0D0D;color:white;">Non-negotiable</span></div></div></div>
+    <div class="req"><div><div class="req-code">REQ_02</div><div class="req-tag">Capital</div></div><div class="req-body"><div class="h3">Active Co-Investment Network</div><div class="body">Local angels, funds, and institutions ready to co-invest alongside Haus Fund — so every demo day has a room of committed capital, not tourists.</div><div style="margin-top:12px;"><span class="tag" style="background:#0D0D0D;color:white;">Non-negotiable</span></div></div></div>
+    <div class="req"><div><div class="req-code">REQ_03</div><div class="req-tag">Habitat</div></div><div class="req-body"><div class="h3">A 15-ish Bedroom House</div><div class="body">Big enough to house a full cohort; intimate enough that the kitchen table stays the center of gravity. The house is the instrument.</div><div style="margin-top:12px;"><span class="tag" style="background:#0D0D0D;color:white;">Non-negotiable</span></div></div></div>
+    <div class="req"><div><div class="req-code">REQ_04</div><div class="req-tag">Network</div></div><div class="req-body"><div class="h3">Vertical Partnership Support</div><div class="body">An active partnership network in the node's specific vertical — labs, manufacturers, hospitals, regulators, associations — wired in before the first cohort arrives.</div><div style="margin-top:12px;"><span class="tag" style="background:#0D0D0D;color:white;">Non-negotiable</span></div></div></div>
+    <div class="req" style="border-bottom:1px solid #E5E1D9;"><div><div class="req-code">REQ_05</div><div class="req-tag">Talent</div></div><div class="req-body"><div class="h3">The Right People In The House</div><div class="body">A Program Manager operating as a member of our team and a venture scout — plus an embedded scientific communicator producing media and video on the founders.</div><div style="margin-top:12px;"><span class="tag" style="background:#0D0D0D;color:white;">Non-negotiable</span></div></div></div>
+  </div>
+</section>
+
+<!-- ACTIVE / IN DEVELOPMENT NODES -->
+<section id="active" style="background:#F8F7F3;">
+  <div class="wrap">
+    <div class="over">01 / In Development</div>
+    <div class="h2">Priority nodes.</div>
+    <div class="g3" style="gap:28px;align-items:start;">
+
+      <!-- PharmHaus — San Juan -->
+      <div style="border:1px solid #E5E1D9;border-radius:10px;overflow:hidden;">
+        <div style="padding:24px 28px;background:#D4E8F4;display:flex;justify-content:space-between;align-items:flex-start;">
+          <div>
+            <div class="mono xs" style="color:#2A5888;letter-spacing:0.10em;text-transform:uppercase;opacity:0.7;margin-bottom:6px;">NODE_SJU · PHARMA MFG</div>
+            <div class="node-wm" style="color:#0D0D0D;"><span class="pre">PHARM</span><span class="sfx">HAUS</span></div>
+          </div>
+          <span class="tag" style="background:rgba(42,88,136,0.12);color:#2A5888;">In Development</span>
+        </div>
+        <div style="background:white;padding:22px 28px;">
+          <div class="mono xs" style="margin-bottom:12px;text-transform:uppercase;letter-spacing:0.08em;">San Juan · Puerto Rico · USA</div>
+          <div class="sm" style="margin-bottom:16px;color:#3A3A3A;"><strong>The thesis:</strong> Puerto Rico has decades of cGMP infrastructure, a deep pharma manufacturing workforce, and federal jurisdiction that keeps FDA pathways simple.</div>
+          <div class="sm" style="margin-bottom:16px;color:#3A3A3A;"><strong>The build:</strong> In conjunction with BioLeap — operated by parallel18 — residents get lab space at the Confluence Center in Science City, plus cGMP pilot plant access.</div>
+          <div class="sm" style="color:#3A3A3A;margin-bottom:16px;"><strong>The living:</strong> Cohort housing anchored at Casa Chironja, a beachside coliving compound in San Juan.</div>
+          <div style="display:flex;flex-wrap:wrap;gap:6px;"><span class="tag tag-f">cGMP Pilot Plants</span><span class="tag">R&amp;D Tax Credits</span><span class="tag">US Jurisdiction</span><span class="tag">Wet Lab</span></div>
+        </div>
+      </div>
+
+      <!-- CellHaus — Kobe -->
+      <div style="border:1px solid #E5E1D9;border-radius:10px;overflow:hidden;">
+        <div style="padding:24px 28px;background:#C4D8E8;display:flex;justify-content:space-between;align-items:flex-start;">
+          <div>
+            <div class="mono xs" style="color:#2A587A;letter-spacing:0.10em;text-transform:uppercase;opacity:0.7;margin-bottom:6px;">NODE_UKB · CELL &amp; GENE THERAPY</div>
+            <div class="node-wm" style="color:#0D0D0D;"><span class="pre">CELL</span><span class="sfx">HAUS</span></div>
+          </div>
+          <span class="tag" style="background:rgba(42,88,122,0.12);color:#2A587A;">Sep 2026</span>
+        </div>
+        <div style="background:white;padding:22px 28px;">
+          <div class="mono xs" style="margin-bottom:12px;text-transform:uppercase;letter-spacing:0.08em;">Port Island · Kobe · Japan</div>
+          <div class="sm" style="margin-bottom:16px;color:#3A3A3A;"><strong>The thesis:</strong> Japan's conditional-approval pathway for regenerative medicine lets cell and gene therapies reach patients years ahead of other markets.</div>
+          <div class="sm" style="margin-bottom:16px;color:#3A3A3A;"><strong>The build:</strong> Lab space inside KBIC — the Kobe Biomedical Innovation Cluster — with cohort living space on campus. Bench and bed on the same island.</div>
+          <div class="sm" style="color:#3A3A3A;margin-bottom:16px;"><strong>The launch:</strong> First cohort targeted September 2026 in partnership with Frontier Humans, running into Mirai Tech PopUp City on Port Island.</div>
+          <div style="display:flex;flex-wrap:wrap;gap:6px;"><span class="tag tag-f">KBIC Lab Space</span><span class="tag">PMDA Pathways</span><span class="tag">On-Campus Living</span><span class="tag">Sep 2026</span></div>
+        </div>
+      </div>
+
+      <!-- DeSciHaus — Buenos Aires -->
+      <div style="border:1px solid #E5E1D9;border-radius:10px;overflow:hidden;">
+        <div style="padding:24px 28px;background:#B8D898;display:flex;justify-content:space-between;align-items:flex-start;">
+          <div>
+            <div class="mono xs" style="color:#2A6018;letter-spacing:0.10em;text-transform:uppercase;opacity:0.7;margin-bottom:6px;">NODE_EZE · DESCI / AGTECH</div>
+            <div class="node-wm" style="color:#0D0D0D;font-size:22px;"><span class="pre">DESCI</span><span class="sfx">HAUS</span></div>
+          </div>
+          <span class="tag" style="background:rgba(42,96,24,0.12);color:#2A6018;">In Development</span>
+        </div>
+        <div style="background:white;padding:22px 28px;">
+          <div class="mono xs" style="margin-bottom:12px;text-transform:uppercase;letter-spacing:0.08em;">Buenos Aires · Argentina</div>
+          <div class="sm" style="margin-bottom:16px;color:#3A3A3A;"><strong>The thesis:</strong> Argentina punches far above its weight in bioscience and its agtech sector sits on top of one of the planet's great agricultural engines.</div>
+          <div class="sm" style="margin-bottom:16px;color:#3A3A3A;"><strong>The build:</strong> In conjunction with Crecimiento, with lab and coworking space at +54 Lab inside the Parque de Innovación, Buenos Aires' science and technology district.</div>
+          <div class="sm" style="color:#3A3A3A;margin-bottom:16px;"><strong>The network:</strong> Industry access through the Cámara Argentina de Biotecnología's member companies and startup program.</div>
+          <div style="display:flex;flex-wrap:wrap;gap:6px;"><span class="tag tag-f">DeSci</span><span class="tag">AgTech</span><span class="tag">Lab Coworking</span><span class="tag">Pop-Up City Energy</span></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- CANDIDATE CITIES -->
+<section id="prospects" style="background:#FFFFFF;">
+  <div class="wrap">
+    <div class="over">02 / Candidate Habitats</div>
+    <div class="h2">Where the organism goes next.</div>
+    <div class="body" style="max-width:640px;margin-bottom:48px;">Ten cities under evaluation — each chosen because its local ecosystem gives one biotech vertical an unfair advantage. A node only opens where the city itself is the accelerant.</div>
+
+    <div class="g4" style="gap:16px;">
+
+      <div style="border:1px solid #E5E1D9;border-radius:10px;overflow:hidden;">
+        <div style="padding:16px 20px;background:#C0E0D0;border-bottom:1px solid rgba(0,0,0,0.06);">
+          <div class="mono xs" style="color:#1A6850;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:4px;">MEL · Australia</div>
+          <div class="node-wm" style="font-size:20px;color:#0D0D0D;"><span class="pre">TRIAL</span><span class="sfx">HAUS</span></div>
+        </div>
+        <div style="padding:16px 20px;background:white;"><div class="sm" style="color:#3A3A3A;margin-bottom:10px;">Clinical Trials</div><div class="xs mono" style="color:#B0ADA6;line-height:1.5;">43.5% R&D tax rebate + fast CTN approval. Fastest, cheapest Phase I/II trials with FDA-acceptable data.</div></div>
+      </div>
+
+      <div style="border:1px solid #E5E1D9;border-radius:10px;overflow:hidden;">
+        <div style="padding:16px 20px;background:#A0D878;border-bottom:1px solid rgba(0,0,0,0.06);">
+          <div class="mono xs" style="color:#286820;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:4px;">MTY · Mexico</div>
+          <div class="node-wm" style="font-size:20px;color:#0D0D0D;"><span class="pre">FERM</span><span class="sfx">HAUS</span></div>
+        </div>
+        <div style="padding:16px 20px;background:white;"><div class="sm" style="color:#3A3A3A;margin-bottom:10px;">Industrial Biotech</div><div class="xs mono" style="color:#B0ADA6;line-height:1.5;">Mexico's industrial capital. Tec de Monterrey talent + nearshoring momentum for fermentation &amp; bioprocess scale-up.</div></div>
+      </div>
+
+      <div style="border:1px solid #E5E1D9;border-radius:10px;overflow:hidden;">
+        <div style="padding:16px 20px;background:#C0CCD8;border-bottom:1px solid rgba(0,0,0,0.06);">
+          <div class="mono xs" style="color:#283858;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:4px;">BOS · USA</div>
+          <div class="node-wm" style="font-size:20px;color:#0D0D0D;"><span class="pre">BIOME</span><span class="sfx">HAUS</span></div>
+        </div>
+        <div style="padding:16px 20px;background:white;"><div class="sm" style="color:#3A3A3A;margin-bottom:10px;">Microbiome Engineering</div><div class="xs mono" style="color:#B0ADA6;line-height:1.5;">Densest life-science talent pool. MIT/Harvard corridor + the investors who already understand the space.</div></div>
+      </div>
+
+      <div style="border:1px solid #E5E1D9;border-radius:10px;overflow:hidden;">
+        <div style="padding:16px 20px;background:#F0D890;border-bottom:1px solid rgba(0,0,0,0.06);">
+          <div class="mono xs" style="color:#7A5010;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:4px;">NYC · USA</div>
+          <div class="node-wm" style="font-size:20px;color:#0D0D0D;"><span class="pre">IMM</span><span class="sfx">HAUS</span></div>
+        </div>
+        <div style="padding:16px 20px;background:white;"><div class="sm" style="color:#3A3A3A;margin-bottom:10px;">Immuno-Oncology</div><div class="xs mono" style="color:#B0ADA6;line-height:1.5;">MSK + Columbia KOL network. One subway ride from trial sites, KOLs, and the patient populations that define the field.</div></div>
+      </div>
+
+      <div style="border:1px solid #E5E1D9;border-radius:10px;overflow:hidden;">
+        <div style="padding:16px 20px;background:#E8C4C4;border-bottom:1px solid rgba(0,0,0,0.06);">
+          <div class="mono xs" style="color:#782030;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:4px;">LHR · UK</div>
+          <div class="node-wm" style="font-size:20px;color:#0D0D0D;"><span class="pre">DIAG</span><span class="sfx">HAUS</span></div>
+        </div>
+        <div style="padding:16px 20px;background:white;"><div class="sm" style="color:#3A3A3A;margin-bottom:10px;">AI-Driven Diagnostics</div><div class="xs mono" style="color:#B0ADA6;line-height:1.5;">NHS-scale health data, world-class genomics infrastructure, Europe's deepest AI talent bench.</div></div>
+      </div>
+
+      <div style="border:1px solid #E5E1D9;border-radius:10px;overflow:hidden;">
+        <div style="padding:16px 20px;background:#F0E0B0;border-bottom:1px solid rgba(0,0,0,0.06);">
+          <div class="mono xs" style="color:#7A5810;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:4px;">CDG · France</div>
+          <div class="node-wm" style="font-size:20px;color:#0D0D0D;"><span class="pre">LUX</span><span class="sfx">HAUS</span></div>
+        </div>
+        <div style="padding:16px 20px;background:white;"><div class="sm" style="color:#3A3A3A;margin-bottom:10px;">Luxury Biotech</div><div class="xs mono" style="color:#B0ADA6;line-height:1.5;">Where biotechnology meets the maisons. Fermented actives, biofabricated materials, longevity science for the luxury houses.</div></div>
+      </div>
+
+      <div style="border:1px solid #E5E1D9;border-radius:10px;overflow:hidden;">
+        <div style="padding:16px 20px;background:#D4D8E4;border-bottom:1px solid rgba(0,0,0,0.06);">
+          <div class="mono xs" style="color:#404858;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:4px;">BSL · Switzerland</div>
+          <div class="node-wm" style="font-size:20px;color:#0D0D0D;"><span class="pre">SENSOR</span><span class="sfx">HAUS</span></div>
+        </div>
+        <div style="padding:16px 20px;background:white;"><div class="sm" style="color:#3A3A3A;margin-bottom:10px;">Biosensors</div><div class="xs mono" style="color:#B0ADA6;line-height:1.5;">Pharma's European capital × Swiss precision instrumentation. For sensing hardware that has to be exact, regulated, trusted.</div></div>
+      </div>
+
+      <div style="border:1px solid #E5E1D9;border-radius:10px;overflow:hidden;">
+        <div style="padding:16px 20px;background:#C8D4E4;border-bottom:1px solid rgba(0,0,0,0.06);">
+          <div class="mono xs" style="color:#3A4E6A;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:4px;">SZX · China</div>
+          <div class="node-wm" style="font-size:20px;color:#0D0D0D;"><span class="pre">FAB</span><span class="sfx">HAUS</span></div>
+        </div>
+        <div style="padding:16px 20px;background:white;"><div class="sm" style="color:#3A3A3A;margin-bottom:10px;">Electronics &amp; Hardware</div><div class="xs mono" style="color:#B0ADA6;line-height:1.5;">World's fastest hardware iteration loop. CAD to working device in days, not quarters.</div></div>
+      </div>
+
+      <div style="border:1px solid #E5E1D9;border-radius:10px;overflow:hidden;">
+        <div style="padding:16px 20px;background:#F0C8C0;border-bottom:1px solid rgba(0,0,0,0.06);">
+          <div class="mono xs" style="color:#782820;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:4px;">SHA · China</div>
+          <div class="node-wm" style="font-size:20px;color:#0D0D0D;"><span class="pre">SCALE</span><span class="sfx">HAUS</span></div>
+        </div>
+        <div style="padding:16px 20px;background:white;"><div class="sm" style="color:#3A3A3A;margin-bottom:10px;">Contract Research</div><div class="xs mono" style="color:#B0ADA6;line-height:1.5;">Global CRO/CDMO engine room. Preclinical programs, chemistry, and manufacturing at unmatched speed and cost.</div></div>
+      </div>
+
+      <div style="border:1px solid #E5E1D9;border-radius:10px;overflow:hidden;border-style:dashed;">
+        <div style="padding:16px 20px;background:#F8F7F3;border-bottom:1px solid #E5E1D9;">
+          <div class="mono xs" style="color:#B0ADA6;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:4px;">??? · Your City</div>
+          <div class="node-wm" style="font-size:20px;color:#B0ADA6;"><span class="pre">___</span><span class="sfx">HAUS</span></div>
+        </div>
+        <div style="padding:16px 20px;background:white;"><div class="sm" style="color:#B0ADA6;margin-bottom:10px;">Open Protocol</div><div class="xs mono" style="color:#B0ADA6;line-height:1.5;">Know a city with an unfair advantage for one biotech vertical? The organism is listening.</div><div style="margin-top:12px;"><a href="mailto:elliot@biopunk.house?subject=Node%20Proposal" style="font-size:12px;font-weight:700;color:#1C3B2D;letter-spacing:0.04em;">Propose →</a></div></div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- PARTNER CTA -->
+<section style="background:#1C3B2D;">
+  <div class="wrap" style="text-align:center;">
+    <div class="over over-w">05 / Partnership</div>
+    <div style="font-family:'Barlow Condensed',sans-serif;font-size:80px;font-weight:900;color:white;letter-spacing:0.03em;line-height:0.95;margin-bottom:24px;text-transform:uppercase;">Build a node<br>with us.</div>
+    <div class="body" style="color:rgba(255,255,255,0.55);max-width:540px;margin:0 auto 40px;">We partner with incubators, coliving operators, manufacturers, economic development agencies, and incentive specialists to bring each node alive.</div>
+    <div style="display:flex;gap:16px;justify-content:center;">
+      <a href="mailto:elliot@biopunk.house?subject=Global%20Node%20Partnership" class="btn-f" style="background:white;color:#1C3B2D;">Start the Conversation →</a>
+      <a href="index.html" class="btn-ol">← Back to the House</a>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer style="background:#0D0D0D;border-top:1px solid rgba(255,255,255,0.06);padding:32px 80px;">
+  <div style="max-width:1440px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;">
+    <div class="mono xs" style="color:rgba(255,255,255,0.2);letter-spacing:0.08em;text-transform:uppercase;">HAUS HOUSE · GLOBAL NODES</div>
+    <div style="display:flex;gap:32px;">
+      <a href="index.html" class="mono xs" style="color:rgba(255,255,255,0.25);letter-spacing:0.06em;text-transform:uppercase;">← House</a>
+      <a href="#protocol" class="mono xs" style="color:rgba(255,255,255,0.25);letter-spacing:0.06em;text-transform:uppercase;">Protocol</a>
+      <a href="mailto:elliot@biopunk.house" class="mono xs" style="color:rgba(255,255,255,0.25);letter-spacing:0.06em;text-transform:uppercase;">Contact</a>
+    </div>
+    <div class="mono xs" style="color:rgba(255,255,255,0.15);letter-spacing:0.08em;text-transform:uppercase;">REPLICATE // ADAPT // SPECIATE</div>
+  </div>
+</footer>
+
+<script>
+(function(){
+  var nav=document.getElementById('nav');
+  var hero=document.getElementById('top');
+  window.addEventListener('scroll',function(){
+    nav.classList.toggle('scrolled',window.scrollY>(hero.offsetHeight-80));
+  },{passive:true});
+})();
+</script>
+</body>
+</html>
