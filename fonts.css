@@ -1,0 +1,6 @@
+/* Haus Fund — Web Fonts via Google Fonts CDN
+ * Production: replace with self-hosted .woff2 files and proper @font-face rules.
+ * Flag: Barlow / Barlow Condensed / DM Sans / DM Mono are closest Google Fonts
+ * matches for the Haus brand. Provide .ttf/.woff2 files for exact brand font.
+ */
+@import url('https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700;800;900&family=Barlow+Condensed:wght@400;600;700;800;900&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&family=DM+Mono:wght@300;400;500&display=swap');
