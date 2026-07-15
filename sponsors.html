@@ -1,0 +1,494 @@
+<!-- @dsCard group="Website" viewport="1440x900" name="Haus — Sponsors" subtitle="Partnerships · hero · marquee · stats · audiences · tiers · FAQ" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Partner with Haus — Sponsorships</title>
+<meta name="description" content="Put your brand in front of biotech founders, scientists, and investors across the Haus network — from showcase nights to residencies and labs.">
+<meta property="og:title" content="Partner with Haus — Sponsorships">
+<meta property="og:description" content="Reach the biotech founders, investors, and operators building inside the Haus network.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700;800;900&family=Barlow+Condensed:wght@600;700;800;900&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600&family=DM+Mono:wght@400;500&display=swap">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html{scroll-behavior:smooth;}
+body{font-family:'DM Sans',sans-serif;background:#F8F7F3;color:#0D0D0D;line-height:1.6;}
+a{color:inherit;text-decoration:none;}
+img{display:block;}
+
+/* ── Nav ── */
+nav{position:fixed;top:0;left:0;right:0;z-index:200;transition:background 200ms,border-color 200ms;border-bottom:1px solid transparent;}
+nav.scrolled{background:#F8F7F3;border-bottom-color:#E5E1D9;}
+.nav-inner{max-width:1440px;margin:0 auto;padding:0 56px;height:72px;display:flex;align-items:center;justify-content:space-between;}
+.nav-logo{height:28px;object-fit:contain;filter:invert(1) brightness(100);transition:filter 200ms;}
+nav.scrolled .nav-logo{filter:none;}
+.nav-links{display:flex;align-items:center;gap:32px;}
+.nav-links a{font-size:14px;font-weight:500;color:rgba(255,255,255,0.65);transition:color 150ms;letter-spacing:0.01em;}
+.nav-links a:hover{color:white;}
+nav.scrolled .nav-links a{color:#3A3A3A;}
+nav.scrolled .nav-links a:hover{color:#1C3B2D;}
+.nav-apply{background:rgba(255,255,255,0.12);color:white;padding:8px 18px;border-radius:6px;font-size:13px;font-weight:600;border:1.5px solid rgba(255,255,255,0.3);transition:all 200ms;letter-spacing:0.01em;}
+.nav-apply:hover{background:rgba(255,255,255,0.2);border-color:rgba(255,255,255,0.5);}
+nav.scrolled .nav-apply{background:#1C3B2D;border-color:#1C3B2D;color:white;}
+nav.scrolled .nav-apply:hover{background:#2A5C46;}
+
+/* ── Sections ── */
+.wrap{max-width:1440px;margin:0 auto;padding:100px 80px;}
+.wrap-sm{max-width:1440px;margin:0 auto;padding:80px 80px;}
+
+/* ── Type ── */
+.over{font-size:12px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:#727272;margin-bottom:12px;}
+.over-w{color:rgba(255,255,255,0.45);}
+.h2{font-family:'Barlow',sans-serif;font-size:56px;font-weight:700;line-height:1.08;letter-spacing:-0.01em;color:#0D0D0D;margin-bottom:40px;}
+.h2-w{color:white;}
+.h3{font-family:'Barlow',sans-serif;font-size:26px;font-weight:700;color:#0D0D0D;line-height:1.2;margin-bottom:8px;}
+.body{font-size:18px;line-height:1.65;color:#3A3A3A;}
+.sm{font-size:15px;line-height:1.55;color:#727272;}
+.xs{font-size:12px;color:#B0ADA6;}
+.mono{font-family:'DM Mono',monospace;}
+
+/* ── Cards ── */
+.card{background:#fff;border:1px solid #E5E1D9;border-radius:10px;padding:28px 32px;}
+.card-t{border-top:3px solid #1C3B2D;}
+
+/* ── Buttons ── */
+.btn-f{display:inline-flex;align-items:center;gap:8px;background:#1C3B2D;color:white;padding:14px 28px;border-radius:6px;font-size:15px;font-weight:600;transition:background 150ms;cursor:pointer;border:none;}
+.btn-f:hover{background:#2A5C46;}
+.btn-ol{display:inline-flex;align-items:center;gap:8px;background:transparent;color:rgba(255,255,255,0.75);padding:14px 28px;border-radius:6px;font-size:15px;font-weight:500;border:1.5px solid rgba(255,255,255,0.3);transition:all 150ms;cursor:pointer;}
+.btn-ol:hover{border-color:rgba(255,255,255,0.7);color:white;}
+.btn-dk{display:inline-flex;align-items:center;gap:8px;background:#0D0D0D;color:white;padding:14px 28px;border-radius:6px;font-size:15px;font-weight:600;transition:background 150ms;cursor:pointer;border:none;}
+.btn-dk:hover{background:#3A3A3A;}
+.btn-olg{display:inline-flex;align-items:center;gap:8px;background:transparent;color:#1C3B2D;padding:14px 28px;border-radius:6px;font-size:15px;font-weight:600;border:1.5px solid #C9C3B6;transition:all 150ms;cursor:pointer;}
+.btn-olg:hover{border-color:#1C3B2D;background:#1C3B2D;color:white;}
+
+/* ── Grids ── */
+.g2{display:grid;grid-template-columns:repeat(2,1fr);gap:24px;}
+.g3{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;}
+.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:20px;}
+
+/* ── Tags ── */
+.tag{display:inline-flex;align-items:center;padding:3px 9px;border-radius:4px;font-size:11px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;background:#F0EDE6;color:#727272;}
+.tag-f{background:#BDDDD3;color:#1C3B2D;}
+.tag-br{background:#F2E8D5;color:#6B4E2A;}
+
+/* ── DNA Ticker ── */
+@keyframes tick{0%{transform:translateX(0);}100%{transform:translateX(-50%);}}
+.ticker{overflow:hidden;background:#0D0D0D;height:44px;display:flex;align-items:center;}
+.ticker-inner{display:flex;white-space:nowrap;animation:tick 36s linear infinite;}
+.ti{font-family:'DM Mono',monospace;font-size:11px;letter-spacing:0.06em;padding:0 20px;color:rgba(255,255,255,0.25);}
+.ti-b{font-weight:600;letter-spacing:0.12em;color:rgba(255,255,255,0.65);}
+
+/* ── Partner marquee ── */
+.marq{overflow:hidden;width:100%;-webkit-mask-image:linear-gradient(90deg,transparent,#000 7%,#000 93%,transparent);mask-image:linear-gradient(90deg,transparent,#000 7%,#000 93%,transparent);}
+.marq-track{display:flex;align-items:center;width:max-content;animation:marq 40s linear infinite;}
+.marq-track.rev{animation-direction:reverse;animation-duration:48s;}
+.marq:hover .marq-track{animation-play-state:paused;}
+@keyframes marq{from{transform:translateX(0);}to{transform:translateX(-50%);}}
+.pm{font-family:'Barlow',sans-serif;font-weight:800;font-size:clamp(20px,4vw,30px);letter-spacing:-0.01em;color:#A7A39A;white-space:nowrap;padding:0 6px;transition:color 160ms;}
+.pm:hover{color:#1C3B2D;}
+.pm-dot{color:#D8D4CB;font-weight:400;padding:0 26px;font-size:clamp(18px,3.4vw,24px);}
+.pm-sm{font-weight:700;font-size:clamp(16px,3.2vw,22px);color:#BCB8AF;}
+.pm-label{text-align:center;font-size:12px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:#B0ADA6;margin:40px 0 22px;}
+@media (prefers-reduced-motion:reduce){.marq{overflow-x:auto;}.marq-track{animation:none;}}
+
+/* ── Imagery ── */
+.fig{position:relative;overflow:hidden;border-radius:10px;background:#E5E1D9;}
+.fig img{display:block;width:100%;height:100%;object-fit:cover;}
+.ar-32{aspect-ratio:3/2;} .ar-169{aspect-ratio:16/9;}
+.band{position:relative;width:100%;height:clamp(260px,42vw,540px);overflow:hidden;}
+.band img{width:100%;height:100%;object-fit:cover;display:block;}
+.grad-wm::after{content:"";position:absolute;inset:0;background:linear-gradient(transparent,rgba(15,36,25,.62));pointer-events:none;}
+.grad-wm .wm{position:absolute;left:clamp(16px,4vw,40px);bottom:clamp(14px,3vw,28px);height:clamp(22px,3.4vw,34px);width:auto;opacity:.92;z-index:2;}
+.duo img{filter:grayscale(1) contrast(1.03) brightness(1.02);}
+.duo::after{content:"";position:absolute;inset:0;background:#1C3B2D;mix-blend-mode:color;pointer-events:none;}
+.duo::before{content:"";position:absolute;inset:0;background:rgba(13,13,13,0.18);z-index:1;pointer-events:none;}
+.grain::before{content:"";position:absolute;inset:0;z-index:1;pointer-events:none;opacity:.07;mix-blend-mode:overlay;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");background-size:180px 180px;}
+.fig .cap{position:absolute;left:14px;bottom:12px;z-index:2;font-family:'DM Mono',monospace;font-size:10px;letter-spacing:0.10em;text-transform:uppercase;color:rgba(255,255,255,0.82);text-shadow:0 1px 6px rgba(0,0,0,0.5);}
+
+/* ── Moments gallery ── */
+.moments{display:grid;grid-template-columns:repeat(4,1fr);grid-auto-rows:200px;gap:12px;}
+.mtile{position:relative;overflow:hidden;border-radius:10px;background:#E5E1D9;}
+.mtile img{width:100%;height:100%;object-fit:cover;transition:transform 500ms ease;}
+.mtile:hover img{transform:scale(1.05);}
+.mtile.tall{grid-row:span 2;}
+.mtile.wide{grid-column:span 2;}
+.mtile .lab{position:absolute;left:14px;bottom:12px;z-index:2;font-family:'Barlow',sans-serif;font-weight:700;font-size:16px;color:white;text-shadow:0 1px 8px rgba(0,0,0,0.6);}
+.mtile .grd{position:absolute;inset:0;background:linear-gradient(transparent 45%,rgba(13,13,13,0.6));z-index:1;}
+
+/* ── Stats ── */
+.statrow{display:grid;grid-template-columns:repeat(4,1fr);border-top:1px solid rgba(255,255,255,0.14);}
+.stat{padding:40px 28px;border-left:1px solid rgba(255,255,255,0.14);}
+.stat:first-child{border-left:none;}
+.stat-n{font-family:'Barlow Condensed',sans-serif;font-size:64px;font-weight:900;color:white;line-height:1;letter-spacing:0.01em;}
+.stat-n .u{color:#B8924A;}
+.stat-l{font-size:14px;color:rgba(255,255,255,0.55);margin-top:12px;line-height:1.45;}
+
+/* ── Tiers ── */
+.tier{background:#fff;border:1px solid #E5E1D9;border-radius:12px;padding:34px 30px;display:flex;flex-direction:column;}
+.tier.feat{border:1.5px solid #1C3B2D;box-shadow:0 12px 40px rgba(28,59,45,0.12);}
+.tier-name{font-family:'Barlow',sans-serif;font-size:24px;font-weight:800;color:#0D0D0D;letter-spacing:-0.01em;}
+.tier-sub{font-size:15px;color:#727272;margin:8px 0 22px;line-height:1.5;}
+.tier ul{list-style:none;margin:0 0 26px;padding:0;flex:1;}
+.tier li{position:relative;padding:9px 0 9px 26px;font-size:15px;color:#3A3A3A;border-top:1px solid #F0EDE6;}
+.tier li:first-child{border-top:none;}
+.tier li::before{content:"";position:absolute;left:0;top:15px;width:12px;height:12px;border-radius:3px;background:#BDDDD3;}
+.tier.feat li::before{background:#1C3B2D;}
+.tier.title li::before{background:#B8924A;}
+
+/* ── FAQ ── */
+.faq{border-top:1px solid #E5E1D9;}
+.faq details{border-bottom:1px solid #E5E1D9;}
+.faq summary{cursor:pointer;list-style:none;padding:26px 0;display:flex;justify-content:space-between;align-items:center;gap:24px;font-family:'Barlow',sans-serif;font-size:21px;font-weight:700;color:#0D0D0D;}
+.faq summary::-webkit-details-marker{display:none;}
+.faq summary .ic{flex-shrink:0;width:26px;height:26px;border:1.5px solid #C9C3B6;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;color:#727272;transition:all 200ms;}
+.faq details[open] summary .ic{transform:rotate(45deg);border-color:#1C3B2D;color:#1C3B2D;}
+.faq .ans{padding:0 0 26px;max-width:820px;font-size:16px;line-height:1.65;color:#3A3A3A;}
+
+/* ════ RESPONSIVE ════ */
+@media (max-width:1024px){
+  .nav-inner{padding:0 32px;}
+  .nav-links{gap:22px;}
+  .wrap{padding:80px 40px;}
+  .wrap-sm{padding:64px 40px;}
+  .h2{font-size:44px;margin-bottom:32px;}
+  .g4{grid-template-columns:repeat(2,1fr);}
+  .g3{grid-template-columns:1fr;}
+  .statrow{grid-template-columns:repeat(2,1fr);}
+  .stat:nth-child(3){border-left:none;}
+  .stat{border-top:1px solid rgba(255,255,255,0.14);}
+  .stat:nth-child(1),.stat:nth-child(2){border-top:none;}
+  .hero-h1{font-size:64px !important;}
+  .moments{grid-template-columns:repeat(3,1fr);}
+}
+@media (max-width:680px){
+  .nav-inner{padding:0 18px;height:60px;}
+  .nav-links{display:none;}
+  .nav-logo{height:24px;}
+  .nav-apply{padding:7px 14px;font-size:12px;}
+  .wrap{padding:56px 20px !important;}
+  .wrap-sm{padding:48px 20px !important;}
+  .h2{font-size:34px;margin-bottom:24px;}
+  .h3{font-size:22px;}
+  .body{font-size:16px;}
+  #top{min-height:auto !important;padding:104px 20px 64px !important;}
+  .hero-coords{display:none !important;}
+  #top img[alt="Haus"]{height:56px !important;margin-bottom:28px !important;}
+  .hero-h1{font-size:42px !important;margin-bottom:24px !important;}
+  .hero-ctas{flex-direction:column !important;gap:12px !important;width:100%;}
+  .hero-ctas a{justify-content:center;width:100%;}
+  .g2,.g3,.g4{grid-template-columns:1fr !important;}
+  .statrow{grid-template-columns:1fr;}
+  .stat{border-left:none;border-top:1px solid rgba(255,255,255,0.14);padding:28px 4px;}
+  .stat:first-child{border-top:none;}
+  .stat-n{font-size:52px;}
+  .moments{grid-template-columns:repeat(2,1fr);grid-auto-rows:150px;}
+  .cta-h{font-size:52px !important;}
+  .apply-ctas{flex-direction:column !important;gap:12px !important;}
+  .apply-ctas a{justify-content:center;width:100%;}
+  .site-footer{padding:28px 20px !important;}
+  .footer-inner{flex-direction:column !important;gap:16px;text-align:center;}
+  .footer-inner > div{flex-wrap:wrap;justify-content:center;gap:18px;}
+  html,body{overflow-x:hidden;}
+}
+</style>
+</head>
+<body>
+
+<!-- ── NAV ── -->
+<nav id="nav">
+  <div class="nav-inner">
+    <a href="index.html#top"><img src="assets/logo-mark.svg" class="nav-logo" alt="Haus"></a>
+    <div class="nav-links">
+      <a href="index.html#program">Program</a>
+      <a href="index.html#stack">What You Get</a>
+      <a href="index.html#nodes">Nodes</a>
+      <a href="mentors.html">Mentors</a>
+      <a href="expansion.html">Global &#8599;</a>
+      <a href="sponsors.html" style="color:white;">Sponsors</a>
+    </div>
+    <a href="mailto:elliot@haus.fund?subject=Sponsorship%20inquiry" class="nav-apply">Partner With Us</a>
+  </div>
+</nav>
+
+<!-- ── HERO ── -->
+<section id="top" style="background:#1C3B2D;min-height:92vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:120px 80px 80px;position:relative;overflow:hidden;">
+  <div class="hero-coords" style="position:absolute;top:96px;left:0;right:0;display:flex;justify-content:space-between;padding:0 80px;">
+    <div class="mono xs" style="color:rgba(255,255,255,0.35);letter-spacing:0.08em;text-transform:uppercase;">Partnerships &#183; Haus Network</div>
+    <div class="mono xs" style="color:rgba(255,255,255,0.35);letter-spacing:0.08em;text-transform:uppercase;">SF &#183; Global Nodes &#183; 2026</div>
+  </div>
+
+  <img src="assets/logo-white.svg" style="height:76px;object-fit:contain;margin-bottom:36px;" alt="Haus">
+
+  <div class="over over-w" style="margin-bottom:20px;">Partnerships</div>
+  <div class="hero-h1" style="font-family:'Barlow Condensed',sans-serif;font-size:84px;font-weight:900;color:white;letter-spacing:0.03em;line-height:0.95;text-transform:uppercase;max-width:1080px;margin-bottom:30px;">
+    Put your brand<br>where biotech gets built.
+  </div>
+
+  <div class="body" style="color:rgba(255,255,255,0.58);max-width:660px;margin-bottom:44px;">
+    Reach the founders, scientists, and investors moving through the Haus network &#8212; live-in residencies, wet labs, and showcase nights across San Francisco and a growing set of global nodes. Real rooms, high-signal audiences, measurable brand impact.
+  </div>
+
+  <div class="hero-ctas" style="display:flex;gap:16px;justify-content:center;margin-bottom:56px;">
+    <a href="mailto:elliot@haus.fund?subject=Sponsorship%20inquiry" class="btn-f">Start a sponsorship inquiry &#8594;</a>
+    <a href="#tiers" class="btn-ol">See partnership formats &#8595;</a>
+  </div>
+
+  <div style="font-family:'DM Mono',monospace;font-size:12px;letter-spacing:0.16em;color:rgba(255,255,255,0.25);text-transform:uppercase;">FOUNDERS &nbsp;// &nbsp;SCIENTISTS &nbsp;// &nbsp;INVESTORS</div>
+
+  <div class="ghost-num" style="position:absolute;right:-40px;bottom:-60px;font-family:'Barlow Condensed',sans-serif;font-size:320px;font-weight:900;color:rgba(255,255,255,0.04);line-height:1;pointer-events:none;user-select:none;">&#167;</div>
+</section>
+
+<!-- ── DNA TICKER ── -->
+<div class="ticker">
+  <div class="ticker-inner">
+    <span class="ti">ATGCCATTGGACCTTAAGCG</span><span class="ti ti-b">BRAND VISIBILITY</span>
+    <span class="ti">TTAGGCATCCGATTACGGAT</span><span class="ti ti-b">FOUNDER ACCESS</span>
+    <span class="ti">CCGTAATGGCAATTCCGGTA</span><span class="ti ti-b">SHOWCASE NIGHTS</span>
+    <span class="ti">GGATCCTTAACGGCATTAGC</span><span class="ti ti-b">DEALFLOW &amp; PIPELINE</span>
+    <span class="ti">AATGGCCATTAGGCCTTAGA</span><span class="ti ti-b">CO-BRANDED CONTENT</span>
+    <span class="ti">TTCCGGAATTAGCCGGATCA</span><span class="ti ti-b">GLOBAL NODES</span>
+    <span class="ti">ATGCCATTGGACCTTAAGCG</span><span class="ti ti-b">BRAND VISIBILITY</span>
+    <span class="ti">TTAGGCATCCGATTACGGAT</span><span class="ti ti-b">FOUNDER ACCESS</span>
+    <span class="ti">CCGTAATGGCAATTCCGGTA</span><span class="ti ti-b">SHOWCASE NIGHTS</span>
+    <span class="ti">GGATCCTTAACGGCATTAGC</span><span class="ti ti-b">DEALFLOW &amp; PIPELINE</span>
+    <span class="ti">AATGGCCATTAGGCCTTAGA</span><span class="ti ti-b">CO-BRANDED CONTENT</span>
+    <span class="ti">TTCCGGAATTAGCCGGATCA</span><span class="ti ti-b">GLOBAL NODES</span>
+  </div>
+</div>
+
+<!-- ── PARTNERS MARQUEE ── -->
+<section class="wrap-sm" style="padding-bottom:40px;">
+  <div style="text-align:center;margin-bottom:36px;">
+    <div class="over">Partners &amp; friends</div>
+    <div class="h2" style="font-size:40px;margin-bottom:0;">The company you&#8217;ll keep.</div>
+  </div>
+  <div class="marq">
+    <div class="marq-track">
+      <span class="pm">The Residency</span><span class="pm-dot">&#183;</span>
+      <span class="pm">Frontier Tower</span><span class="pm-dot">&#183;</span>
+      <span class="pm">Superhero Hotel</span><span class="pm-dot">&#183;</span>
+      <span class="pm">Orrick</span><span class="pm-dot">&#183;</span>
+      <span class="pm">Nucleate</span><span class="pm-dot">&#183;</span>
+      <span class="pm" aria-hidden="true">The Residency</span><span class="pm-dot" aria-hidden="true">&#183;</span>
+      <span class="pm" aria-hidden="true">Frontier Tower</span><span class="pm-dot" aria-hidden="true">&#183;</span>
+      <span class="pm" aria-hidden="true">Superhero Hotel</span><span class="pm-dot" aria-hidden="true">&#183;</span>
+      <span class="pm" aria-hidden="true">Orrick</span><span class="pm-dot" aria-hidden="true">&#183;</span>
+      <span class="pm" aria-hidden="true">Nucleate</span><span class="pm-dot" aria-hidden="true">&#183;</span>
+    </div>
+  </div>
+  <div class="pm-label">Alongside co-investors from</div>
+  <div class="marq">
+    <div class="marq-track rev">
+      <span class="pm pm-sm">50 Years</span><span class="pm-dot">&#183;</span>
+      <span class="pm pm-sm">1517 Fund</span><span class="pm-dot">&#183;</span>
+      <span class="pm pm-sm">Boost VC</span><span class="pm-dot">&#183;</span>
+      <span class="pm pm-sm">Draper Associates</span><span class="pm-dot">&#183;</span>
+      <span class="pm pm-sm">Entrepreneur First</span><span class="pm-dot">&#183;</span>
+      <span class="pm pm-sm">Foresight Institute</span><span class="pm-dot">&#183;</span>
+      <span class="pm pm-sm" aria-hidden="true">50 Years</span><span class="pm-dot" aria-hidden="true">&#183;</span>
+      <span class="pm pm-sm" aria-hidden="true">1517 Fund</span><span class="pm-dot" aria-hidden="true">&#183;</span>
+      <span class="pm pm-sm" aria-hidden="true">Boost VC</span><span class="pm-dot" aria-hidden="true">&#183;</span>
+      <span class="pm pm-sm" aria-hidden="true">Draper Associates</span><span class="pm-dot" aria-hidden="true">&#183;</span>
+      <span class="pm pm-sm" aria-hidden="true">Entrepreneur First</span><span class="pm-dot" aria-hidden="true">&#183;</span>
+      <span class="pm pm-sm" aria-hidden="true">Foresight Institute</span><span class="pm-dot" aria-hidden="true">&#183;</span>
+    </div>
+  </div>
+</section>
+
+<!-- ── STATS BAND ── -->
+<section style="background:#1C3B2D;">
+  <div class="wrap-sm" style="padding-top:64px;padding-bottom:64px;">
+    <div class="over over-w" style="text-align:center;margin-bottom:8px;">By the numbers</div>
+    <div class="h2 h2-w" style="text-align:center;font-size:38px;margin-bottom:44px;">A network worth standing next to.</div>
+    <div class="statrow">
+      <div class="stat"><div class="stat-n">7<span class="u">+</span></div><div class="stat-l">Residencies and labs across the Haus network, in SF and beyond.</div></div>
+      <div class="stat"><div class="stat-n">100<span class="u">+</span></div><div class="stat-l">Biotech founders, scientists, and operators moving through per year.</div></div>
+      <div class="stat"><div class="stat-n">$20<span class="u">M</span></div><div class="stat-l">Haus Fund I &#8212; first-check capital backing companies in the network.</div></div>
+      <div class="stat"><div class="stat-n">6<span class="u">&#215;</span></div><div class="stat-l">Global nodes launching &#8212; Kobe, Paris, Monterrey, Melbourne, and more.</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ── WHY PARTNER / AUDIENCES ── -->
+<section id="why" style="background:#F8F7F3;">
+  <div class="wrap">
+    <div class="over">Why partner with us</div>
+    <div class="h2" style="max-width:820px;">Reach the right audience for your brand.</div>
+    <div class="body" style="max-width:680px;margin-bottom:48px;">High-signal moments across the Haus network &#8212; where biotech founders, investors, and operators actually show up. We shape every partnership around who you&#8217;re trying to reach.</div>
+    <div class="g3">
+      <div class="card card-t">
+        <div style="font-size:28px;margin-bottom:14px;">&#9673;</div>
+        <div class="h3">Corporate &amp; platform partners</div>
+        <div class="body">Get in front of the founders and scientists building the next generation of life-science companies &#8212; reagents, instruments, cloud, CROs, and tooling brands, embedded where the work happens.</div>
+      </div>
+      <div class="card card-t">
+        <div style="font-size:28px;margin-bottom:14px;">&#9672;</div>
+        <div class="h3">VC &amp; capital partners</div>
+        <div class="body">Curated dealflow, judging seats, and rooms full of biotech founders raising angel-to-seed &#8212; aligned to your thesis and stage, ahead of the wider market.</div>
+      </div>
+      <div class="card card-t">
+        <div style="font-size:28px;margin-bottom:14px;">&#9654;</div>
+        <div class="h3">Media &amp; ecosystem partners</div>
+        <div class="body">Co-branded stories, showcase coverage, and distribution through Haus Media &#8212; reaching the founders, talent, and public following frontier biotech.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── IMAGE BAND ── -->
+<div class="band grad-wm grain">
+  <img src="assets/photos/web/p08.jpg" alt="Showcase night at Haus" loading="lazy">
+  <img src="assets/logo-house-white.svg" class="wm" alt="Haus">
+</div>
+
+<!-- ── MOMENTS / WHERE YOUR BRAND SHOWS UP ── -->
+<section id="moments" style="background:#FFFFFF;">
+  <div class="wrap">
+    <div class="over">Flagship moments</div>
+    <div class="h2" style="margin-bottom:16px;">Brand visibility where it counts.</div>
+    <div class="body" style="max-width:680px;margin-bottom:44px;">Stage presence, logo placement, and content moments across the live programs and recaps that define the Haus network.</div>
+    <div class="moments">
+      <div class="mtile tall wide"><img src="assets/photos/web/p07.jpg" alt="Final immersive showcase" loading="lazy"><div class="grd"></div><div class="lab">Final Showcase &#183; investors in the room</div></div>
+      <div class="mtile"><img src="assets/photos/thumb/p10.jpg" alt="Pitch at the house" loading="lazy"><div class="grd"></div><div class="lab">Reverse Demo Day</div></div>
+      <div class="mtile"><img src="assets/photos/thumb/p11.jpg" alt="Weekly dinner" loading="lazy"><div class="grd"></div><div class="lab">Weekly Dinners</div></div>
+      <div class="mtile wide"><img src="assets/photos/thumb/p16.jpg" alt="Inside the lab" loading="lazy"><div class="grd"></div><div class="lab">Wet Lab &#183; the bench</div></div>
+      <div class="mtile"><img src="assets/photos/thumb/p05.jpg" alt="The cohort" loading="lazy"><div class="grd"></div><div class="lab">Cohort Life</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ── DUOTONE DIVIDER ── -->
+<div class="band duo grain">
+  <img src="assets/photos/web/p13.jpg" alt="Evening at the house" loading="lazy">
+</div>
+
+<!-- ── TIERS ── -->
+<section id="tiers" style="background:#F8F7F3;">
+  <div class="wrap">
+    <div class="over">Packages</div>
+    <div class="h2" style="margin-bottom:16px;">Sponsorship formats.</div>
+    <div class="body" style="max-width:680px;margin-bottom:48px;">Every partnership is custom-built. These tiers are starting points &#8212; we&#8217;ll shape deliverables around your goals, audience, and calendar.</div>
+    <div class="g3">
+      <div class="tier">
+        <div class="tier-name">Event Sponsor</div>
+        <div class="tier-sub">High-visibility presence at a single flagship moment &#8212; a showcase night or reverse demo day.</div>
+        <ul>
+          <li>Logo on event materials &amp; recap</li>
+          <li>On-site brand presence</li>
+          <li>2&#8211;4 team passes</li>
+          <li>Social mention in event promotion</li>
+        </ul>
+        <a href="mailto:elliot@haus.fund?subject=Event%20Sponsor%20inquiry" class="btn-olg" style="justify-content:center;">Inquire</a>
+      </div>
+      <div class="tier feat">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2px;"><div class="tier-name">Series Sponsor</div><span class="tag tag-f">Most popular</span></div>
+        <div class="tier-sub">Recurring visibility across a full cohort season and multiple moments.</div>
+        <ul>
+          <li>Priority logo placement across the season</li>
+          <li>Speaking or fireside slot</li>
+          <li>Curated founder introductions</li>
+          <li>Newsletter &amp; Haus Media features</li>
+          <li>6&#8211;8 team passes across events</li>
+        </ul>
+        <a href="mailto:elliot@haus.fund?subject=Series%20Sponsor%20inquiry" class="btn-f" style="justify-content:center;">Inquire</a>
+      </div>
+      <div class="tier title">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2px;"><div class="tier-name">Title Partner</div><span class="tag tag-br">Lead</span></div>
+        <div class="tier-sub">Lead partner for a flagship Haus experience or node.</div>
+        <ul>
+          <li>Naming rights on select programs</li>
+          <li>Keynote or judging participation</li>
+          <li>Custom on-site activation</li>
+          <li>Dedicated partnership lead</li>
+          <li>Year-round network access</li>
+        </ul>
+        <a href="mailto:elliot@haus.fund?subject=Title%20Partner%20inquiry" class="btn-dk" style="justify-content:center;">Inquire</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── INTENTIONAL / MID CTA ── -->
+<section style="background:#1C3B2D;">
+  <div class="wrap" style="text-align:center;">
+    <div class="over over-w">25K+ connections in the ecosystem</div>
+    <div class="h2 h2-w" style="max-width:900px;margin:0 auto 20px;">Make every sponsorship intentional, visible, and high-impact.</div>
+    <div class="body" style="color:rgba(255,255,255,0.62);max-width:600px;margin:0 auto 40px;">From a single-event partnership to a title program across nodes &#8212; we build the package around your goals, your audience, and your calendar.</div>
+    <a href="mailto:elliot@haus.fund?subject=Sponsorship%20inquiry" class="btn-ol" style="border-color:rgba(255,255,255,0.5);color:white;">Start an inquiry &#8594;</a>
+  </div>
+</section>
+
+<!-- ── FAQ ── -->
+<section id="faq" style="background:#FFFFFF;">
+  <div class="wrap">
+    <div class="over">FAQ</div>
+    <div class="h2" style="margin-bottom:44px;">Common questions.</div>
+    <div class="faq">
+      <details open>
+        <summary>What kinds of companies sponsor Haus?<span class="ic">+</span></summary>
+        <div class="ans">Life-science platforms, instrument and reagent brands, cloud and compute providers, CROs, service firms, funds, and frontier-tech companies that want direct access to biotech founders and investors. We tailor packages to your goal &#8212; brand, pipeline, dealflow, or community.</div>
+      </details>
+      <details>
+        <summary>Can we sponsor a single event?<span class="ic">+</span></summary>
+        <div class="ans">Yes. Many partners start with one flagship moment &#8212; a Final Showcase or Reverse Demo Day &#8212; then expand into a series or title partnership once we align on format and audience.</div>
+      </details>
+      <details>
+        <summary>What deliverables are included?<span class="ic">+</span></summary>
+        <div class="ans">Packages typically include logo placement, on-site presence, team passes, social and newsletter promotion, and optional speaking or activation slots. We share a custom one-pager after intake based on your tier and goals.</div>
+      </details>
+      <details>
+        <summary>Can we partner across multiple nodes?<span class="ic">+</span></summary>
+        <div class="ans">Absolutely. The Haus network is expanding to global nodes &#8212; Kobe, Paris, Monterrey, Melbourne, and more. Title and series partners can activate across several houses at once, or focus on a single region.</div>
+      </details>
+      <details>
+        <summary>How quickly will we hear back?<span class="ic">+</span></summary>
+        <div class="ans">We review every sponsor inquiry personally. If there&#8217;s a fit with an upcoming program, expect a reply within a few business days with next steps &#8212; no mass outreach.</div>
+      </details>
+    </div>
+  </div>
+</section>
+
+<!-- ── APPLY / CONTACT CTA ── -->
+<section id="apply" style="background:#0D0D0D;position:relative;overflow:hidden;">
+  <div aria-hidden="true" style="position:absolute;inset:0;z-index:0;"><img src="assets/photos/web/p19.jpg" alt="" style="width:100%;height:100%;object-fit:cover;opacity:0.5;"></div>
+  <div aria-hidden="true" style="position:absolute;inset:0;z-index:1;background:linear-gradient(rgba(13,13,13,0.82),rgba(13,13,13,0.9));"></div>
+  <div class="wrap" style="text-align:center;position:relative;z-index:2;">
+    <div class="over" style="color:rgba(255,255,255,0.35);">Partner with Haus</div>
+    <div class="cta-h" style="font-family:'Barlow Condensed',sans-serif;font-size:88px;font-weight:900;color:white;letter-spacing:0.03em;line-height:0.95;margin-bottom:28px;text-transform:uppercase;">Let&#8217;s build<br>something together.</div>
+    <div class="body" style="color:rgba(255,255,255,0.7);max-width:560px;margin:0 auto 48px;">Tell us who you&#8217;re trying to reach and what a win looks like. We&#8217;ll come back with a tailored package &#8212; and a warm room to put your brand in.</div>
+    <div class="apply-ctas" style="display:flex;gap:16px;justify-content:center;">
+      <a href="mailto:elliot@haus.fund?subject=Sponsorship%20inquiry" class="btn-f" style="font-size:16px;padding:16px 36px;">Email the team &#8594;</a>
+      <a href="https://airtable.com/appisCTsCCcBCMSk0/shr5L7eSSz2IbUmdM" class="btn-ol">Start the questionnaire</a>
+    </div>
+    <div class="mono xs" style="color:rgba(255,255,255,0.45);margin-top:32px;letter-spacing:0.06em;">Direct line: elliot@haus.fund</div>
+  </div>
+</section>
+
+<!-- ── FOOTER ── -->
+<footer style="background:#0D0D0D;border-top:1px solid rgba(255,255,255,0.06);padding:32px 80px;" class="site-footer">
+  <div class="footer-inner" style="max-width:1440px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;">
+    <div class="mono xs" style="color:rgba(255,255,255,0.2);letter-spacing:0.08em;text-transform:uppercase;">HAUS &#183; SAN FRANCISCO</div>
+    <div style="display:flex;gap:32px;">
+      <a href="index.html#program" class="mono xs" style="color:rgba(255,255,255,0.25);letter-spacing:0.06em;text-transform:uppercase;">PROGRAM</a>
+      <a href="mentors.html" class="mono xs" style="color:rgba(255,255,255,0.25);letter-spacing:0.06em;text-transform:uppercase;">MENTORS</a>
+      <a href="expansion.html" class="mono xs" style="color:rgba(255,255,255,0.25);letter-spacing:0.06em;text-transform:uppercase;">GLOBAL</a>
+      <a href="sponsors.html" class="mono xs" style="color:rgba(255,255,255,0.25);letter-spacing:0.06em;text-transform:uppercase;">SPONSORS</a>
+      <a href="mailto:elliot@haus.fund" class="mono xs" style="color:rgba(255,255,255,0.25);letter-spacing:0.06em;text-transform:uppercase;">CONTACT</a>
+    </div>
+    <div class="mono xs" style="color:rgba(255,255,255,0.15);letter-spacing:0.08em;text-transform:uppercase;">MUTATE // BUILD // DISRUPT</div>
+  </div>
+</footer>
+
+<script>
+(function(){
+  var nav = document.getElementById('nav');
+  var hero = document.getElementById('top');
+  window.addEventListener('scroll', function() {
+    nav.classList.toggle('scrolled', window.scrollY > (hero.offsetHeight - 80));
+  }, {passive:true});
+})();
+</script>
+
+</body>
+</html>
