@@ -12,12 +12,12 @@ https://www.haus.fund https://haus.fund 301!
 # matches, and without "!" an existing static file wins over the redirect.
 #
 # ADDING A NEW .md TO THIS REPO? Add a line here too, or it goes live.
-/README.md /index.html 404!
-/DEPLOYMENT.md /index.html 404!
-/DESIGN-SYSTEM.md /index.html 404!
-/SKILL.md /index.html 404!
-/CONNECT-GIT.md /index.html 404!
+/README.md /404.html 404!
+/DEPLOYMENT.md /404.html 404!
+/DESIGN-SYSTEM.md /404.html 404!
+/SKILL.md /404.html 404!
+/CONNECT-GIT.md /404.html 404!
 
-# Real files (design-system.html, expansion.html, fund-portal/, assets/) are
-# served before this rule. Catch-all sends unknown paths to the homepage.
-/* /index.html 200
+# No catch-all. Unknown paths fall through to 404.html with a real 404 status.
+# A "/* /index.html 200" rule here would turn every typo into a soft 404: the
+# homepage served under a 200, which search engines penalise and users misread.

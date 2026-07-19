@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+
+# Internal — not part of the public site
+Disallow: /fund-portal/
+Disallow: /design-system.html
+
+Sitemap: https://haus.fund/sitemap.xml
