@@ -4,6 +4,20 @@
 https://www.haus.fund/* https://haus.fund/:splat 301!
 https://www.haus.fund https://haus.fund 301!
 
+# Internal docs live in the repo for reference but must not be served.
+# publish = "." means every committed file is otherwise reachable.
+#
+# These must be listed one per file and forced with "!". A wildcard does not
+# work here: Netlify only allows a splat at the END of a path, so "/*.md" never
+# matches, and without "!" an existing static file wins over the redirect.
+#
+# ADDING A NEW .md TO THIS REPO? Add a line here too, or it goes live.
+/README.md /index.html 404!
+/DEPLOYMENT.md /index.html 404!
+/DESIGN-SYSTEM.md /index.html 404!
+/SKILL.md /index.html 404!
+/CONNECT-GIT.md /index.html 404!
+
 # Real files (design-system.html, expansion.html, fund-portal/, assets/) are
 # served before this rule. Catch-all sends unknown paths to the homepage.
 /* /index.html 200

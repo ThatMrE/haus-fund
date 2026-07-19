@@ -4,10 +4,10 @@
 
 ### Content Verification
 - [x] All 8 sections present (Hero, Thesis, How It Works, Numbers, Houses, Traction, Team, CTA)
-- [x] Hero section with "HAUS VC" title (120px+) and $25M tagline
+- [x] Hero section with "HAUS VC" title (120px+) and fund tagline
 - [x] All 7 global houses listed with emoji flags and verticals
 - [x] All 6 key statistics displayed in neon green
-- [x] Contact email configured (er.creates@gmail.com)
+- [x] Contact email configured (elliot@haus.fund)
 - [x] Team members listed (Elliot Roth, Roxana Grunenwald)
 - [x] Social links placeholder in footer
 
@@ -185,7 +185,7 @@ To update website content after deployment:
 3. Netlify will automatically deploy the changes (within 30 seconds)
 
 ### Common Updates
-- **Change email**: Find and replace `er.creates@gmail.com` with your email
+- **Change email**: Find and replace `elliot@haus.fund` with your email
 - **Update team info**: Edit the Team section HTML
 - **Change global houses**: Update the houses-grid section
 - **Modify statistics**: Update the stats-grid values and labels
@@ -251,4 +251,4 @@ After successful deployment:
 **Netlify Site**: [To be filled after deployment]
 **Status**: Ready for deployment
 
-For questions or issues, contact: er.creates@gmail.com
+For questions or issues, contact: elliot@haus.fund
