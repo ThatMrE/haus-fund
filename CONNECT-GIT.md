@@ -1,58 +1,61 @@
-# Connect haus.fund → GitHub (ThatMrE/haus-fund) → auto-deploy
+# Deploying haus.fund
 
-One-time setup so every change to this `website/` folder deploys to **haus.fund** automatically. Run on your own machine (Git is flaky on the OneDrive mount from the sandbox, fine locally). Repo: https://github.com/ThatMrE/haus-fund
+**Continuous deployment is live.** Push to `main` and Netlify builds and publishes
+haus.fund automatically, usually in well under a minute.
 
-Already prepared in this folder:
-- `.gitignore` (excludes local Netlify state, old `deploy-*.zip`, `*.bak`/backup HTML)
-- `netlify.toml` (`publish = "."`, www→apex redirects, security headers)
-- All site changes staged: Airtable Apply embed + links, Mentors page, nav/footer links.
-
-## Step 0 — delete the stray .git folder
-A partial repo was created during setup and the sandbox couldn't remove it. In the `website` folder, delete the hidden `.git` folder first:
 ```bash
-rm -rf .git           # Windows: rmdir /s /q .git  (or delete in Explorer with hidden files shown)
-```
-
-## Step 1 — is the repo empty or does it already have files?
-Open https://github.com/ThatMrE/haus-fund and check.
-
-### Case A — repo is EMPTY → push this folder straight in
-From inside the `website` folder:
-```bash
-git init
-git branch -M main
 git add -A
-git commit -m "Haus website: Airtable application form, Mentors page, nav/footer"
-git remote add origin https://github.com/ThatMrE/haus-fund.git
-git push -u origin main
+git commit -m "what changed"
+git push
 ```
 
-### Case B — repo ALREADY has content → merge cleanly (don't overwrite blindly)
-Clone it next to this folder, copy the current website files in, then commit:
+That's the whole workflow. No zip uploads, no CLI deploy.
+
+## The setup
+
+| | |
+|---|---|
+| Repo | [ThatMrE/haus-fund](https://github.com/ThatMrE/haus-fund) |
+| Deploy branch | `main` |
+| Build command | *(none — static site)* |
+| Publish directory | `.` (set by `netlify.toml`) |
+| Netlify project | [haus-fund](https://app.netlify.com/projects/haus-fund) |
+| Domain | haus.fund (www redirects to apex) |
+
+Pull requests get their own preview URL automatically.
+
+## Don't use `netlify deploy --prod`
+
+It still works, but it uploads your local folder directly and **bypasses git**. The
+result is a deploy Netlify records as `manual`, with no commit attached, which
+overrides whatever CD just published.
+
+That matters because a manual deploy ships your working directory — including any
+uncommitted or half-finished edits — with nothing in git recording what went live.
+If the site later looks out of step with `main`, a stray manual deploy is the first
+thing to check.
+
+Use it only to recover when CD itself is broken.
+
+## Checking a deploy
+
 ```bash
-# in a scratch location
-git clone https://github.com/ThatMrE/haus-fund.git haus-fund-repo
-cp -R "<path to>/Biopunk VC/website/." haus-fund-repo/   # copies files incl. .gitignore & netlify.toml
-cd haus-fund-repo
-git add -A
-git commit -m "Update site: Airtable application form, Mentors page, nav/footer"
-git push origin main         # (or your default branch name)
+# recent deploys — entries with a commit hash came from git, "manual" ones did not
+netlify api listSiteDeploys --data '{"site_id":"b85de1d6-8226-4c4b-b269-8e0a82e66b37"}'
+
+# what is published right now
+netlify status
 ```
-Review the diff on GitHub before/after to make sure nothing important was clobbered.
 
-## Step 2 — link the EXISTING haus-fund Netlify site to the repo (keeps haus.fund)
-Netlify → open the **haus-fund** project → **Site configuration → Build & deploy → Continuous deployment → Link repository** → GitHub → select **ThatMrE/haus-fund**. Set:
-- Branch to deploy: `main` (or your default)
-- Build command: (empty — static site)
-- Publish directory: `.`
+Build logs: https://app.netlify.com/projects/haus-fund/deploys
 
-Do NOT create a new Netlify site — linking the repo to the existing haus-fund site keeps the haus.fund domain and settings.
+## What gets published
 
-## Step 3 — from now on
-```bash
-git add -A && git commit -m "what changed" && git push
-```
-Netlify auto-builds + deploys in ~1 min; pull requests get preview URLs.
+`netlify.toml` sets `publish = "."`, so **every file in the repo is served**, not just
+the pages. That includes the design-system bundle (`_ds_bundle.js`, `_ds_manifest.json`,
+`SKILL.md`, `DESIGN-SYSTEM.md`, `HAUS Houses.html`). Treat anything you commit here as
+public.
 
----
-Tip: if you ever add a GitHub tool/connector in here, I can commit and push site changes directly — you'd never touch the terminal.
+Local-only files listed in `.gitignore` — the old `deploy-*.zip` archives, `*.bak`, and
+`index.legacy-backup.html` — stay out of the repo and off the site. The `/*` catch-all in
+`_redirects` sends unknown paths to the homepage.
