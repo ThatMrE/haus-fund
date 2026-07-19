@@ -1,0 +1,9 @@
+# Netlify Redirects — Haus Fund (haus.fund)
+
+# Redirect www to apex
+https://www.haus.fund/* https://haus.fund/:splat 301!
+https://www.haus.fund https://haus.fund 301!
+
+# Real files (design-system.html, expansion.html, fund-portal/, assets/) are
+# served before this rule. Catch-all sends unknown paths to the homepage.
+/* /index.html 200

@@ -1,0 +1,10 @@
+# Local Netlify state & old manual-deploy artifacts
+.netlify/
+deploy-*.zip
+*.bak
+index.html.bak
+index.legacy-backup.html
+# OS / editor junk
+.DS_Store
+Thumbs.db
+node_modules/

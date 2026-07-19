@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <rect width="1200" height="630" fill="#1C3B2D"/>
+  <rect x="0" y="0" width="1200" height="8" fill="#B8924A"/>
+  <text x="80" y="150" font-family="'DM Mono', monospace" font-size="22" letter-spacing="6" fill="#BDDDD3">DESIGN SYSTEM · V1.0</text>
+  <text x="76" y="320" font-family="'Barlow', 'Barlow Condensed', sans-serif" font-size="150" font-weight="900" fill="#F8F7F3" letter-spacing="2">HAUS<tspan font-weight="400" fill="#B8924A">FUND</tspan></text>
+  <text x="80" y="420" font-family="'Barlow', sans-serif" font-size="40" font-weight="400" fill="#E6EDE9">A functional, Bauhaus-rooted design language.</text>
+  <g font-family="'DM Mono', monospace" font-size="22" fill="#BDDDD3" letter-spacing="2">
+    <text x="80" y="540">145 TOKENS</text>
+    <text x="320" y="540">·</text>
+    <text x="350" y="540">8 COMPONENTS</text>
+    <text x="640" y="540">·</text>
+    <text x="670" y="540">16 HOUSES</text>
+    <text x="900" y="540">·</text>
+    <text x="930" y="540">AGENT RULES</text>
+  </g>
+  <!-- house mark: geometric roof -->
+  <path d="M1010 120 L1120 120 L1065 60 Z" fill="none" stroke="#B8924A" stroke-width="6"/>
+  <rect x="1020" y="120" width="90" height="70" fill="none" stroke="#B8924A" stroke-width="6"/>
+</svg>

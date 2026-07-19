@@ -1,0 +1,43 @@
+# Netlify Configuration for Haus Fund
+
+[build]
+  publish = "."
+  command = ""
+
+# Redirect www to apex
+[[redirects]]
+  from = "https://www.haus.fund/*"
+  to = "https://haus.fund/:splat"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://www.haus.fund"
+  to = "https://haus.fund"
+  status = 301
+  force = true
+
+# Cache static assets
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Content-Type-Options = "nosniff"
+    X-Frame-Options = "DENY"
+    X-XSS-Protection = "1; mode=block"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    Permissions-Policy = "geolocation=(), microphone=(), camera=()"
+
+# HTML should not be cached aggressively
+[[headers]]
+  for = "/*.html"
+  [headers.values]
+    Cache-Control = "public, max-age=3600"
+
+[context.production]
+  environment = { CONTEXT = "production" }
+
+[context.deploy-preview]
+  environment = { CONTEXT = "deploy-preview" }
+
+[context.branch-deploy]
+  environment = { CONTEXT = "branch-deploy" }

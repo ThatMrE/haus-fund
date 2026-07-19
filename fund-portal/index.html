@@ -1,0 +1,59 @@
+<!-- @dsCard group="Fund Portal" viewport="1440x900" name="Investor Portal" subtitle="Dashboard · Portfolio · Deal Flow · Company Detail" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Haus Fund — Investor Portal</title>
+<link rel="stylesheet" href="../styles.css">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: var(--font-body); background: var(--canvas-1); overflow: hidden; }
+  button { font-family: var(--font-body); }
+</style>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel" src="LocalComponents.jsx"></script>
+<script type="text/babel" src="Icons.jsx"></script>
+<script type="text/babel" src="Data.jsx"></script>
+<script type="text/babel" src="Sidebar.jsx"></script>
+<script type="text/babel" src="Dashboard.jsx"></script>
+<script type="text/babel" src="Portfolio.jsx"></script>
+<script type="text/babel" src="CompanyDetail.jsx"></script>
+<script type="text/babel" src="DealFlow.jsx"></script>
+
+<script type="text/babel">
+function App() {
+  const [screen, setScreen] = React.useState('dashboard');
+  const [company, setCompany] = React.useState(null);
+
+  const navigate = (s) => { setScreen(s); if (s !== 'company-detail') setCompany(null); };
+  const openCompany = (co) => { setCompany(co); setScreen('company-detail'); };
+  const goBack = () => { setScreen('portfolio'); setCompany(null); };
+
+  const screenMap = {
+    'dashboard':    <window.Dashboard onSelectCompany={openCompany} onNavigate={navigate} />,
+    'portfolio':    <window.Portfolio onSelectCompany={openCompany} />,
+    'deal-flow':    <window.DealFlow />,
+    'company-detail': company && <window.CompanyDetail company={company} onBack={goBack} />,
+  };
+
+  return (
+    <div style={{ display: 'flex', height: '100vh', overflow: 'hidden' }}>
+      <window.Sidebar activeScreen={screen} onNavigate={navigate} />
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', minWidth: 0 }}>
+        {screenMap[screen] || screenMap['dashboard']}
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.render(<App />, document.getElementById('root'));
+</script>
+</body>
+</html>

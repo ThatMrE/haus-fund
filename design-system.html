@@ -1,0 +1,763 @@
+<!-- @dsCard group="Website" viewport="1440x900" name="Haus — Design System" subtitle="The Haus Fund design language — tokens, foundations, components, and agent rules" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="The Haus Fund design system — a functional, Bauhaus-rooted design language for the fund website and investor portal. Tokens, foundations, components, patterns, and AI agent rules.">
+<meta name="author" content="Haus Fund">
+<meta name="theme-color" content="#1C3B2D">
+<link rel="canonical" href="https://haus.fund/design-system.html">
+
+<!-- Open Graph -->
+<meta property="og:title" content="Haus Fund — Design System">
+<meta property="og:description" content="A functional, Bauhaus-rooted design language: 145 tokens, 8 components, foundations, patterns, and agent rules.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://haus.fund/design-system.html">
+<meta property="og:image" content="assets/og-design-system.svg">
+<meta name="twitter:card" content="summary_large_image">
+
+<title>Haus Fund — Design System</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect fill='%231C3B2D' width='100' height='100'/%3E%3Ctext x='50' y='68' font-family='Arial' font-size='62' font-weight='900' fill='%23F8F7F3' text-anchor='middle'%3EH%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700;800;900&family=Barlow+Condensed:wght@400;600;700;800;900&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&family=DM+Mono:wght@300;400;500&display=swap">
+
+<style>
+:root{
+  --ink-1:#0D0D0D; --ink-2:#3A3A3A; --ink-3:#727272; --ink-4:#B0ADA6;
+  --canvas-0:#FFFFFF; --canvas-1:#F8F7F3; --canvas-2:#F0EDE6; --canvas-3:#E5E1D9;
+  --border-1:#E5E1D9; --border-2:#CECAC1; --border-3:#A8A49C;
+  --forest-1:#0F2419; --forest-2:#1C3B2D; --forest-3:#2A5C46; --forest-4:#3D8C6A; --forest-5:#BDDDD3;
+  --bronze-1:#6B4E2A; --bronze-2:#9A7040; --bronze-3:#B8924A; --bronze-4:#D4B07C; --bronze-5:#F2E8D5;
+  --steel-1:#0F2030; --steel-2:#1A3D5C; --steel-3:#2A6090; --steel-4:#4A90C4; --steel-5:#C8DFEF;
+  --positive:#1B7A48; --positive-bg:#D8F0E5; --warning:#C47A1A; --warning-bg:#FDF0D5;
+  --negative:#B83232; --negative-bg:#F5D5D5; --info:#1A4E8A; --info-bg:#D5E5F8;
+  --font-display:'Barlow Condensed',sans-serif; --font-heading:'Barlow',sans-serif;
+  --font-body:'DM Sans',sans-serif; --font-mono:'DM Mono',monospace;
+  --shadow-xs:0 1px 2px rgba(13,13,13,0.06);
+  --shadow-sm:0 1px 4px rgba(13,13,13,0.06),0 1px 2px rgba(13,13,13,0.04);
+  --shadow-md:0 4px 12px rgba(13,13,13,0.08),0 1px 3px rgba(13,13,13,0.04);
+  --shadow-lg:0 8px 24px rgba(13,13,13,0.10),0 2px 6px rgba(13,13,13,0.04);
+  --shadow-xl:0 16px 48px rgba(13,13,13,0.12),0 4px 12px rgba(13,13,13,0.05);
+  --sidebar-w:280px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html{scroll-behavior:smooth;}
+body{font-family:var(--font-body);background:var(--canvas-1);color:var(--ink-1);line-height:1.6;-webkit-font-smoothing:antialiased;}
+a{color:var(--forest-2);text-decoration:none;}
+img{display:block;}
+.mono{font-family:var(--font-mono);}
+
+/* ── Layout shell ── */
+.shell{display:flex;min-height:100vh;}
+
+/* ── Sidebar ── */
+.sidebar{width:var(--sidebar-w);flex-shrink:0;position:fixed;top:0;left:0;bottom:0;background:var(--canvas-3);border-right:1px solid var(--border-2);overflow-y:auto;padding:0;z-index:100;}
+.sb-brand{padding:24px 28px 18px;border-bottom:1px solid var(--border-2);}
+.sb-brand .wm{font-family:var(--font-heading);font-size:24px;line-height:1;letter-spacing:0.04em;}
+.sb-brand .wm .pre{font-weight:900;}
+.sb-brand .wm .sfx{font-weight:400;}
+.sb-brand .sub{font-family:var(--font-mono);font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--ink-3);margin-top:8px;}
+.sb-search{margin:16px 20px 8px;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:9px 12px;background:var(--canvas-0);border:1px solid var(--border-2);border-radius:8px;color:var(--ink-3);font-size:13px;cursor:text;}
+.sb-search .kbd{font-family:var(--font-mono);font-size:11px;background:var(--canvas-2);border:1px solid var(--border-2);border-radius:4px;padding:1px 6px;color:var(--ink-3);}
+.sb-nav{padding:8px 12px 40px;}
+.sb-sec{font-family:var(--font-mono);font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--ink-4);padding:18px 16px 6px;}
+.sb-nav a{display:block;font-size:14px;color:var(--ink-2);padding:6px 16px;border-radius:7px;transition:background 120ms,color 120ms;}
+.sb-nav a:hover{background:rgba(255,255,255,0.6);color:var(--ink-1);}
+.sb-nav a.active{background:var(--canvas-0);color:var(--forest-2);font-weight:600;box-shadow:0 0 0 1px var(--border-2);}
+
+/* ── Main ── */
+.main{margin-left:var(--sidebar-w);flex:1;min-width:0;}
+.topbar{position:sticky;top:0;z-index:50;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:14px 56px;background:rgba(248,247,243,0.85);backdrop-filter:blur(8px);border-bottom:1px solid var(--border-1);}
+.crumb{font-size:13px;color:var(--ink-3);}
+.crumb b{color:var(--ink-1);font-weight:600;}
+.topbar .meta{display:flex;align-items:center;gap:12px;font-family:var(--font-mono);font-size:11px;color:var(--ink-3);letter-spacing:0.04em;}
+.ver{background:var(--positive-bg);color:var(--positive);padding:2px 9px;border-radius:999px;font-weight:500;}
+.wrap{max-width:920px;padding:0 56px 120px;}
+
+/* ── Section scaffolding ── */
+.sect{padding-top:72px;}
+.sect:first-of-type{padding-top:40px;}
+.eyebrow{font-family:var(--font-mono);font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:var(--bronze-2);margin-bottom:12px;}
+h1.disp{font-family:var(--font-display);font-weight:800;font-size:64px;line-height:1;letter-spacing:-0.01em;text-transform:uppercase;margin-bottom:18px;}
+h2{font-family:var(--font-heading);font-weight:700;font-size:34px;line-height:1.1;letter-spacing:-0.01em;margin-bottom:8px;scroll-margin-top:80px;}
+h3{font-family:var(--font-heading);font-weight:700;font-size:19px;margin:36px 0 12px;}
+.lead{font-size:19px;line-height:1.6;color:var(--ink-2);max-width:660px;}
+p.body{font-size:16px;color:var(--ink-2);max-width:660px;margin-bottom:14px;}
+.sect-intro{font-size:16px;color:var(--ink-3);max-width:660px;margin:6px 0 28px;}
+.hr{border:none;border-top:1px solid var(--border-1);margin:0;}
+
+/* ── Hero stats ── */
+.hero-meta{display:flex;flex-wrap:wrap;gap:14px;margin:28px 0 8px;}
+.stat{background:var(--canvas-0);border:1px solid var(--border-1);border-radius:10px;padding:18px 22px;min-width:120px;box-shadow:var(--shadow-xs);}
+.stat .v{font-family:var(--font-display);font-weight:300;font-size:42px;line-height:1;letter-spacing:-0.02em;color:var(--forest-2);}
+.stat .l{font-family:var(--font-mono);font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--ink-3);margin-top:8px;}
+
+/* ── Cards / panels ── */
+.panel{background:var(--canvas-0);border:1px solid var(--border-1);border-radius:12px;padding:26px 28px;box-shadow:var(--shadow-xs);margin-bottom:18px;}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;}
+.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;}
+
+/* principle cards */
+.principle h4{font-family:var(--font-heading);font-size:17px;font-weight:700;margin-bottom:6px;}
+.principle p{font-size:14px;color:var(--ink-3);line-height:1.55;}
+.principle .num{font-family:var(--font-mono);font-size:11px;color:var(--bronze-3);letter-spacing:0.1em;margin-bottom:10px;}
+
+/* ── Color swatches ── */
+.swatch-row{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:10px;}
+.swatch{border-radius:10px;overflow:hidden;border:1px solid var(--border-1);background:var(--canvas-0);}
+.swatch .chip{height:64px;}
+.swatch .info{padding:9px 11px;}
+.swatch .nm{font-size:12px;font-weight:600;color:var(--ink-1);}
+.swatch .hx{font-family:var(--font-mono);font-size:11px;color:var(--ink-3);text-transform:uppercase;}
+.scale-row{display:flex;border-radius:10px;overflow:hidden;border:1px solid var(--border-1);margin-bottom:14px;}
+.scale-row .cell{flex:1;height:72px;display:flex;flex-direction:column;justify-content:flex-end;padding:8px 10px;}
+.scale-row .cell .t{font-family:var(--font-mono);font-size:10px;letter-spacing:0.04em;}
+.house-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;}
+.house{border-radius:10px;overflow:hidden;border:1px solid var(--border-1);}
+.house .bar{height:46px;display:flex;align-items:center;padding:0 12px;font-family:var(--font-heading);font-size:15px;letter-spacing:0.03em;}
+.house .bar .pre{font-weight:900;} .house .bar .sfx{font-weight:400;}
+.house .ft{padding:7px 12px;background:var(--canvas-0);font-family:var(--font-mono);font-size:10px;color:var(--ink-3);text-transform:uppercase;letter-spacing:0.05em;}
+
+/* ── Type specimens ── */
+.type-row{display:flex;align-items:baseline;gap:20px;padding:14px 0;border-bottom:1px solid var(--border-1);}
+.type-row .meta{width:150px;flex-shrink:0;font-family:var(--font-mono);font-size:11px;color:var(--ink-3);line-height:1.5;}
+.type-row .spec{color:var(--ink-1);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.font-card{padding:20px 22px;border:1px solid var(--border-1);border-radius:10px;background:var(--canvas-0);}
+.font-card .big{font-size:40px;line-height:1.1;color:var(--ink-1);margin-bottom:10px;}
+.font-card .nm{font-family:var(--font-mono);font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:var(--bronze-2);}
+.font-card .role{font-size:13px;color:var(--ink-3);margin-top:4px;}
+
+/* ── Spacing / radius / shadow demos ── */
+.space-row{display:flex;align-items:center;gap:14px;padding:7px 0;}
+.space-row .bar{background:var(--forest-4);height:14px;border-radius:3px;}
+.space-row .t{font-family:var(--font-mono);font-size:12px;color:var(--ink-3);}
+.radius-grid,.shadow-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;}
+.demo-box{background:var(--canvas-0);border:1px solid var(--border-1);height:88px;display:flex;align-items:flex-end;padding:10px;}
+.demo-cap{font-family:var(--font-mono);font-size:11px;color:var(--ink-3);margin-top:8px;}
+.shadow-box{background:var(--canvas-0);height:88px;border-radius:10px;}
+
+/* ── Component specimens ── */
+.spec-stage{background:var(--canvas-0);border:1px solid var(--border-1);border-radius:12px;padding:28px;display:flex;flex-wrap:wrap;gap:12px;align-items:center;box-shadow:var(--shadow-xs);}
+.spec-stage.col{flex-direction:column;align-items:stretch;}
+.spec-label{font-family:var(--font-mono);font-size:11px;letter-spacing:0.06em;text-transform:uppercase;color:var(--ink-4);margin:22px 0 10px;}
+
+/* buttons */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;font-family:var(--font-body);font-weight:600;font-size:15px;border-radius:6px;border:1.5px solid transparent;padding:0 20px;height:40px;cursor:pointer;transition:all 140ms cubic-bezier(.2,0,0,1);}
+.btn.sm{height:32px;font-size:13px;padding:0 14px;} .btn.lg{height:48px;font-size:16px;padding:0 26px;}
+.btn-primary{background:var(--ink-1);color:#fff;border-color:var(--ink-1);} .btn-primary:hover{background:var(--ink-2);border-color:var(--ink-2);}
+.btn-forest{background:var(--forest-2);color:#fff;border-color:var(--forest-2);} .btn-forest:hover{background:var(--forest-3);border-color:var(--forest-3);}
+.btn-bronze{background:var(--bronze-3);color:var(--ink-1);border-color:var(--bronze-3);} .btn-bronze:hover{background:var(--bronze-2);color:#fff;border-color:var(--bronze-2);}
+.btn-outline{background:transparent;color:var(--ink-1);border-color:var(--border-3);} .btn-outline:hover{border-color:var(--ink-1);}
+.btn-ghost{background:transparent;color:var(--ink-2);border-color:transparent;} .btn-ghost:hover{background:var(--canvas-2);}
+.btn-danger{background:var(--negative);color:#fff;border-color:var(--negative);}
+.btn:disabled,.btn.is-disabled{opacity:.45;cursor:not-allowed;}
+
+/* badges + tags */
+.badge{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;padding:3px 10px;border-radius:999px;}
+.badge::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor;}
+.badge-pos{background:var(--positive-bg);color:var(--positive);}
+.badge-warn{background:var(--warning-bg);color:var(--warning);}
+.badge-neg{background:var(--negative-bg);color:var(--negative);}
+.badge-info{background:var(--info-bg);color:var(--info);}
+.tag{display:inline-flex;align-items:center;font-size:12px;font-weight:500;padding:4px 10px;border-radius:4px;background:var(--canvas-2);color:var(--ink-2);border:1px solid var(--border-1);}
+.tag-forest{background:var(--forest-5);color:var(--forest-1);border-color:transparent;}
+.tag-bronze{background:var(--bronze-5);color:var(--bronze-1);border-color:transparent;}
+.tag-steel{background:var(--steel-5);color:var(--steel-1);border-color:transparent;}
+
+/* avatars */
+.avatar{width:40px;height:40px;border-radius:999px;display:flex;align-items:center;justify-content:center;font-family:var(--font-heading);font-weight:700;font-size:15px;color:#fff;}
+.avatar.sq{border-radius:8px;}
+
+/* statcards */
+.statcard{background:var(--canvas-0);border:1px solid var(--border-1);border-radius:10px;padding:18px 20px;position:relative;overflow:hidden;flex:1;}
+.statcard::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--forest-3);}
+.statcard .lab{font-family:var(--font-mono);font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--ink-3);}
+.statcard .val{font-family:var(--font-display);font-weight:300;font-size:34px;line-height:1.05;letter-spacing:-0.02em;color:var(--ink-1);margin-top:6px;}
+.statcard .trend{font-size:12px;font-weight:600;color:var(--positive);margin-top:4px;}
+
+/* inputs */
+.field{display:flex;flex-direction:column;gap:6px;margin-bottom:14px;}
+.field label{font-size:13px;font-weight:600;color:var(--ink-2);}
+.input{height:40px;padding:0 12px;border:1px solid var(--border-2);border-radius:6px;background:var(--canvas-0);font-family:var(--font-body);font-size:15px;color:var(--ink-1);transition:border-color 140ms,box-shadow 140ms;}
+.input:focus{outline:none;border-color:var(--forest-3);box-shadow:0 0 0 3px var(--forest-5);}
+.input.err{border-color:var(--negative);} .input.err:focus{box-shadow:0 0 0 3px var(--negative-bg);}
+.field .hint{font-size:12px;color:var(--ink-3);} .field .errtext{font-size:12px;color:var(--negative);}
+
+/* tables */
+table.tbl{width:100%;border-collapse:collapse;background:var(--canvas-0);border:1px solid var(--border-1);border-radius:10px;overflow:hidden;font-size:14px;}
+table.tbl th{text-align:left;font-family:var(--font-mono);font-size:10px;letter-spacing:0.08em;text-transform:uppercase;color:var(--ink-3);padding:11px 16px;background:var(--canvas-2);border-bottom:1px solid var(--border-1);}
+table.tbl td{padding:12px 16px;border-bottom:1px solid var(--border-1);color:var(--ink-2);}
+table.tbl tr:last-child td{border-bottom:none;}
+table.tbl td .mono{color:var(--ink-1);}
+
+/* do / don't */
+.dd{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.dd .box{border-radius:10px;padding:18px 20px;font-size:14px;line-height:1.55;}
+.dd .do{background:var(--positive-bg);border:1px solid #BEE3D0;}
+.dd .dont{background:var(--negative-bg);border:1px solid #E9C2C2;}
+.dd h5{font-family:var(--font-mono);font-size:11px;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:8px;}
+.dd .do h5{color:var(--positive);} .dd .dont h5{color:var(--negative);}
+.dd ul{list-style:none;display:flex;flex-direction:column;gap:6px;}
+.dd li{padding-left:18px;position:relative;color:var(--ink-2);}
+.dd .do li::before{content:"✓";position:absolute;left:0;color:var(--positive);font-weight:700;}
+.dd .dont li::before{content:"✕";position:absolute;left:0;color:var(--negative);font-weight:700;}
+
+/* code */
+pre.code{background:var(--forest-1);color:#E6EDE9;border-radius:10px;padding:18px 20px;overflow-x:auto;font-family:var(--font-mono);font-size:12.5px;line-height:1.7;margin:8px 0 14px;}
+pre.code .c{color:#8FB6A4;} pre.code .k{color:#D4B07C;} pre.code .v{color:#BDDDD3;}
+
+/* governance rule list */
+.rules{display:flex;flex-direction:column;gap:10px;}
+.rule{display:flex;gap:14px;background:var(--canvas-0);border:1px solid var(--border-1);border-radius:10px;padding:16px 18px;}
+.rule .ico{flex-shrink:0;width:28px;height:28px;border-radius:7px;background:var(--forest-5);color:var(--forest-1);display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);font-weight:500;font-size:13px;}
+.rule .txt{font-size:14px;color:var(--ink-2);line-height:1.5;}
+.rule .txt b{color:var(--ink-1);}
+
+.footer{border-top:1px solid var(--border-1);margin-top:80px;padding:28px 56px;display:flex;justify-content:space-between;align-items:center;color:var(--ink-3);font-size:13px;}
+.footer a{color:var(--ink-2);} .footer .mono{font-size:11px;letter-spacing:0.04em;}
+
+/* mobile */
+.menu-btn{display:none;}
+@media(max-width:1080px){
+  .sidebar{transform:translateX(-100%);transition:transform 200ms;}
+  .sidebar.open{transform:none;}
+  .main{margin-left:0;}
+  .menu-btn{display:inline-flex;align-items:center;justify-content:center;width:38px;height:38px;border:1px solid var(--border-2);border-radius:8px;background:var(--canvas-0);cursor:pointer;}
+}
+@media(max-width:760px){
+  .wrap,.topbar,.footer{padding-left:22px;padding-right:22px;}
+  h1.disp{font-size:46px;} h2{font-size:27px;}
+  .grid2,.grid3,.grid4,.swatch-row,.house-grid,.radius-grid,.shadow-grid,.dd{grid-template-columns:1fr 1fr;}
+  .type-row{flex-direction:column;gap:4px;} .type-row .meta{width:auto;}
+}
+@media(max-width:480px){
+  h1.disp{font-size:38px;} h2{font-size:24px;}
+  .grid2,.grid3,.grid4,.swatch-row,.house-grid,.radius-grid,.shadow-grid,.dd{grid-template-columns:1fr;}
+}
+</style>
+</head>
+<body>
+<div class="shell">
+
+<!-- ════════ SIDEBAR ════════ -->
+<aside class="sidebar" id="sidebar">
+  <div class="sb-brand">
+    <a href="index.html" class="wm"><span class="pre">HAUS</span><span class="sfx" style="color:var(--ink-3)"> · DS</span></a>
+    <div class="sub">Design System · v1.0</div>
+  </div>
+  <div class="sb-search">
+    <span>Jump to a section…</span><span class="kbd">↓</span>
+  </div>
+  <nav class="sb-nav" id="sbnav">
+    <a href="#overview">Overview</a>
+    <a href="#principles">Principles</a>
+    <a href="#voice">Voice &amp; Language</a>
+    <div class="sb-sec">Foundations</div>
+    <a href="#color">Color</a>
+    <a href="#houses">House palettes</a>
+    <a href="#typography">Typography</a>
+    <a href="#spacing">Spacing &amp; layout</a>
+    <a href="#radius">Radius &amp; shadow</a>
+    <a href="#motion">Motion</a>
+    <a href="#logo">Logo &amp; wordmark</a>
+    <div class="sb-sec">Components</div>
+    <a href="#buttons">Buttons</a>
+    <a href="#badges">Badges &amp; tags</a>
+    <a href="#avatars">Avatars</a>
+    <a href="#cards">Cards &amp; stats</a>
+    <a href="#inputs">Inputs &amp; forms</a>
+    <a href="#tables">Tables</a>
+    <div class="sb-sec">Patterns</div>
+    <a href="#patterns">Layout patterns</a>
+    <div class="sb-sec">Governance</div>
+    <a href="#agent">AI agent rules</a>
+    <a href="#tokens">Token reference</a>
+  </nav>
+</aside>
+
+<!-- ════════ MAIN ════════ -->
+<div class="main">
+  <div class="topbar">
+    <div style="display:flex;align-items:center;gap:14px;">
+      <button class="menu-btn" id="menuBtn" aria-label="Menu">≡</button>
+      <div class="crumb">Design system › <b>Overview</b></div>
+    </div>
+    <div class="meta">
+      <span class="ver">v1.0 · stable</span>
+      <span>updated jun 19, 2026</span>
+    </div>
+  </div>
+
+  <div class="wrap">
+
+    <!-- ─── OVERVIEW ─── -->
+    <section class="sect" id="overview">
+      <div class="eyebrow">The Haus Fund design language</div>
+      <h1 class="disp">A house, not<br>just a check.</h1>
+      <p class="lead">The visual and verbal system behind the Haus Fund website and investor portal. Rooted in Bauhaus functionalism — precise, warm, and built to last — it gives founders, LPs, and our own team one consistent surface to meet on.</p>
+      <div class="hero-meta">
+        <div class="stat"><div class="v">145</div><div class="l">Design tokens</div></div>
+        <div class="stat"><div class="v">8</div><div class="l">Core components</div></div>
+        <div class="stat"><div class="v">16</div><div class="l">House palettes</div></div>
+        <div class="stat"><div class="v">4</div><div class="l">Type families</div></div>
+        <div class="stat"><div class="v">2</div><div class="l">Products</div></div>
+      </div>
+      <p class="body" style="margin-top:26px;">The name draws from the German <em>haus</em> and the spirit of the Bauhaus — the idea that a building is not just structure, but a gathering place, a system, a way of working. This system serves two products: the public <b>Fund Website</b> and the internal <b>Investor Portal</b>.</p>
+    </section>
+
+    <hr class="hr">
+
+    <!-- ─── PRINCIPLES ─── -->
+    <section class="sect" id="principles">
+      <div class="eyebrow">Foundations</div>
+      <h2>Principles</h2>
+      <p class="sect-intro">Five rules that decide every judgment call. When a choice isn't covered by a token, it's covered here.</p>
+      <div class="grid3">
+        <div class="panel principle"><div class="num">01</div><h4>Function first</h4><p>Every element earns its place. No decoration for its own sake — geometry, hierarchy, and whitespace do the work.</p></div>
+        <div class="panel principle"><div class="num">02</div><h4>Warm, not cold</h4><p>Near-black on warm off-white. Shadows are tinted warm, never blue. The system should feel like a room, not a dashboard.</p></div>
+        <div class="panel principle"><div class="num">03</div><h4>Flat &amp; honest</h4><p>No gradients, no glass morphism, no faux-3D. Surfaces are solid; depth comes from restrained, layered shadow.</p></div>
+        <div class="panel principle"><div class="num">04</div><h4>Data-forward</h4><p>Specific numbers, always — set in DM Mono so figures read as figures. The portfolio speaks for itself.</p></div>
+        <div class="panel principle"><div class="num">05</div><h4>Quietly confident</h4><p>Understated by default. Impact comes from one bold Barlow Condensed headline, not from many loud ones.</p></div>
+      </div>
+    </section>
+
+    <hr class="hr">
+
+    <!-- ─── VOICE ─── -->
+    <section class="sect" id="voice">
+      <div class="eyebrow">Foundations</div>
+      <h2>Voice &amp; language</h2>
+      <p class="sect-intro">Authoritative, not corporate. First-person plural. Precise. The copy respects the intelligence of deeptech founders without excluding newcomers.</p>
+      <div class="dd">
+        <div class="box do">
+          <h5>Do</h5>
+          <ul>
+            <li>"We back founders at the earliest stage."</li>
+            <li>"12 portfolio companies across 4 sectors. $18.4M deployed."</li>
+            <li>Numbers as digits — $20M, 14 companies, 3 exits.</li>
+            <li>Em dashes (—), Oxford comma, full punctuation.</li>
+          </ul>
+        </div>
+        <div class="box dont">
+          <h5>Don't</h5>
+          <ul>
+            <li>"We're SUPER excited about our amazing portfolio!!"</li>
+            <li>"Haus Fund has invested millions of dollars."</li>
+            <li>Spelled-out numbers, hype words, or jargon for its own sake.</li>
+            <li>Exclamation marks or emoji — ever, in formal UI.</li>
+          </ul>
+        </div>
+      </div>
+      <h3>Casing</h3>
+      <table class="tbl">
+        <thead><tr><th>Context</th><th>Case</th></tr></thead>
+        <tbody>
+          <tr><td>Primary display headlines</td><td>ALL CAPS</td></tr>
+          <tr><td>Subheadings, UI section titles</td><td>Sentence case</td></tr>
+          <tr><td>Navigation items</td><td>Title Case</td></tr>
+          <tr><td>Metric labels</td><td>UPPERCASE + tight tracking</td></tr>
+          <tr><td>Button labels</td><td>Sentence case</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <hr class="hr">
+
+    <!-- ─── COLOR ─── -->
+    <section class="sect" id="color">
+      <div class="eyebrow">Foundations</div>
+      <h2>Color</h2>
+      <p class="sect-intro">A restrained core palette: near-black ink on warm canvas, with deep forest green as primary accent, warm bronze as secondary, and cool steel for data contexts.</p>
+
+      <div class="spec-label">Ink — foreground hierarchy</div>
+      <div class="swatch-row">
+        <div class="swatch"><div class="chip" style="background:#0D0D0D"></div><div class="info"><div class="nm">Ink 1</div><div class="hx">#0D0D0D</div></div></div>
+        <div class="swatch"><div class="chip" style="background:#3A3A3A"></div><div class="info"><div class="nm">Ink 2</div><div class="hx">#3A3A3A</div></div></div>
+        <div class="swatch"><div class="chip" style="background:#727272"></div><div class="info"><div class="nm">Ink 3</div><div class="hx">#727272</div></div></div>
+        <div class="swatch"><div class="chip" style="background:#B0ADA6"></div><div class="info"><div class="nm">Ink 4</div><div class="hx">#B0ADA6</div></div></div>
+        <div class="swatch"><div class="chip" style="background:#FFFFFF;border-bottom:1px solid var(--border-1)"></div><div class="info"><div class="nm">Canvas 0</div><div class="hx">#FFFFFF</div></div></div>
+      </div>
+
+      <div class="spec-label">Canvas — backgrounds</div>
+      <div class="scale-row">
+        <div class="cell" style="background:#FFFFFF;color:#727272"><span class="t">--canvas-0</span></div>
+        <div class="cell" style="background:#F8F7F3;color:#727272"><span class="t">--canvas-1</span></div>
+        <div class="cell" style="background:#F0EDE6;color:#727272"><span class="t">--canvas-2</span></div>
+        <div class="cell" style="background:#E5E1D9;color:#727272"><span class="t">--canvas-3</span></div>
+        <div class="cell" style="background:#CECAC1;color:#3A3A3A"><span class="t">--border-2</span></div>
+      </div>
+
+      <div class="spec-label">Forest — primary accent · deeptech, science, growth</div>
+      <div class="scale-row">
+        <div class="cell" style="background:#0F2419;color:#BDDDD3"><span class="t">forest-1</span></div>
+        <div class="cell" style="background:#1C3B2D;color:#BDDDD3"><span class="t">forest-2</span></div>
+        <div class="cell" style="background:#2A5C46;color:#fff"><span class="t">forest-3</span></div>
+        <div class="cell" style="background:#3D8C6A;color:#fff"><span class="t">forest-4</span></div>
+        <div class="cell" style="background:#BDDDD3;color:#0F2419"><span class="t">forest-5</span></div>
+      </div>
+
+      <div class="spec-label">Bronze — secondary accent · investment, premium, warmth</div>
+      <div class="scale-row">
+        <div class="cell" style="background:#6B4E2A;color:#F2E8D5"><span class="t">bronze-1</span></div>
+        <div class="cell" style="background:#9A7040;color:#F2E8D5"><span class="t">bronze-2</span></div>
+        <div class="cell" style="background:#B8924A;color:#fff"><span class="t">bronze-3</span></div>
+        <div class="cell" style="background:#D4B07C;color:#6B4E2A"><span class="t">bronze-4</span></div>
+        <div class="cell" style="background:#F2E8D5;color:#6B4E2A"><span class="t">bronze-5</span></div>
+      </div>
+
+      <div class="spec-label">Steel — tertiary accent · data, technical, institutional</div>
+      <div class="scale-row">
+        <div class="cell" style="background:#0F2030;color:#C8DFEF"><span class="t">steel-1</span></div>
+        <div class="cell" style="background:#1A3D5C;color:#C8DFEF"><span class="t">steel-2</span></div>
+        <div class="cell" style="background:#2A6090;color:#fff"><span class="t">steel-3</span></div>
+        <div class="cell" style="background:#4A90C4;color:#fff"><span class="t">steel-4</span></div>
+        <div class="cell" style="background:#C8DFEF;color:#0F2030"><span class="t">steel-5</span></div>
+      </div>
+
+      <div class="spec-label">Semantic — status</div>
+      <div class="swatch-row" style="grid-template-columns:repeat(4,1fr)">
+        <div class="swatch"><div class="chip" style="background:#1B7A48"></div><div class="info"><div class="nm">Positive</div><div class="hx">#1B7A48</div></div></div>
+        <div class="swatch"><div class="chip" style="background:#C47A1A"></div><div class="info"><div class="nm">Warning</div><div class="hx">#C47A1A</div></div></div>
+        <div class="swatch"><div class="chip" style="background:#B83232"></div><div class="info"><div class="nm">Negative</div><div class="hx">#B83232</div></div></div>
+        <div class="swatch"><div class="chip" style="background:#1A4E8A"></div><div class="info"><div class="nm">Info</div><div class="hx">#1A4E8A</div></div></div>
+      </div>
+    </section>
+
+    <hr class="hr">
+
+    <!-- ─── HOUSE PALETTES ─── -->
+    <section class="sect" id="houses">
+      <div class="eyebrow">Foundations</div>
+      <h2>House palettes</h2>
+      <p class="sect-intro">Each residency track — a city, a thesis, a house — carries its own accent, drawn so its tile reads clearly against warm canvas. Used for node cards, maps, and portfolio tagging.</p>
+      <div class="house-grid">
+        <div class="house"><div class="bar" style="background:#C4D8E8;color:#2A587A"><span class="pre">CELL</span><span class="sfx">HAUS</span></div><div class="ft">Kobe · Cell Therapy</div></div>
+        <div class="house"><div class="bar" style="background:#C0E0D0;color:#1A6850"><span class="pre">TRIAL</span><span class="sfx">HAUS</span></div><div class="ft">Australia · Clinical Trials</div></div>
+        <div class="house"><div class="bar" style="background:#F0D890;color:#7A5010"><span class="pre">ONC</span><span class="sfx">HAUS</span></div><div class="ft">New York · Oncology</div></div>
+        <div class="house"><div class="bar" style="background:#C0CCD8;color:#283858"><span class="pre">MICRO</span><span class="sfx">HAUS</span></div><div class="ft">Boston · Microbiome</div></div>
+        <div class="house"><div class="bar" style="background:#A0D878;color:#286820"><span class="pre">BIO</span><span class="sfx">HAUS</span></div><div class="ft">Mexico · Industrial Bio</div></div>
+        <div class="house"><div class="bar" style="background:#D4E8F4;color:#2A5888"><span class="pre">PHARM</span><span class="sfx">HAUS</span></div><div class="ft">Puerto Rico · Manufacturing</div></div>
+        <div class="house"><div class="bar" style="background:#E8C4C4;color:#782030"><span class="pre">TEST</span><span class="sfx">HAUS</span></div><div class="ft">UK · Diagnostics</div></div>
+        <div class="house"><div class="bar" style="background:#B8D898;color:#2A6018"><span class="pre">GREEN</span><span class="sfx">HAUS</span></div><div class="ft">Buenos Aires · Agtech</div></div>
+        <div class="house"><div class="bar" style="background:#F0E0B0;color:#7A5810"><span class="pre">LUX</span><span class="sfx">HAUS</span></div><div class="ft">Paris · Luxury Tech</div></div>
+        <div class="house"><div class="bar" style="background:#D4D8E4;color:#404858"><span class="pre">SENSOR</span><span class="sfx">HAUS</span></div><div class="ft">Zurich · Sensors</div></div>
+        <div class="house"><div class="bar" style="background:#BCE0EC;color:#15607E"><span class="pre">BLUE</span><span class="sfx">HAUS</span></div><div class="ft">Miami · Marine Tech</div></div>
+        <div class="house"><div class="bar" style="background:#D4CFEC;color:#3A306A"><span class="pre">NEURO</span><span class="sfx">HAUS</span></div><div class="ft">Baltimore · Neurotech</div></div>
+      </div>
+    </section>
+
+    <hr class="hr">
+
+    <!-- ─── TYPOGRAPHY ─── -->
+    <section class="sect" id="typography">
+      <div class="eyebrow">Foundations</div>
+      <h2>Typography</h2>
+      <p class="sect-intro">Four families, each with one job. Barlow Condensed carries impact; Barlow structures the page; DM Sans does the reading; DM Mono sets every number.</p>
+      <div class="grid2">
+        <div class="font-card"><div class="big" style="font-family:var(--font-display);font-weight:800;text-transform:uppercase;">Discover the hidden</div><div class="nm">Barlow Condensed</div><div class="role">Display — hero &amp; stat values</div></div>
+        <div class="font-card"><div class="big" style="font-family:var(--font-heading);font-weight:700;">Section headings</div><div class="nm">Barlow</div><div class="role">Headings &amp; navigation</div></div>
+        <div class="font-card"><div class="big" style="font-family:var(--font-body);font-weight:400;">Body &amp; UI copy</div><div class="nm">DM Sans</div><div class="role">Body, labels, controls</div></div>
+        <div class="font-card"><div class="big" style="font-family:var(--font-mono);font-weight:500;">$20.4M · 14</div><div class="nm">DM Mono</div><div class="role">Numbers, code, data</div></div>
+      </div>
+
+      <h3>Type scale</h3>
+      <div class="type-row"><div class="meta">hero · 80<br>Barlow Cond 800</div><div class="spec" style="font-family:var(--font-display);font-weight:800;font-size:56px;text-transform:uppercase;line-height:1;">Haus Fund</div></div>
+      <div class="type-row"><div class="meta">4xl · 48 / 3xl · 36</div><div class="spec" style="font-family:var(--font-heading);font-weight:700;font-size:36px;">A home for founders</div></div>
+      <div class="type-row"><div class="meta">2xl · 28 / xl · 22</div><div class="spec" style="font-family:var(--font-heading);font-weight:700;font-size:22px;">Built at the earliest stage</div></div>
+      <div class="type-row"><div class="meta">lg · 18 / md · 16</div><div class="spec" style="font-family:var(--font-body);font-size:16px;">We back deeptech companies with a long view.</div></div>
+      <div class="type-row"><div class="meta">base · 15 / sm · 13</div><div class="spec" style="font-family:var(--font-body);font-size:13px;">Capital, community, and infrastructure for science founders.</div></div>
+      <div class="type-row"><div class="meta">xs · 11 · caps</div><div class="spec mono" style="font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:var(--ink-3);">Portfolio · Deal flow · Metrics</div></div>
+    </section>
+
+    <hr class="hr">
+
+    <!-- ─── SPACING ─── -->
+    <section class="sect" id="spacing">
+      <div class="eyebrow">Foundations</div>
+      <h2>Spacing &amp; layout</h2>
+      <p class="sect-intro">A 4px base unit. Spacing tokens step from 4px to 192px; a 240px sidebar and 1280px content max frame every layout.</p>
+      <div class="panel">
+        <div class="space-row"><div class="bar" style="width:4px"></div><span class="t">--space-1 · 4px</span></div>
+        <div class="space-row"><div class="bar" style="width:8px"></div><span class="t">--space-2 · 8px</span></div>
+        <div class="space-row"><div class="bar" style="width:16px"></div><span class="t">--space-4 · 16px</span></div>
+        <div class="space-row"><div class="bar" style="width:24px"></div><span class="t">--space-6 · 24px</span></div>
+        <div class="space-row"><div class="bar" style="width:32px"></div><span class="t">--space-8 · 32px</span></div>
+        <div class="space-row"><div class="bar" style="width:48px"></div><span class="t">--space-12 · 48px</span></div>
+        <div class="space-row"><div class="bar" style="width:64px"></div><span class="t">--space-16 · 64px</span></div>
+        <div class="space-row"><div class="bar" style="width:96px"></div><span class="t">--space-24 · 96px</span></div>
+      </div>
+    </section>
+
+    <hr class="hr">
+
+    <!-- ─── RADIUS & SHADOW ─── -->
+    <section class="sect" id="radius">
+      <div class="eyebrow">Foundations</div>
+      <h2>Radius &amp; shadow</h2>
+      <p class="sect-intro">Corners stay tight and functional. Shadows are warm-tinted and soft — depth without drama.</p>
+      <div class="spec-label">Border radii</div>
+      <div class="radius-grid">
+        <div><div class="demo-box" style="border-radius:2px"></div><div class="demo-cap">xs · 2px</div></div>
+        <div><div class="demo-box" style="border-radius:6px"></div><div class="demo-cap">md · 6px</div></div>
+        <div><div class="demo-box" style="border-radius:10px"></div><div class="demo-cap">lg · 10px</div></div>
+        <div><div class="demo-box" style="border-radius:16px"></div><div class="demo-cap">xl · 16px</div></div>
+      </div>
+      <div class="spec-label">Shadow scale</div>
+      <div class="shadow-grid">
+        <div><div class="shadow-box" style="box-shadow:var(--shadow-xs)"></div><div class="demo-cap">xs</div></div>
+        <div><div class="shadow-box" style="box-shadow:var(--shadow-sm)"></div><div class="demo-cap">sm</div></div>
+        <div><div class="shadow-box" style="box-shadow:var(--shadow-md)"></div><div class="demo-cap">md</div></div>
+        <div><div class="shadow-box" style="box-shadow:var(--shadow-lg)"></div><div class="demo-cap">lg</div></div>
+      </div>
+    </section>
+
+    <hr class="hr">
+
+    <!-- ─── MOTION ─── -->
+    <section class="sect" id="motion">
+      <div class="eyebrow">Foundations</div>
+      <h2>Motion</h2>
+      <p class="sect-intro">Fast and precise. Most transitions run 160ms on a sharp ease; spring is reserved and used sparingly. Hover any swatch below.</p>
+      <div class="spec-stage">
+        <div class="btn btn-forest" style="transition:transform 100ms cubic-bezier(.2,0,0,1);" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform=''">fast · 100ms</div>
+        <div class="btn btn-outline" style="transition:transform 160ms cubic-bezier(.2,0,0,1);" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform=''">base · 160ms</div>
+        <div class="btn btn-outline" style="transition:transform 280ms cubic-bezier(.34,1.4,.64,1);" onmouseover="this.style.transform='scale(1.06)'" onmouseout="this.style.transform=''">spring · 280ms</div>
+      </div>
+    </section>
+
+    <hr class="hr">
+
+    <!-- ─── LOGO ─── -->
+    <section class="sect" id="logo">
+      <div class="eyebrow">Foundations</div>
+      <h2>Logo &amp; wordmark</h2>
+      <p class="sect-intro">The wordmark is built from a construction rule, not a fixed file: PREFIX in Barlow 900 + HAUS in Barlow 400, ALL CAPS, tracked 0.04em. One system spans every house.</p>
+      <div class="grid2">
+        <div class="spec-stage" style="background:var(--canvas-0);justify-content:center;"><span style="font-family:var(--font-heading);font-size:48px;letter-spacing:0.04em;"><b style="font-weight:900">HAUS</b><span style="font-weight:400;color:var(--ink-3)">FUND</span></span></div>
+        <div class="spec-stage" style="background:var(--forest-2);justify-content:center;"><span style="font-family:var(--font-heading);font-size:48px;letter-spacing:0.04em;color:#fff;"><b style="font-weight:900">HAUS</b><span style="font-weight:400;color:var(--forest-5)">FUND</span></span></div>
+      </div>
+      <div class="spec-label">Wordmark construction across houses</div>
+      <div class="spec-stage" style="gap:28px;">
+        <span style="font-family:var(--font-heading);font-size:28px;letter-spacing:0.04em;"><b style="font-weight:900">CELL</b>HAUS</span>
+        <span style="font-family:var(--font-heading);font-size:28px;letter-spacing:0.04em;"><b style="font-weight:900">GREEN</b>HAUS</span>
+        <span style="font-family:var(--font-heading);font-size:28px;letter-spacing:0.04em;"><b style="font-weight:900">PHARM</b>HAUS</span>
+        <span style="font-family:var(--font-heading);font-size:28px;letter-spacing:0.04em;"><b style="font-weight:900">NEURO</b>HAUS</span>
+      </div>
+    </section>
+
+    <hr class="hr">
+
+    <!-- ─── BUTTONS ─── -->
+    <section class="sect" id="buttons">
+      <div class="eyebrow">Components</div>
+      <h2>Buttons</h2>
+      <p class="sect-intro">Seven variants, three sizes. Labels are sentence case. Forest is the primary brand CTA; bronze signals investment and financial actions.</p>
+      <div class="spec-label">Variants</div>
+      <div class="spec-stage">
+        <button class="btn btn-primary">Primary</button>
+        <button class="btn btn-forest">Apply to residency</button>
+        <button class="btn btn-bronze">Invest with us</button>
+        <button class="btn btn-outline">Export report</button>
+        <button class="btn btn-ghost">Cancel</button>
+        <button class="btn btn-danger">Delete</button>
+        <button class="btn btn-outline is-disabled" disabled>Disabled</button>
+      </div>
+      <div class="spec-label">Sizes</div>
+      <div class="spec-stage">
+        <button class="btn btn-forest sm">Small · 32px</button>
+        <button class="btn btn-forest">Medium · 40px</button>
+        <button class="btn btn-forest lg">Large · 48px</button>
+      </div>
+    </section>
+
+    <hr class="hr">
+
+    <!-- ─── BADGES & TAGS ─── -->
+    <section class="sect" id="badges">
+      <div class="eyebrow">Components</div>
+      <h2>Badges &amp; tags</h2>
+      <p class="sect-intro">Badges carry status with a leading dot. Tags label and categorize — neutral by default, or tinted with an accent family.</p>
+      <div class="spec-label">Status badges</div>
+      <div class="spec-stage">
+        <span class="badge badge-pos">Active</span>
+        <span class="badge badge-info">In diligence</span>
+        <span class="badge badge-warn">Closing soon</span>
+        <span class="badge badge-neg">Passed</span>
+      </div>
+      <div class="spec-label">Tags</div>
+      <div class="spec-stage">
+        <span class="tag">Cell Therapy</span>
+        <span class="tag tag-forest">Pre-seed</span>
+        <span class="tag tag-bronze">SAFE</span>
+        <span class="tag tag-steel">Diagnostics</span>
+        <span class="tag">Cohort 2</span>
+      </div>
+    </section>
+
+    <hr class="hr">
+
+    <!-- ─── AVATARS ─── -->
+    <section class="sect" id="avatars">
+      <div class="eyebrow">Components</div>
+      <h2>Avatars</h2>
+      <p class="sect-intro">Initials on an accent fill. Round for people, square for companies and houses.</p>
+      <div class="spec-stage">
+        <span class="avatar" style="background:var(--forest-3)">ER</span>
+        <span class="avatar" style="background:var(--bronze-3)">AK</span>
+        <span class="avatar" style="background:var(--steel-3)">MT</span>
+        <span class="avatar sq" style="background:var(--forest-2)">CH</span>
+        <span class="avatar sq" style="background:var(--house-pharm,#2A5888)">PH</span>
+      </div>
+    </section>
+
+    <hr class="hr">
+
+    <!-- ─── CARDS & STATS ─── -->
+    <section class="sect" id="cards">
+      <div class="eyebrow">Components</div>
+      <h2>Cards &amp; stat cards</h2>
+      <p class="sect-intro">The white card on warm canvas is the workhorse surface. StatCards carry a single KPI with an accent bar and trend.</p>
+      <div class="grid3" style="margin-bottom:16px;">
+        <div class="statcard"><div class="lab">Fund size</div><div class="val">$20M</div><div class="trend">Pre-seed · Fund I</div></div>
+        <div class="statcard"><div class="lab">Deployed</div><div class="val">$18.4M</div><div class="trend">▲ 4 new this quarter</div></div>
+        <div class="statcard"><div class="lab">Companies</div><div class="val">14</div><div class="trend">across 4 sectors</div></div>
+      </div>
+      <div class="panel">
+        <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--ink-3);margin-bottom:8px;">Portfolio company</div>
+        <div style="font-family:var(--font-heading);font-weight:700;font-size:20px;margin-bottom:6px;">Helix Bio</div>
+        <p style="font-size:14px;color:var(--ink-3);margin-bottom:14px;">Synthetic biology platform for programmable enzymes. Pre-seed, CellHaus cohort.</p>
+        <span class="tag tag-forest">Synthetic Bio</span> <span class="tag">Pre-seed</span>
+      </div>
+    </section>
+
+    <hr class="hr">
+
+    <!-- ─── INPUTS ─── -->
+    <section class="sect" id="inputs">
+      <div class="eyebrow">Components</div>
+      <h2>Inputs &amp; forms</h2>
+      <p class="sect-intro">Quiet by default; a forest focus ring on interaction. Validation uses the semantic negative color.</p>
+      <div class="panel grid2">
+        <div>
+          <div class="field"><label>Company name</label><input class="input" value="Helix Bio"></div>
+          <div class="field"><label>Sector</label><select class="input"><option>Synthetic Biology</option><option>Cell Therapy</option><option>Diagnostics</option></select></div>
+        </div>
+        <div>
+          <div class="field"><label>Check size</label><input class="input" placeholder="$250,000"><span class="hint">Pre-seed range: $100K–$500K.</span></div>
+          <div class="field"><label>Email</label><input class="input err" value="not-an-email"><span class="errtext">Enter a valid email address.</span></div>
+        </div>
+      </div>
+    </section>
+
+    <hr class="hr">
+
+    <!-- ─── TABLES ─── -->
+    <section class="sect" id="tables">
+      <div class="eyebrow">Components</div>
+      <h2>Tables</h2>
+      <p class="sect-intro">For deal flow, portfolio, and LP data. Mono numerals, uppercase mono headers, hairline rows.</p>
+      <table class="tbl">
+        <thead><tr><th>Company</th><th>Sector</th><th>Stage</th><th>Check</th><th>Status</th></tr></thead>
+        <tbody>
+          <tr><td><b>Helix Bio</b></td><td>Synthetic Bio</td><td>Pre-seed</td><td class="mono">$250K</td><td><span class="badge badge-pos">Active</span></td></tr>
+          <tr><td><b>Cohort Dx</b></td><td>Diagnostics</td><td>Pre-seed</td><td class="mono">$200K</td><td><span class="badge badge-info">Diligence</span></td></tr>
+          <tr><td><b>Verde Ag</b></td><td>Agtech</td><td>Seed</td><td class="mono">$400K</td><td><span class="badge badge-warn">Closing</span></td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <hr class="hr">
+
+    <!-- ─── PATTERNS ─── -->
+    <section class="sect" id="patterns">
+      <div class="eyebrow">Patterns</div>
+      <h2>Layout patterns</h2>
+      <p class="sect-intro">Recurring compositions assembled from the components above. Explore the live UI kits:</p>
+      <div class="grid2">
+        <a class="panel" href="fund-portal/index.html" style="display:block;">
+          <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--bronze-2);margin-bottom:8px;">Investor portal ↗</div>
+          <div style="font-family:var(--font-heading);font-weight:700;font-size:19px;margin-bottom:4px;">Dashboard · Portfolio · Deal Flow</div>
+          <p style="font-size:14px;color:var(--ink-3);">The internal surface — sidebar shell, KPI row, data tables, company detail.</p>
+        </a>
+        <a class="panel" href="index.html" style="display:block;">
+          <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--bronze-2);margin-bottom:8px;">Fund website ↗</div>
+          <div style="font-family:var(--font-heading);font-weight:700;font-size:19px;margin-bottom:4px;">Home · Program · Nodes</div>
+          <p style="font-size:14px;color:var(--ink-3);">The public site — hero, program, the global network of houses.</p>
+        </a>
+      </div>
+    </section>
+
+    <hr class="hr">
+
+    <!-- ─── AGENT RULES ─── -->
+    <section class="sect" id="agent">
+      <div class="eyebrow">Governance</div>
+      <h2>AI agent rules</h2>
+      <p class="sect-intro">Guardrails for any AI or contributor generating Haus interfaces. Follow these and output stays on-brand by default.</p>
+      <div class="rules">
+        <div class="rule"><div class="ico">1</div><div class="txt"><b>Tokens only.</b> Never hard-code a hex, size, or radius that exists as a token. Reference <span class="mono">var(--forest-2)</span>, not <span class="mono">#1C3B2D</span>.</div></div>
+        <div class="rule"><div class="ico">2</div><div class="txt"><b>Two fonts do the work.</b> Barlow Condensed for impact headlines and stat values; DM Sans for everything else. DM Mono for all numbers. Never substitute system fonts.</div></div>
+        <div class="rule"><div class="ico">3</div><div class="txt"><b>No gradients, no glass.</b> Solid fills only. Depth comes from the warm shadow scale — never from blur or transparency stacks.</div></div>
+        <div class="rule"><div class="ico">4</div><div class="txt"><b>Numbers as digits, set in mono.</b> <span class="mono">$20M</span>, <span class="mono">14 companies</span> — never spelled out, never proportional figures in data.</div></div>
+        <div class="rule"><div class="ico">5</div><div class="txt"><b>No emoji, no exclamation marks</b> in product UI or formal copy. Understated confidence only.</div></div>
+        <div class="rule"><div class="ico">6</div><div class="txt"><b>ALL CAPS is for display headlines only.</b> Buttons and body stay sentence case; nav stays Title Case.</div></div>
+      </div>
+    </section>
+
+    <hr class="hr">
+
+    <!-- ─── TOKENS ─── -->
+    <section class="sect" id="tokens">
+      <div class="eyebrow">Governance</div>
+      <h2>Token reference</h2>
+      <p class="sect-intro">The full system loads from five CSS files. Import them in order, then build with variables.</p>
+      <pre class="code"><span class="c">/* import order */</span>
+<span class="k">@import</span> <span class="v">"tokens/colors.css"</span>;     <span class="c">/* ink · canvas · forest · bronze · steel · houses */</span>
+<span class="k">@import</span> <span class="v">"tokens/typography.css"</span>; <span class="c">/* families · scale · weights · tracking */</span>
+<span class="k">@import</span> <span class="v">"tokens/spacing.css"</span>;    <span class="c">/* 4px base · containers · layout slots */</span>
+<span class="k">@import</span> <span class="v">"tokens/effects.css"</span>;    <span class="c">/* radii · shadows · easing · duration */</span>
+
+<span class="c">/* usage */</span>
+.cta {
+  background: <span class="k">var</span>(<span class="v">--forest-2</span>);
+  border-radius: <span class="k">var</span>(<span class="v">--radius-md</span>);
+  box-shadow: <span class="k">var</span>(<span class="v">--shadow-sm</span>);
+  font-family: <span class="k">var</span>(<span class="v">--font-body</span>);
+}</pre>
+      <p class="body">Source of truth lives in the <b>Haus_Design_System</b> package — <span class="mono">tokens/</span>, <span class="mono">components/</span>, and <span class="mono">guidelines/</span>. This page is the human-readable overview; the CSS files are canonical.</p>
+    </section>
+
+  </div>
+
+  <div class="footer">
+    <div>Haus Fund · Design system v1.0 — a home for the companies we back.</div>
+    <div class="mono"><a href="index.html">← haus.fund</a></div>
+  </div>
+</div>
+</div>
+
+<script>
+// active-section highlight
+const links=[...document.querySelectorAll('#sbnav a')];
+const map=new Map(links.map(a=>[a.getAttribute('href').slice(1),a]));
+const obs=new IntersectionObserver((ents)=>{
+  ents.forEach(e=>{
+    if(e.isIntersecting){
+      links.forEach(l=>l.classList.remove('active'));
+      const a=map.get(e.target.id); if(a)a.classList.add('active');
+      const crumb=document.querySelector('.crumb b');
+      if(a&&crumb)crumb.textContent=a.textContent;
+    }
+  });
+},{rootMargin:'-20% 0px -70% 0px'});
+document.querySelectorAll('.sect').forEach(s=>obs.observe(s));
+// mobile menu
+const sb=document.getElementById('sidebar'),mb=document.getElementById('menuBtn');
+if(mb)mb.addEventListener('click',()=>sb.classList.toggle('open'));
+document.querySelectorAll('#sbnav a').forEach(a=>a.addEventListener('click',()=>{if(window.innerWidth<=1080)sb.classList.remove('open');}));
+</script>
+</body>
+</html>
