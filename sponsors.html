@@ -202,6 +202,19 @@ nav.scrolled .nav-apply:hover{background:#2A5C46;}
   .footer-inner > div{flex-wrap:wrap;justify-content:center;gap:18px;}
   html,body{overflow-x:hidden;}
 }
+
+/* ── Houses dropdown ── */
+.nav-drop{position:relative;}
+.nav-drop-t{background:none;border:none;cursor:pointer;font-family:inherit;display:inline-flex;align-items:center;gap:5px;padding:0;font-size:14px;font-weight:500;color:rgba(255,255,255,0.65);transition:color 150ms;letter-spacing:0.01em;}
+.nav-drop-t:hover{color:white;}
+nav.scrolled .nav-drop-t{color:#3A3A3A;}
+nav.scrolled .nav-drop-t:hover{color:#1C3B2D;}
+.nav-drop-menu{position:absolute;top:calc(100% + 10px);left:-16px;min-width:210px;background:#FFFFFF;border:1px solid #E5E1D9;border-radius:9px;padding:8px;box-shadow:0 12px 34px rgba(13,13,13,0.14);display:none;}
+.nav-drop-menu::before{content:"";position:absolute;top:-12px;left:0;right:0;height:12px;}
+.nav-drop:hover .nav-drop-menu,.nav-drop:focus-within .nav-drop-menu,.nav-drop.open .nav-drop-menu{display:block;}
+.nav-drop-menu a{display:block;padding:9px 12px;border-radius:6px;font-size:14px;font-weight:500;color:#3A3A3A;transition:background 130ms,color 130ms;}
+.nav-drop-menu a:hover{background:#F0EDE6;color:#1C3B2D;}
+nav.scrolled .nav-drop-menu a{color:#3A3A3A;}
 </style>
 </head>
 <body>
@@ -214,6 +227,16 @@ nav.scrolled .nav-apply:hover{background:#2A5C46;}
       <a href="index.html#program">Program</a>
       <a href="index.html#stack">What You Get</a>
       <a href="index.html#nodes">Nodes</a>
+      <div class="nav-drop">
+        <button class="nav-drop-t" aria-expanded="false" aria-haspopup="true">Houses <span aria-hidden="true">&#9662;</span></button>
+        <div class="nav-drop-menu">
+          <a href="punkhaus.html">PunkHaus</a>
+          <a href="femhaus.html">FemHaus</a>
+          <a href="safehaus.html">SafeHaus</a>
+          <a href="cellhaus.html">CellHaus</a>
+          <a href="pharmhaus.html">PharmHaus</a>
+        </div>
+      </div>
       <a href="mentors.html">Mentors</a>
       <a href="expansion.html">Global &#8599;</a>
       <a href="sponsors.html" style="color:white;">Sponsors</a>
@@ -483,6 +506,11 @@ nav.scrolled .nav-apply:hover{background:#2A5C46;}
     <div style="display:flex;gap:32px;">
       <a href="index.html#program" class="mono xs" style="color:rgba(255,255,255,0.25);letter-spacing:0.06em;text-transform:uppercase;">PROGRAM</a>
       <a href="mentors.html" class="mono xs" style="color:rgba(255,255,255,0.25);letter-spacing:0.06em;text-transform:uppercase;">MENTORS</a>
+      <a href="punkhaus.html" class="mono xs" style="color:rgba(255,255,255,0.25);letter-spacing:0.06em;text-transform:uppercase;">PUNKHAUS</a>
+      <a href="femhaus.html" class="mono xs" style="color:rgba(255,255,255,0.25);letter-spacing:0.06em;text-transform:uppercase;">FEMHAUS</a>
+      <a href="safehaus.html" class="mono xs" style="color:rgba(255,255,255,0.25);letter-spacing:0.06em;text-transform:uppercase;">SAFEHAUS</a>
+      <a href="cellhaus.html" class="mono xs" style="color:rgba(255,255,255,0.25);letter-spacing:0.06em;text-transform:uppercase;">CELLHAUS</a>
+      <a href="pharmhaus.html" class="mono xs" style="color:rgba(255,255,255,0.25);letter-spacing:0.06em;text-transform:uppercase;">PHARMHAUS</a>
       <a href="expansion.html" class="mono xs" style="color:rgba(255,255,255,0.25);letter-spacing:0.06em;text-transform:uppercase;">GLOBAL</a>
       <a href="sponsors.html" class="mono xs" style="color:rgba(255,255,255,0.25);letter-spacing:0.06em;text-transform:uppercase;">SPONSORS</a>
       <a href="mailto:elliot@haus.fund" class="mono xs" style="color:rgba(255,255,255,0.25);letter-spacing:0.06em;text-transform:uppercase;">CONTACT</a>
@@ -498,6 +526,14 @@ nav.scrolled .nav-apply:hover{background:#2A5C46;}
   window.addEventListener('scroll', function() {
     nav.classList.toggle('scrolled', window.scrollY > (hero.offsetHeight - 80));
   }, {passive:true});
+
+  var d=document.querySelector('.nav-drop'),t=d&&d.querySelector('.nav-drop-t');
+  if(d&&t){
+    t.addEventListener('click',function(e){e.stopPropagation();
+      var o=d.classList.toggle('open');t.setAttribute('aria-expanded',o?'true':'false');});
+    document.addEventListener('click',function(){d.classList.remove('open');t.setAttribute('aria-expanded','false');});
+    document.addEventListener('keydown',function(e){if(e.key==='Escape'){d.classList.remove('open');t.setAttribute('aria-expanded','false');}});
+  }
 })();
 </script>
 

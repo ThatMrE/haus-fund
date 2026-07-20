@@ -63,6 +63,19 @@ footer{background:#0D0D0D;border-top:1px solid rgba(255,255,255,0.06);padding:32
 .footer-inner{max-width:1440px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;}
 .footer-inner a{color:rgba(255,255,255,0.25);font-size:12px;letter-spacing:0.06em;text-transform:uppercase;font-family:'DM Mono',monospace;}
 @media(max-width:1000px){.mentor-grid{grid-template-columns:1fr;}.wrap{padding:80px 28px;}.nav-inner{padding:0 24px;}.h2{font-size:40px;}}
+
+/* ── Houses dropdown ── */
+.nav-drop{position:relative;}
+.nav-drop-t{background:none;border:none;cursor:pointer;font-family:inherit;display:inline-flex;align-items:center;gap:5px;padding:0;font-size:14px;font-weight:500;color:rgba(255,255,255,0.65);transition:color 150ms;letter-spacing:0.01em;}
+.nav-drop-t:hover{color:white;}
+nav.scrolled .nav-drop-t{color:#3A3A3A;}
+nav.scrolled .nav-drop-t:hover{color:#1C3B2D;}
+.nav-drop-menu{position:absolute;top:calc(100% + 10px);left:-16px;min-width:210px;background:#FFFFFF;border:1px solid #E5E1D9;border-radius:9px;padding:8px;box-shadow:0 12px 34px rgba(13,13,13,0.14);display:none;}
+.nav-drop-menu::before{content:"";position:absolute;top:-12px;left:0;right:0;height:12px;}
+.nav-drop:hover .nav-drop-menu,.nav-drop:focus-within .nav-drop-menu,.nav-drop.open .nav-drop-menu{display:block;}
+.nav-drop-menu a{display:block;padding:9px 12px;border-radius:6px;font-size:14px;font-weight:500;color:#3A3A3A;transition:background 130ms,color 130ms;}
+.nav-drop-menu a:hover{background:#F0EDE6;color:#1C3B2D;}
+nav.scrolled .nav-drop-menu a{color:#3A3A3A;}
 </style>
 </head>
 <body>
@@ -74,6 +87,16 @@ footer{background:#0D0D0D;border-top:1px solid rgba(255,255,255,0.06);padding:32
       <a href="index.html#program">Program</a>
       <a href="index.html#stack">What You Get</a>
       <a href="index.html#nodes">Nodes</a>
+      <div class="nav-drop">
+        <button class="nav-drop-t" aria-expanded="false" aria-haspopup="true">Houses <span aria-hidden="true">&#9662;</span></button>
+        <div class="nav-drop-menu">
+          <a href="punkhaus.html">PunkHaus</a>
+          <a href="femhaus.html">FemHaus</a>
+          <a href="safehaus.html">SafeHaus</a>
+          <a href="cellhaus.html">CellHaus</a>
+          <a href="pharmhaus.html">PharmHaus</a>
+        </div>
+      </div>
       <a href="mentors.html">Mentors</a>
       <a href="expansion.html">Global ↗</a>
       <a href="sponsors.html">Sponsors</a>
@@ -110,6 +133,11 @@ footer{background:#0D0D0D;border-top:1px solid rgba(255,255,255,0.06);padding:32
     <div style="display:flex;gap:32px;">
       <a href="index.html#program">PROGRAM</a>
       <a href="mentors.html">MENTORS</a>
+      <a href="punkhaus.html">PUNKHAUS</a>
+      <a href="femhaus.html">FEMHAUS</a>
+      <a href="safehaus.html">SAFEHAUS</a>
+      <a href="cellhaus.html">CELLHAUS</a>
+      <a href="pharmhaus.html">PHARMHAUS</a>
       <a href="expansion.html">GLOBAL</a>
       <a href="sponsors.html">SPONSORS</a>
       <a href="mailto:elliot@haus.fund">CONTACT</a>
@@ -119,7 +147,15 @@ footer{background:#0D0D0D;border-top:1px solid rgba(255,255,255,0.06);padding:32
 </footer>
 
 <script>
-(function(){var nav=document.getElementById('nav');window.addEventListener('scroll',function(){nav.classList.toggle('scrolled',window.scrollY>120);},{passive:true});})();
+(function(){var nav=document.getElementById('nav');window.addEventListener('scroll',function(){nav.classList.toggle('scrolled',window.scrollY>120);},{passive:true});
+  var d=document.querySelector('.nav-drop'),t=d&&d.querySelector('.nav-drop-t');
+  if(d&&t){
+    t.addEventListener('click',function(e){e.stopPropagation();
+      var o=d.classList.toggle('open');t.setAttribute('aria-expanded',o?'true':'false');});
+    document.addEventListener('click',function(){d.classList.remove('open');t.setAttribute('aria-expanded','false');});
+    document.addEventListener('keydown',function(e){if(e.key==='Escape'){d.classList.remove('open');t.setAttribute('aria-expanded','false');}});
+  }
+})();
 </script>
 </body>
 </html>

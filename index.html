@@ -232,6 +232,19 @@ nav.scrolled .nav-apply:hover{background:#2A5C46;}
   .gtile.wide{grid-column:span 2;aspect-ratio:auto;}
   .band{height:clamp(220px,56vw,360px);}
 }
+
+/* ── Houses dropdown ── */
+.nav-drop{position:relative;}
+.nav-drop-t{background:none;border:none;cursor:pointer;font-family:inherit;display:inline-flex;align-items:center;gap:5px;padding:0;font-size:14px;font-weight:500;color:rgba(255,255,255,0.65);transition:color 150ms;letter-spacing:0.01em;}
+.nav-drop-t:hover{color:white;}
+nav.scrolled .nav-drop-t{color:#3A3A3A;}
+nav.scrolled .nav-drop-t:hover{color:#1C3B2D;}
+.nav-drop-menu{position:absolute;top:calc(100% + 10px);left:-16px;min-width:210px;background:#FFFFFF;border:1px solid #E5E1D9;border-radius:9px;padding:8px;box-shadow:0 12px 34px rgba(13,13,13,0.14);display:none;}
+.nav-drop-menu::before{content:"";position:absolute;top:-12px;left:0;right:0;height:12px;}
+.nav-drop:hover .nav-drop-menu,.nav-drop:focus-within .nav-drop-menu,.nav-drop.open .nav-drop-menu{display:block;}
+.nav-drop-menu a{display:block;padding:9px 12px;border-radius:6px;font-size:14px;font-weight:500;color:#3A3A3A;transition:background 130ms,color 130ms;}
+.nav-drop-menu a:hover{background:#F0EDE6;color:#1C3B2D;}
+nav.scrolled .nav-drop-menu a{color:#3A3A3A;}
 </style>
 </head>
 <body>
@@ -244,6 +257,16 @@ nav.scrolled .nav-apply:hover{background:#2A5C46;}
       <a href="#program">Program</a>
       <a href="#stack">What You Get</a>
       <a href="#nodes">Nodes</a>
+      <div class="nav-drop">
+        <button class="nav-drop-t" aria-expanded="false" aria-haspopup="true">Houses <span aria-hidden="true">&#9662;</span></button>
+        <div class="nav-drop-menu">
+          <a href="punkhaus.html">PunkHaus</a>
+          <a href="femhaus.html">FemHaus</a>
+          <a href="safehaus.html">SafeHaus</a>
+          <a href="cellhaus.html">CellHaus</a>
+          <a href="pharmhaus.html">PharmHaus</a>
+        </div>
+      </div>
       <a href="mentors.html">Mentors</a>
       <a href="expansion.html">Global ↗</a>
       <a href="sponsors.html">Sponsors</a>
@@ -259,7 +282,7 @@ nav.scrolled .nav-apply:hover{background:#2A5C46;}
   <!-- Coordinates + cohort -->
   <div class="hero-coords" style="position:absolute;top:96px;left:0;right:0;display:flex;justify-content:space-between;padding:0 80px;">
     <div class="mono xs" style="color:rgba(255,255,255,0.35);letter-spacing:0.08em;text-transform:uppercase;">37.7898°N 122.4172°W · San Francisco, CA</div>
-    <div class="mono xs" style="color:rgba(255,255,255,0.35);letter-spacing:0.08em;text-transform:uppercase;">Cohort 2 // Jun 1 — Aug 15 2026</div>
+    <div class="mono xs" style="color:rgba(255,255,255,0.35);letter-spacing:0.08em;text-transform:uppercase;">Cohort 3 // Sept 15 — Dec 15 2026</div>
   </div>
 
   <!-- Mark -->
@@ -446,7 +469,7 @@ nav.scrolled .nav-apply:hover{background:#2A5C46;}
           <div><div style="font-family:'DM Mono',monospace;font-size:10px;color:rgba(255,255,255,0.4);letter-spacing:0.10em;text-transform:uppercase;margin-bottom:6px;">NODE_01 · RESIDENCE</div><div class="node-wm" style="color:white;"><span class="pre">PUNK</span><span class="sfx">HAUS</span></div></div>
           <span class="tag tag-f" style="background:rgba(255,255,255,0.12);color:rgba(255,255,255,0.7);">Active</span>
         </div>
-        <div class="node-bd"><div class="node-addr">1153 Bush St · Nob Hill</div><div class="body sm">The fundraising flagship. Cohort housing, communal kitchen, dry-lab workspace, and the weekly dinners where companies go from angel to seed. Home of Cohort 2.</div><div class="node-tags"><span class="tag tag-f">Fundraising</span><span class="tag">Cohort Housing</span><span class="tag">Showcase</span></div></div>
+        <div class="node-bd"><div class="node-addr">1153 Bush St · Nob Hill</div><div class="body sm">The fundraising flagship. Cohort housing, communal kitchen, dry-lab workspace, and the weekly dinners where companies go from angel to seed. Home of Cohort 3.</div><div class="node-tags"><span class="tag tag-f">Fundraising</span><span class="tag">Cohort Housing</span><span class="tag">Showcase</span></div></div>
       </div>
 
       <!-- FEMHAUS -->
@@ -623,6 +646,11 @@ nav.scrolled .nav-apply:hover{background:#2A5C46;}
     <div style="display:flex;gap:32px;">
       <a href="#program" class="mono xs" style="color:rgba(255,255,255,0.25);letter-spacing:0.06em;text-transform:uppercase;transition:color 150ms;">PROGRAM</a>
       <a href="mentors.html" class="mono xs" style="color:rgba(255,255,255,0.25);letter-spacing:0.06em;text-transform:uppercase;transition:color 150ms;">MENTORS</a>
+      <a href="punkhaus.html" class="mono xs" style="color:rgba(255,255,255,0.25);letter-spacing:0.06em;text-transform:uppercase;transition:color 150ms;">PUNKHAUS</a>
+      <a href="femhaus.html" class="mono xs" style="color:rgba(255,255,255,0.25);letter-spacing:0.06em;text-transform:uppercase;transition:color 150ms;">FEMHAUS</a>
+      <a href="safehaus.html" class="mono xs" style="color:rgba(255,255,255,0.25);letter-spacing:0.06em;text-transform:uppercase;transition:color 150ms;">SAFEHAUS</a>
+      <a href="cellhaus.html" class="mono xs" style="color:rgba(255,255,255,0.25);letter-spacing:0.06em;text-transform:uppercase;transition:color 150ms;">CELLHAUS</a>
+      <a href="pharmhaus.html" class="mono xs" style="color:rgba(255,255,255,0.25);letter-spacing:0.06em;text-transform:uppercase;transition:color 150ms;">PHARMHAUS</a>
       <a href="#life" class="mono xs" style="color:rgba(255,255,255,0.25);letter-spacing:0.06em;text-transform:uppercase;transition:color 150ms;">PHOTOS</a>
       <a href="expansion.html" class="mono xs" style="color:rgba(255,255,255,0.25);letter-spacing:0.06em;text-transform:uppercase;transition:color 150ms;">GLOBAL</a>
       <a href="sponsors.html" class="mono xs" style="color:rgba(255,255,255,0.25);letter-spacing:0.06em;text-transform:uppercase;transition:color 150ms;">SPONSORS</a>
@@ -639,6 +667,14 @@ nav.scrolled .nav-apply:hover{background:#2A5C46;}
   window.addEventListener('scroll', function() {
     nav.classList.toggle('scrolled', window.scrollY > (hero.offsetHeight - 80));
   }, {passive:true});
+
+  var d=document.querySelector('.nav-drop'),t=d&&d.querySelector('.nav-drop-t');
+  if(d&&t){
+    t.addEventListener('click',function(e){e.stopPropagation();
+      var o=d.classList.toggle('open');t.setAttribute('aria-expanded',o?'true':'false');});
+    document.addEventListener('click',function(){d.classList.remove('open');t.setAttribute('aria-expanded','false');});
+    document.addEventListener('keydown',function(e){if(e.key==='Escape'){d.classList.remove('open');t.setAttribute('aria-expanded','false');}});
+  }
 })();
 </script>
 
