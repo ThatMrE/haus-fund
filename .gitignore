@@ -11,3 +11,8 @@ node_modules/
 
 # scratch files from page generation — never publish
 _parts.*
+
+# Decks and binaries dropped in this folder — publish = "." would serve them
+*.pptx
+*.pdf
+*.key

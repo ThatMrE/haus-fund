@@ -18,6 +18,11 @@ https://www.haus.fund https://haus.fund 301!
 /SKILL.md /404.html 404!
 /CONNECT-GIT.md /404.html 404!
 
+# Edge-function source lives in the repo and would otherwise be served as a
+# static file, because publish = ".". No secrets are in it (the LP password is
+# an environment variable), but it is not part of the site.
+/netlify/* /404.html 404!
+
 # No catch-all. Unknown paths fall through to 404.html with a real 404 status.
 # A "/* /index.html 200" rule here would turn every typo into a soft 404: the
 # homepage served under a 200, which search engines penalise and users misread.

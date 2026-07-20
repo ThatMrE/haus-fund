@@ -5,4 +5,8 @@ Allow: /
 Disallow: /fund-portal/
 Disallow: /design-system.html
 
+# Private — behind authentication
+Disallow: /lp
+Disallow: /lp/
+
 Sitemap: https://haus.fund/sitemap.xml

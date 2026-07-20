@@ -4,6 +4,17 @@
   publish = "."
   command = ""
 
+# ── LP section: HTTP Basic Auth at the edge ──
+# Both paths are declared: "/lp" alone does not match the "/lp/*" pattern.
+# The function fails closed if LP_PASSWORD is unset.
+[[edge_functions]]
+  path = "/lp"
+  function = "lp-auth"
+
+[[edge_functions]]
+  path = "/lp/*"
+  function = "lp-auth"
+
 # Redirect www to apex
 [[redirects]]
   from = "https://www.haus.fund/*"
