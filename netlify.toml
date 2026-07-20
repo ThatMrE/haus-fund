@@ -15,6 +15,12 @@
   path = "/lp/*"
   function = "lp-auth"
 
+# ── Mentors: server-side Airtable proxy ──
+# The token stays server-side; only whitelisted mentor fields are returned.
+[[edge_functions]]
+  path = "/api/mentors"
+  function = "mentors"
+
 # Redirect www to apex
 [[redirects]]
   from = "https://www.haus.fund/*"

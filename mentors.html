@@ -178,11 +178,18 @@ nav.scrolled .nav-burger span,nav.scrolled .nav-burger span::before,nav.scrolled
   <div class="h2">People who build with us.</div>
   <div class="body" style="max-width:680px;">Our mentors span synthetic biology, therapeutics, hardware, fundraising, and operations. Want to give back? Apply through the mentor form and we'll be in touch.</div>
 
-  <!-- MENTORS:START — cards below are generated from the Airtable Mentors table; do not edit by hand -->
-  <div class="empty">
-    <div class="body"><strong>The mentor network is growing.</strong><br>Approved mentors will appear here with their bio, focus areas, and LinkedIn. Be one of the first.</div>
-    <a href="https://airtable.com/appisCTsCCcBCMSk0/shrcDCDQRSgEnJkqx" class="btn-f">Apply to mentor →</a>
+  <!-- MENTORS:START — rendered at runtime from the Airtable Mentors table via /api/mentors -->
+  <div id="mentorRoot" aria-live="polite">
+    <div id="mentorLoading" class="empty" style="border-style:solid;">
+      <div class="body">Loading the mentor network&hellip;</div>
+    </div>
   </div>
+  <template id="mentorEmpty">
+    <div class="empty">
+      <div class="body"><strong>The mentor network is growing.</strong><br>Approved mentors will appear here with their bio, focus areas, and LinkedIn. Be one of the first.</div>
+      <a href="https://airtable.com/appisCTsCCcBCMSk0/shrcDCDQRSgEnJkqx" class="btn-f">Apply to mentor &#8594;</a>
+    </div>
+  </template>
   <!-- MENTORS:END -->
 </section>
 
@@ -248,5 +255,62 @@ nav.scrolled .nav-burger span,nav.scrolled .nav-burger span::before,nav.scrolled
 
 (function(){})();
 </script>
+
+<script>
+(function(){
+  var root = document.getElementById('mentorRoot');
+  if (!root) return;
+  var emptyTpl = document.getElementById('mentorEmpty');
+
+  function showEmpty(){
+    root.innerHTML = '';
+    root.appendChild(emptyTpl.content.cloneNode(true));
+  }
+
+  function esc(v){
+    return String(v == null ? '' : v)
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+      .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+  }
+
+  function initials(name){
+    return name.split(/\s+/).filter(Boolean).slice(0,2).map(function(p){return p[0];}).join('').toUpperCase();
+  }
+
+  function card(m){
+    var el = document.createElement('div');
+    el.className = 'mentor-card';
+    var photo = m.photo
+      ? '<img class="mentor-photo" src="' + esc(m.photo) + '" alt="' + esc(m.name) + '" loading="lazy" width="84" height="84">'
+      : '<div class="mentor-photo" aria-hidden="true" style="display:flex;align-items:center;justify-content:center;'
+        + 'font-family:Barlow,sans-serif;font-weight:800;color:#1C3B2D;font-size:26px;">' + esc(initials(m.name)) + '</div>';
+    var tags = (m.tags || []).map(function(t){
+      return '<span class="mentor-tag">' + esc(t) + '</span>';
+    }).join('');
+    el.innerHTML =
+      photo +
+      '<div class="mentor-name">' + esc(m.name) + '</div>' +
+      (m.area ? '<div class="mentor-area">' + esc(m.area) + '</div>' : '') +
+      (m.bio ? '<div class="mentor-bio">' + esc(m.bio) + '</div>' : '<div class="mentor-bio"></div>') +
+      (tags ? '<div class="mentor-tags">' + tags + '</div>' : '') +
+      (m.linkedin ? '<a class="mentor-li" href="' + esc(m.linkedin) + '" target="_blank" rel="noopener noreferrer">LinkedIn &#8599;</a>' : '');
+    return el;
+  }
+
+  fetch('/api/mentors', { headers: { 'Accept': 'application/json' } })
+    .then(function(r){ return r.ok ? r.json() : Promise.reject(r.status); })
+    .then(function(data){
+      var list = (data && data.mentors) || [];
+      if (!list.length) { showEmpty(); return; }
+      var grid = document.createElement('div');
+      grid.className = 'mentor-grid';
+      list.forEach(function(m){ grid.appendChild(card(m)); });
+      root.innerHTML = '';
+      root.appendChild(grid);
+    })
+    .catch(function(){ showEmpty(); });
+})();
+</script>
+
 </body>
 </html>
