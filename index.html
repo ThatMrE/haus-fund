@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Haus — The Live-In Biotech Accelerator</title>
 <meta name="description" content="Haus is a live-in biotech accelerator in San Francisco — wet lab space, first-check capital, and a resident cohort building the future of life sciences.">
 <link rel="canonical" href="https://haus.fund/">
@@ -245,6 +245,63 @@ nav.scrolled .nav-drop-t:hover{color:#1C3B2D;}
 .nav-drop-menu a{display:block;padding:9px 12px;border-radius:6px;font-size:14px;font-weight:500;color:#3A3A3A;transition:background 130ms,color 130ms;}
 .nav-drop-menu a:hover{background:#F0EDE6;color:#1C3B2D;}
 nav.scrolled .nav-drop-menu a{color:#3A3A3A;}
+
+/* ══ Mobile navigation + cross-OS fixes ══ */
+/* Footer link row must wrap — it holds 11 links and overflowed on tablets */
+.footer-inner{flex-wrap:wrap;row-gap:14px;}
+.footer-inner > div{flex-wrap:wrap;row-gap:6px;}
+@media(max-width:900px){.footer-inner{justify-content:center;text-align:center;}
+  .footer-inner > div{justify-content:center;}}
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%;}
+body{-webkit-font-smoothing:antialiased;}
+/* Respect the notch / rounded corners on iOS */
+.nav-inner{padding-left:max(18px,env(safe-area-inset-left));padding-right:max(18px,env(safe-area-inset-right));}
+@media(min-width:681px){.nav-inner{padding-left:max(56px,env(safe-area-inset-left));padding-right:max(56px,env(safe-area-inset-right));}}
+/* Taller viewport units where supported (iOS address-bar shrink) */
+@supports (height:100dvh){#top{min-height:100dvh;}}
+@media(max-width:680px){@supports (height:100dvh){#top{min-height:auto;}}}
+
+.nav-burger{display:none;background:none;border:none;cursor:pointer;padding:8px;margin-left:4px;
+  width:44px;height:44px;align-items:center;justify-content:center;flex:0 0 auto;-webkit-tap-highlight-color:transparent;}
+.nav-burger span{display:block;position:relative;width:22px;height:2px;background:#fff;border-radius:2px;transition:background 200ms;}
+.nav-burger span::before,.nav-burger span::after{content:"";position:absolute;left:0;width:22px;height:2px;background:#fff;border-radius:2px;transition:transform 200ms,background 200ms;}
+.nav-burger span::before{top:-7px;}
+.nav-burger span::after{top:7px;}
+nav.scrolled .nav-burger span,nav.scrolled .nav-burger span::before,nav.scrolled .nav-burger span::after{background:#0D0D0D;}
+.nav-burger[aria-expanded="true"] span{background:transparent;}
+.nav-burger[aria-expanded="true"] span::before{transform:translateY(7px) rotate(45deg);background:#0D0D0D;}
+.nav-burger[aria-expanded="true"] span::after{transform:translateY(-7px) rotate(-45deg);background:#0D0D0D;}
+
+.nav-mobile{display:none;}
+@media(max-width:900px){
+  /* 900 not 680: between 681-780 the full nav needs ~746px and pushed Apply off-screen */
+  .nav-burger{display:inline-flex;}
+  .nav-links{display:none !important;}
+  /* With the links hidden, space-between stranded Apply mid-nav */
+  .nav-apply{margin-left:auto;}
+  .nav-mobile{position:absolute;top:100%;left:0;right:0;background:#F8F7F3;border-bottom:1px solid #E5E1D9;
+    box-shadow:0 14px 34px rgba(13,13,13,0.16);padding:6px 0 14px;
+    max-height:calc(100vh - 60px);overflow-y:auto;-webkit-overflow-scrolling:touch;}
+  @supports (max-height:100dvh){.nav-mobile{max-height:calc(100dvh - 60px);}}
+  .nav-mobile.open{display:block;}
+  .nav-mobile a{display:block;padding:15px max(20px,env(safe-area-inset-left));font-size:16px;font-weight:500;
+    color:#0D0D0D !important;border-bottom:1px solid #E8E4DC;-webkit-tap-highlight-color:rgba(28,59,45,0.08);}
+  .nav-mobile a:last-child{border-bottom:none;}
+  .nav-mobile a:active{background:#F0EDE6;}
+  .nav-mobile .nm-grp{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;
+    color:#8A8A8A;padding:16px max(20px,env(safe-area-inset-left)) 6px;}
+  .nav-mobile .nm-sub{padding-left:max(34px,calc(env(safe-area-inset-left) + 14px)) !important;}
+  .nav-mobile .nm-apply{margin:14px max(20px,env(safe-area-inset-left)) 4px;background:#1C3B2D;color:#fff !important;
+    text-align:center;border-radius:6px;border-bottom:none;font-weight:600;padding:15px 20px;}
+  /* Tap targets: 44px minimum (Apple HIG / Android a11y) */
+  .footer-inner a,footer a{display:inline-flex;align-items:center;min-height:44px;padding:10px 6px;}
+  .nav-inner > a:first-child{display:inline-flex;align-items:center;min-height:44px;}
+  .nav-apply{display:inline-flex;align-items:center;min-height:44px;padding:11px 16px;}
+  /* Micro-labels: 10px is too small on a phone */
+  .chip-l,.nav-mobile .nm-grp{font-size:11px;}
+  /* Standalone inline links need a real tap area */
+  a.mono.xs{display:inline-flex;align-items:center;min-height:44px;}
+}
 </style>
 </head>
 <body>
@@ -273,7 +330,9 @@ nav.scrolled .nav-drop-menu a{color:#3A3A3A;}
       <a href="design-system.html">Design ↗</a>
     </div>
     <a href="https://airtable.com/app9STfjol4NHGEWj/pag6vvU75E9mWLH49/form" class="nav-apply">Apply</a>
+    <button class="nav-burger" aria-expanded="false" aria-controls="navMobile" aria-label="Menu"><span></span></button>
   </div>
+  <div class="nav-mobile" id="navMobile"></div>
 </nav>
 
 <!-- ── HERO ── -->
@@ -676,6 +735,38 @@ nav.scrolled .nav-drop-menu a{color:#3A3A3A;}
     document.addEventListener('keydown',function(e){if(e.key==='Escape'){d.classList.remove('open');t.setAttribute('aria-expanded','false');}});
   }
 })();
+
+  /* Build the mobile menu from whatever links this page's nav already has. */
+  (function(){
+    var nav=document.getElementById('nav'); if(!nav) return;
+    var links=nav.querySelector('.nav-links'),
+        panel=nav.querySelector('.nav-mobile'),
+        burger=nav.querySelector('.nav-burger');
+    if(!links||!panel||!burger||panel.children.length) return;
+    Array.prototype.forEach.call(links.children,function(el){
+      if(el.classList&&el.classList.contains('nav-drop')){
+        var g=document.createElement('div'); g.className='nm-grp'; g.textContent='Houses'; panel.appendChild(g);
+        Array.prototype.forEach.call(el.querySelectorAll('.nav-drop-menu a'),function(a){
+          var c=a.cloneNode(true); c.removeAttribute('style'); c.className='nm-sub'; panel.appendChild(c);
+        });
+      } else if(el.tagName==='A'){
+        var c=el.cloneNode(true); c.removeAttribute('style'); panel.appendChild(c);
+      }
+    });
+    var ap=nav.querySelector('.nav-apply');
+    if(ap){var c=ap.cloneNode(true); c.removeAttribute('style'); c.className='nm-apply'; panel.appendChild(c);}
+    function set(open){
+      panel.classList.toggle('open',open);
+      burger.setAttribute('aria-expanded',open?'true':'false');
+    }
+    burger.addEventListener('click',function(e){e.stopPropagation();set(!panel.classList.contains('open'));});
+    panel.addEventListener('click',function(e){if(e.target.closest('a'))set(false);});
+    document.addEventListener('click',function(e){if(!nav.contains(e.target))set(false);});
+    document.addEventListener('keydown',function(e){if(e.key==='Escape')set(false);});
+    window.addEventListener('resize',function(){if(window.innerWidth>680)set(false);});
+  })();
+
+(function(){})();
 </script>
 
 </body>
