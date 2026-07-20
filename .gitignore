@@ -8,3 +8,6 @@ index.legacy-backup.html
 .DS_Store
 Thumbs.db
 node_modules/
+
+# scratch files from page generation — never publish
+_parts.*
