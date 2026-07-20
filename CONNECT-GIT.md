@@ -37,6 +37,41 @@ thing to check.
 
 Use it only to recover when CD itself is broken.
 
+## If builds fail at "preparing repo"
+
+Symptom: deploys error with *"Unable to access repository … Host key verification
+failed"*, while the repo itself is fine and your commits are on GitHub.
+
+Cause: Netlify clones over SSH, and the repo had **no deploy key**. The site is
+linked through the Netlify GitHub App (`installation_id` is set), which normally
+clones over HTTPS — but when it falls back to SSH there must be a deploy key on
+the repo for the clone to succeed.
+
+Fix, in order:
+
+```bash
+# 1. Is there a deploy key on the repo? An empty list is the problem.
+gh api repos/ThatMrE/haus-fund/keys
+
+# 2. Get Netlify's public key (list keys first if the id differs)
+netlify api listDeployKeys --data '{}'
+netlify api getDeployKey --data '{"key_id":"<id>"}'
+
+# 3. Add it to the repo, read-only
+gh api repos/ThatMrE/haus-fund/keys -f title="Netlify deploy key" -f key="<public_key>" -F read_only=true
+
+# 4. Point the site at it
+netlify api updateSite --data '{"site_id":"<site_id>","body":{"build_settings":{"deploy_key_id":"<id>"}}}'
+
+# 5. Trigger a build
+netlify api createSiteBuild --data '{"site_id":"<site_id>"}'
+```
+
+The deploy key is read-only: it lets Netlify clone, never push.
+
+Check [githubstatus.com](https://www.githubstatus.com) first — a GitHub incident
+produces similar-looking failures and needs no config change at all.
+
 ## Checking a deploy
 
 ```bash
