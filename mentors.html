@@ -154,6 +154,14 @@ nav.scrolled .nav-burger span,nav.scrolled .nav-burger span::before,nav.scrolled
           <a href="pharmhaus.html">PharmHaus</a>
         </div>
       </div>
+      <div class="nav-drop">
+        <button class="nav-drop-t" aria-expanded="false" aria-haspopup="true">About <span aria-hidden="true">&#9662;</span></button>
+        <div class="nav-drop-menu">
+          <a href="team.html">Team</a>
+          <a href="portfolio.html">Portfolio</a>
+          <a href="careers.html">Careers</a>
+        </div>
+      </div>
       <a href="mentors.html">Mentors</a>
       <a href="expansion.html">Global ↗</a>
       <a href="sponsors.html">Sponsors</a>
@@ -206,6 +214,9 @@ nav.scrolled .nav-burger span,nav.scrolled .nav-burger span::before,nav.scrolled
       <a href="pharmhaus.html">PHARMHAUS</a>
       <a href="expansion.html">GLOBAL</a>
       <a href="sponsors.html">SPONSORS</a>
+      <a href="team.html">TEAM</a>
+      <a href="portfolio.html">PORTFOLIO</a>
+      <a href="careers.html">CAREERS</a>
       <a href="mailto:elliot@haus.fund">CONTACT</a>
     </div>
     <div class="mono" style="color:rgba(255,255,255,0.15);">MUTATE // BUILD // DISRUPT</div>
@@ -214,13 +225,16 @@ nav.scrolled .nav-burger span,nav.scrolled .nav-burger span::before,nav.scrolled
 
 <script>
 (function(){var nav=document.getElementById('nav');window.addEventListener('scroll',function(){nav.classList.toggle('scrolled',window.scrollY>120);},{passive:true});
-  var d=document.querySelector('.nav-drop'),t=d&&d.querySelector('.nav-drop-t');
-  if(d&&t){
+  var drops=document.querySelectorAll('.nav-drop');
+  function closeDrops(){drops.forEach(function(d){d.classList.remove('open');var b=d.querySelector('.nav-drop-t');if(b)b.setAttribute('aria-expanded','false');});}
+  drops.forEach(function(d){
+    var t=d.querySelector('.nav-drop-t'); if(!t) return;
     t.addEventListener('click',function(e){e.stopPropagation();
-      var o=d.classList.toggle('open');t.setAttribute('aria-expanded',o?'true':'false');});
-    document.addEventListener('click',function(){d.classList.remove('open');t.setAttribute('aria-expanded','false');});
-    document.addEventListener('keydown',function(e){if(e.key==='Escape'){d.classList.remove('open');t.setAttribute('aria-expanded','false');}});
-  }
+      var willOpen=!d.classList.contains('open'); closeDrops();
+      if(willOpen){d.classList.add('open');t.setAttribute('aria-expanded','true');}});
+  });
+  document.addEventListener('click',closeDrops);
+  document.addEventListener('keydown',function(e){if(e.key==='Escape')closeDrops();});
 })();
 
   /* Build the mobile menu from whatever links this page's nav already has. */
