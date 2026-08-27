@@ -8,7 +8,7 @@ user-invocable: true
 
 Founders and academics burn weeks discovering that the instrument they need is
 already sitting, paid for, twenty minutes away. This skill searches a curated
-directory of 240 core facilities across 43 countries and drafts the enquiry for
+directory of 269 core facilities across 56 countries and drafts the enquiry for
 you.
 
 ## Commands

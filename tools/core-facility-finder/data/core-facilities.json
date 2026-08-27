@@ -1,7 +1,7 @@
 {
  "schema": 1,
  "generated_by": "scripts/build_dataset.py",
- "count": 240,
+ "count": 269,
  "techniques": [
   "analytics",
   "animal models",
@@ -23,6 +23,7 @@
   "cryo-EM",
   "cryo-ET",
   "data management",
+  "diagnostics development",
   "DMPK",
   "DNA synthesis",
   "drug discovery",
@@ -71,6 +72,7 @@
   "protein engineering",
   "protein production",
   "proteomics",
+  "radioisotope production",
   "SAXS",
   "sequencing",
   "serial femtosecond crystallography",
@@ -87,6 +89,7 @@
   "synchrotron",
   "transgenic mouse models",
   "ultrafast spectroscopy",
+  "vaccine manufacturing",
   "virus production",
   "whole-genome sequencing",
   "X-ray crystallography",
@@ -194,6 +197,7 @@
   "Australia",
   "Austria",
   "Belgium",
+  "Botswana",
   "Brazil",
   "Canada",
   "Chile",
@@ -201,9 +205,12 @@
   "Colombia",
   "Czechia",
   "Denmark",
+  "Egypt",
+  "Ethiopia",
   "Finland",
   "France",
   "Germany",
+  "Ghana",
   "Hong Kong",
   "India",
   "Ireland",
@@ -212,15 +219,20 @@
   "Japan",
   "Jordan",
   "Kenya",
+  "Malawi",
   "Malaysia",
   "Mexico",
+  "Morocco",
   "Netherlands",
   "New Zealand",
+  "Nigeria",
   "Norway",
   "Peru",
   "Portugal",
   "Qatar",
+  "Rwanda",
   "Saudi Arabia",
+  "Senegal",
   "Singapore",
   "South Africa",
   "South Korea",
@@ -228,7 +240,11 @@
   "Sweden",
   "Switzerland",
   "Taiwan",
+  "Tanzania",
   "Thailand",
+  "The Gambia",
+  "Tunisia",
+  "Uganda",
   "United Arab Emirates",
   "United Kingdom",
   "United States",
@@ -499,6 +515,27 @@
     "epigenomics"
    ],
    "notes": "One of VIB's technology core facilities; well-established external service."
+  },
+  {
+   "id": "ea09e8",
+   "facility": "Botswana Harvard Health Partnership laboratory",
+   "institution": "Botswana Harvard Health Partnership",
+   "city": "Gaborone",
+   "region": "South-East",
+   "region_label": "district",
+   "country": "Botswana",
+   "continent": "Africa",
+   "group": null,
+   "access": "both",
+   "url": "https://www.bhp.org.bw/",
+   "techniques": [
+    "sequencing",
+    "whole-genome sequencing",
+    "bioinformatics",
+    "flow cytometry",
+    "biobanking"
+   ],
+   "notes": "HIV genomics laboratory with two decades of sequencing capacity; takes regional collaborations."
   },
   {
    "id": "30bae5",
@@ -1154,6 +1191,71 @@
    "notes": "Very high-throughput clinical proteomics; collaborates widely outside Denmark."
   },
   {
+   "id": "d1e01a",
+   "facility": "Central Laboratories",
+   "institution": "National Research Centre",
+   "city": "Cairo",
+   "region": "Cairo",
+   "region_label": "governorate",
+   "country": "Egypt",
+   "continent": "Africa",
+   "group": null,
+   "access": "both",
+   "url": "https://www.nrc.sci.eg/",
+   "techniques": [
+    "NMR",
+    "mass spectrometry",
+    "electron microscopy",
+    "imaging",
+    "spectroscopy",
+    "X-ray crystallography"
+   ],
+   "notes": "Egypt's largest multidisciplinary research institute; central analytical instrumentation for external users."
+  },
+  {
+   "id": "1a7965",
+   "facility": "Zewail City research centres",
+   "institution": "Zewail City of Science and Technology",
+   "city": "Giza",
+   "region": "Giza",
+   "region_label": "governorate",
+   "country": "Egypt",
+   "continent": "Africa",
+   "group": null,
+   "access": "both",
+   "url": "https://zewailcity.edu.eg/",
+   "techniques": [
+    "sequencing",
+    "bioinformatics",
+    "proteomics",
+    "mass spectrometry",
+    "imaging",
+    "nanofabrication"
+   ],
+   "notes": "Shared analytical instrumentation across its genomics, nanotechnology and materials centres."
+  },
+  {
+   "id": "28eefe",
+   "facility": "Armauer Hansen Research Institute",
+   "institution": "Armauer Hansen Research Institute",
+   "city": "Addis Ababa",
+   "region": "Addis Ababa",
+   "region_label": "region",
+   "country": "Ethiopia",
+   "continent": "Africa",
+   "group": null,
+   "access": "both",
+   "url": "https://www.ahri.gov.et/",
+   "techniques": [
+    "sequencing",
+    "flow cytometry",
+    "bioinformatics",
+    "biobanking",
+    "imaging"
+   ],
+   "notes": "Ethiopia's main biomedical research institute; immunology and TB research platforms."
+  },
+  {
    "id": "5fab23",
    "facility": "FIMM Technology Centre",
    "institution": "University of Helsinki",
@@ -1557,6 +1659,50 @@
     "protein production"
    ],
    "notes": "MPI-CBG's service network also covers light microscopy, EM and protein expression."
+  },
+  {
+   "id": "67a3ae",
+   "facility": "Noguchi Memorial Institute for Medical Research",
+   "institution": "University of Ghana",
+   "city": "Accra",
+   "region": "Greater Accra",
+   "region_label": "region",
+   "country": "Ghana",
+   "continent": "Africa",
+   "group": null,
+   "access": "both",
+   "url": "https://noguchi.ug.edu.gh/",
+   "techniques": [
+    "sequencing",
+    "flow cytometry",
+    "biobanking",
+    "imaging",
+    "metagenomics",
+    "bioinformatics"
+   ],
+   "notes": "Ghana's main biomedical research institute, with an advanced research laboratory open to collaborators."
+  },
+  {
+   "id": "f39e89",
+   "facility": "West African Centre for Cell Biology of Infectious Pathogens",
+   "institution": "University of Ghana",
+   "city": "Accra",
+   "region": "Greater Accra",
+   "region_label": "region",
+   "country": "Ghana",
+   "continent": "Africa",
+   "group": null,
+   "access": "both",
+   "url": "https://waccbip.org/",
+   "techniques": [
+    "sequencing",
+    "bioinformatics",
+    "flow cytometry",
+    "imaging",
+    "metagenomics",
+    "protein production"
+   ],
+   "notes": "WACCBIP; a World Bank centre of excellence whose core equipment and training are explicitly shared across West Africa."
   },
   {
    "id": "95e1e6",
@@ -2267,6 +2413,27 @@
    "notes": "Intergovernmental synchrotron for the Middle East; free beamtime by peer review."
   },
   {
+   "id": "1c6eb8",
+   "facility": "Molecular Biology and Bioinformatics Unit",
+   "institution": "International Centre of Insect Physiology and Ecology",
+   "city": "Nairobi",
+   "region": "Nairobi",
+   "region_label": "county",
+   "country": "Kenya",
+   "continent": "Africa",
+   "group": null,
+   "access": "both",
+   "url": "https://www.icipe.org/",
+   "techniques": [
+    "sequencing",
+    "bioinformatics",
+    "metagenomics",
+    "genotyping",
+    "imaging"
+   ],
+   "notes": "icipe; vector and agricultural genomics, with training programmes for the wider region."
+  },
+  {
    "id": "c05277",
    "facility": "Sequencing and Genomics Platform",
    "institution": "International Livestock Research Institute",
@@ -2286,6 +2453,49 @@
     "biobanking"
    ],
    "notes": "Azrieli/BecA-ILRI hub platforms serving agricultural and health research across Africa."
+  },
+  {
+   "id": "6badd0",
+   "facility": "KEMRI-Wellcome Trust Research Programme",
+   "institution": "Kenya Medical Research Institute",
+   "city": "Kilifi",
+   "region": "Kilifi",
+   "region_label": "county",
+   "country": "Kenya",
+   "continent": "Africa",
+   "group": null,
+   "access": "both",
+   "url": "https://kemri-wellcome.org/",
+   "techniques": [
+    "sequencing",
+    "metagenomics",
+    "bioinformatics",
+    "flow cytometry",
+    "biobanking",
+    "genotyping"
+   ],
+   "notes": "Clinical research programme with sequencing, immunology and biobank capacity, and a well-used data-science group."
+  },
+  {
+   "id": "921114",
+   "facility": "Malawi-Liverpool-Wellcome Programme laboratories",
+   "institution": "Malawi-Liverpool-Wellcome Programme",
+   "city": "Blantyre",
+   "region": "Southern Region",
+   "region_label": "region",
+   "country": "Malawi",
+   "continent": "Africa",
+   "group": null,
+   "access": "both",
+   "url": "https://www.mlw.mw/",
+   "techniques": [
+    "sequencing",
+    "flow cytometry",
+    "bioinformatics",
+    "biobanking",
+    "metagenomics"
+   ],
+   "notes": "Clinical research laboratories with genomics, immunology and a long-running sample archive."
   },
   {
    "id": "b5eb68",
@@ -2396,6 +2606,28 @@
    "notes": "National advanced microscopy laboratory, open to users across Mexico."
   },
   {
+   "id": "264b79",
+   "facility": "African Genome Center",
+   "institution": "Mohammed VI Polytechnic University",
+   "city": "Ben Guerir",
+   "region": "Marrakesh-Safi",
+   "region_label": "region",
+   "country": "Morocco",
+   "continent": "Africa",
+   "group": null,
+   "access": "both",
+   "url": "https://um6p.ma/",
+   "techniques": [
+    "sequencing",
+    "whole-genome sequencing",
+    "long-read sequencing",
+    "genome assembly",
+    "bioinformatics",
+    "metagenomics"
+   ],
+   "notes": "Well-funded genomics centre positioned as a service hub for North and West African partners."
+  },
+  {
    "id": "2d20c3",
    "facility": "Center for Biomics",
    "institution": "Erasmus MC",
@@ -2498,6 +2730,48 @@
     "genotyping"
    ],
    "notes": "New Zealand's main academic sequencing facility."
+  },
+  {
+   "id": "61fb02",
+   "facility": "Central Research Laboratory",
+   "institution": "Nigerian Institute of Medical Research",
+   "city": "Lagos",
+   "region": "Lagos",
+   "region_label": "state",
+   "country": "Nigeria",
+   "continent": "Africa",
+   "group": null,
+   "access": "both",
+   "url": "https://nimr.gov.ng/",
+   "techniques": [
+    "sequencing",
+    "bioinformatics",
+    "flow cytometry",
+    "biobanking",
+    "genotyping"
+   ],
+   "notes": "Nigeria's national biomedical research institute; central laboratories serve external projects."
+  },
+  {
+   "id": "056703",
+   "facility": "African Centre of Excellence for Genomics of Infectious Diseases",
+   "institution": "Redeemer's University",
+   "city": "Ede",
+   "region": "Osun",
+   "region_label": "state",
+   "country": "Nigeria",
+   "continent": "Africa",
+   "group": null,
+   "access": "both",
+   "url": "https://acegid.org/",
+   "techniques": [
+    "sequencing",
+    "whole-genome sequencing",
+    "metagenomics",
+    "bioinformatics",
+    "long-read sequencing"
+   ],
+   "notes": "ACEGID; sequenced the first SARS-CoV-2 genome in Africa. Lassa and Ebola genomics, and a large training programme."
   },
   {
    "id": "3ff450",
@@ -2608,6 +2882,27 @@
    "notes": "Clinical genomics and research cores; works closely with Qatar Biobank."
   },
   {
+   "id": "91f484",
+   "facility": "National Reference Laboratory",
+   "institution": "Rwanda Biomedical Centre",
+   "city": "Kigali",
+   "region": "Kigali",
+   "region_label": "province",
+   "country": "Rwanda",
+   "continent": "Africa",
+   "group": null,
+   "access": "both",
+   "url": "https://www.rbc.gov.rw/",
+   "techniques": [
+    "sequencing",
+    "metagenomics",
+    "bioinformatics",
+    "genotyping",
+    "biobanking"
+   ],
+   "notes": "National reference laboratory with genomic surveillance capacity built out since 2020."
+  },
+  {
    "id": "fe1d93",
    "facility": "KAUST Core Labs",
    "institution": "King Abdullah University of Science and Technology",
@@ -2630,6 +2925,28 @@
     "NMR"
    ],
    "notes": "Unusually well-equipped and openly documented core labs; external users accepted."
+  },
+  {
+   "id": "8aca17",
+   "facility": "Institut Pasteur de Dakar",
+   "institution": "Institut Pasteur de Dakar",
+   "city": "Dakar",
+   "region": "Dakar",
+   "region_label": "region",
+   "country": "Senegal",
+   "continent": "Africa",
+   "group": null,
+   "access": "both",
+   "url": "https://www.pasteur.sn/",
+   "techniques": [
+    "sequencing",
+    "metagenomics",
+    "bioinformatics",
+    "vaccine manufacturing",
+    "biobanking",
+    "diagnostics development"
+   ],
+   "notes": "One of the few WHO-prequalified vaccine producers in Africa; also runs genomics and diagnostics platforms."
   },
   {
    "id": "3d7012",
@@ -2718,6 +3035,27 @@
    "notes": "Structural biology instrumentation including cryo-EM and high-field NMR."
   },
   {
+   "id": "502399",
+   "facility": "Biotechnology Platform",
+   "institution": "Agricultural Research Council",
+   "city": "Pretoria",
+   "region": "Gauteng",
+   "region_label": "province",
+   "country": "South Africa",
+   "continent": "Africa",
+   "group": null,
+   "access": "both",
+   "url": "https://www.arc.agric.za/",
+   "techniques": [
+    "sequencing",
+    "genotyping",
+    "genome assembly",
+    "metagenomics",
+    "bioinformatics"
+   ],
+   "notes": "Crop and livestock genomics; the main agricultural sequencing route in South Africa."
+  },
+  {
    "id": "052cd2",
    "facility": "Centre for Proteomic and Genomic Research",
    "institution": "CPGR",
@@ -2738,6 +3076,220 @@
     "biobanking"
    ],
    "notes": "Not-for-profit genomics service company serving African research and clinical projects."
+  },
+  {
+   "id": "9281f1",
+   "facility": "Centre for High Performance Computing",
+   "institution": "CSIR",
+   "city": "Cape Town",
+   "region": "Western Cape",
+   "region_label": "province",
+   "country": "South Africa",
+   "continent": "Africa",
+   "group": null,
+   "access": "open",
+   "url": "https://www.chpc.ac.za/",
+   "techniques": [
+    "bioinformatics",
+    "computational biology",
+    "high-performance computing",
+    "data management"
+   ],
+   "notes": "National HPC facility; free compute allocations to South African and African researchers by application."
+  },
+  {
+   "id": "1643ed",
+   "facility": "Sequencing Core Facility",
+   "institution": "National Institute for Communicable Diseases",
+   "city": "Johannesburg",
+   "region": "Gauteng",
+   "region_label": "province",
+   "country": "South Africa",
+   "continent": "Africa",
+   "group": null,
+   "access": "academic",
+   "url": "https://www.nicd.ac.za/",
+   "techniques": [
+    "sequencing",
+    "whole-genome sequencing",
+    "metagenomics",
+    "bioinformatics",
+    "genotyping"
+   ],
+   "notes": "National public-health reference laboratory; genomic surveillance for southern Africa."
+  },
+  {
+   "id": "42bba6",
+   "facility": "iThemba LABS",
+   "institution": "National Research Foundation",
+   "city": "Cape Town",
+   "region": "Western Cape",
+   "region_label": "province",
+   "country": "South Africa",
+   "continent": "Africa",
+   "group": null,
+   "access": "open",
+   "url": "https://tlabs.ac.za/",
+   "techniques": [
+    "materials characterisation",
+    "imaging",
+    "spectroscopy",
+    "radioisotope production",
+    "X-ray tomography"
+   ],
+   "notes": "Accelerator-based research facility; also Africa's main medical radioisotope producer. Beamtime by proposal."
+  },
+  {
+   "id": "d72930",
+   "facility": "Central Analytical Facilities",
+   "institution": "Stellenbosch University",
+   "city": "Stellenbosch",
+   "region": "Western Cape",
+   "region_label": "province",
+   "country": "South Africa",
+   "continent": "Africa",
+   "group": null,
+   "access": "both",
+   "url": "https://www.sun.ac.za/english/faculty/science/CAF",
+   "techniques": [
+    "sequencing",
+    "mass spectrometry",
+    "proteomics",
+    "metabolomics",
+    "electron microscopy",
+    "NMR",
+    "flow cytometry",
+    "imaging"
+   ],
+   "notes": "The most complete open-access instrumentation network on the continent; one booking system across eight units, open to external academic and industry users."
+  },
+  {
+   "id": "5bd42e",
+   "facility": "Centre for Epidemic Response and Innovation",
+   "institution": "Stellenbosch University",
+   "city": "Stellenbosch",
+   "region": "Western Cape",
+   "region_label": "province",
+   "country": "South Africa",
+   "continent": "Africa",
+   "group": null,
+   "access": "both",
+   "url": "https://www.ceri.org.za/",
+   "techniques": [
+    "sequencing",
+    "whole-genome sequencing",
+    "metagenomics",
+    "bioinformatics",
+    "long-read sequencing"
+   ],
+   "notes": "CERI; pathogen genomics and outbreak response, with a strong training arm for African partner labs."
+  },
+  {
+   "id": "ae845b",
+   "facility": "Institute of Infectious Disease and Molecular Medicine core facilities",
+   "institution": "University of Cape Town",
+   "city": "Cape Town",
+   "region": "Western Cape",
+   "region_label": "province",
+   "country": "South Africa",
+   "continent": "Africa",
+   "group": null,
+   "access": "academic",
+   "url": "https://www.idm.uct.ac.za/",
+   "techniques": [
+    "flow cytometry",
+    "cell sorting",
+    "light microscopy",
+    "imaging",
+    "proteomics",
+    "mass spectrometry",
+    "bioinformatics"
+   ],
+   "notes": "The IDM runs UCT's flow cytometry, confocal imaging and proteomics cores."
+  },
+  {
+   "id": "e5b4c1",
+   "facility": "KwaZulu-Natal Research Innovation and Sequencing Platform",
+   "institution": "University of KwaZulu-Natal",
+   "city": "Durban",
+   "region": "KwaZulu-Natal",
+   "region_label": "province",
+   "country": "South Africa",
+   "continent": "Africa",
+   "group": null,
+   "access": "both",
+   "url": "https://www.krisp.org.za/",
+   "techniques": [
+    "sequencing",
+    "whole-genome sequencing",
+    "long-read sequencing",
+    "metagenomics",
+    "bioinformatics"
+   ],
+   "notes": "KRISP; the genomic surveillance platform that characterised several SARS-CoV-2 variants first. Runs sequencing for partners across Africa."
+  },
+  {
+   "id": "d6e38e",
+   "facility": "Forestry and Agricultural Biotechnology Institute",
+   "institution": "University of Pretoria",
+   "city": "Pretoria",
+   "region": "Gauteng",
+   "region_label": "province",
+   "country": "South Africa",
+   "continent": "Africa",
+   "group": null,
+   "access": "both",
+   "url": "https://www.fabinet.up.ac.za/",
+   "techniques": [
+    "sequencing",
+    "genome assembly",
+    "bioinformatics",
+    "metagenomics",
+    "long-read sequencing"
+   ],
+   "notes": "FABI; fungal, tree and insect genomics with its own sequencing capacity."
+  },
+  {
+   "id": "4241f1",
+   "facility": "South African National Bioinformatics Institute",
+   "institution": "University of the Western Cape",
+   "city": "Bellville",
+   "region": "Western Cape",
+   "region_label": "province",
+   "country": "South Africa",
+   "continent": "Africa",
+   "group": null,
+   "access": "both",
+   "url": "https://www.sanbi.ac.za/",
+   "techniques": [
+    "bioinformatics",
+    "computational biology",
+    "genome assembly",
+    "metagenomics",
+    "data management"
+   ],
+   "notes": "SANBI; an H3ABioNet node and one of the oldest bioinformatics groups on the continent."
+  },
+  {
+   "id": "06284c",
+   "facility": "Microscopy and Microanalysis Unit",
+   "institution": "University of the Witwatersrand",
+   "city": "Johannesburg",
+   "region": "Gauteng",
+   "region_label": "province",
+   "country": "South Africa",
+   "continent": "Africa",
+   "group": null,
+   "access": "both",
+   "url": "https://www.wits.ac.za/mmu/",
+   "techniques": [
+    "electron microscopy",
+    "imaging",
+    "X-ray tomography",
+    "materials characterisation",
+    "light microscopy"
+   ],
+   "notes": "Long-established EM unit serving Wits and outside users across Gauteng."
   },
   {
    "id": "f6a44d",
@@ -3194,6 +3746,28 @@
    "notes": "Operates the Taiwan Photon Source; proposal-based and proprietary beamtime."
   },
   {
+   "id": "4d2495",
+   "facility": "Ifakara Health Institute laboratories",
+   "institution": "Ifakara Health Institute",
+   "city": "Bagamoyo",
+   "region": "Pwani",
+   "region_label": "region",
+   "country": "Tanzania",
+   "continent": "Africa",
+   "group": null,
+   "access": "both",
+   "url": "https://ihi.or.tz/",
+   "techniques": [
+    "sequencing",
+    "flow cytometry",
+    "bioinformatics",
+    "animal models",
+    "imaging",
+    "metagenomics"
+   ],
+   "notes": "Clinical trial and laboratory platforms, including a large insectary for vector work."
+  },
+  {
    "id": "bf2632",
    "facility": "BIOTEC core facilities",
    "institution": "National Science and Technology Development Agency",
@@ -3235,6 +3809,71 @@
     "imaging"
    ],
    "notes": "Southeast Asia's synchrotron; free proposal-based access plus paid industrial service."
+  },
+  {
+   "id": "62503d",
+   "facility": "MRC Unit The Gambia at LSHTM",
+   "institution": "London School of Hygiene and Tropical Medicine",
+   "city": "Fajara",
+   "region": "Western",
+   "region_label": "division",
+   "country": "The Gambia",
+   "continent": "Africa",
+   "group": null,
+   "access": "both",
+   "url": "https://www.mrc.gm/",
+   "techniques": [
+    "flow cytometry",
+    "sequencing",
+    "bioinformatics",
+    "biobanking",
+    "imaging",
+    "metagenomics"
+   ],
+   "notes": "The largest biomedical research facility of its kind in West Africa; strong immunology and vaccine-trial laboratories."
+  },
+  {
+   "id": "79608a",
+   "facility": "Institut Pasteur de Tunis technology platforms",
+   "institution": "Institut Pasteur de Tunis",
+   "city": "Tunis",
+   "region": "Tunis",
+   "region_label": "governorate",
+   "country": "Tunisia",
+   "continent": "Africa",
+   "group": null,
+   "access": "both",
+   "url": "https://www.pasteur.tn/",
+   "techniques": [
+    "sequencing",
+    "proteomics",
+    "mass spectrometry",
+    "flow cytometry",
+    "bioinformatics",
+    "imaging"
+   ],
+   "notes": "Shared technology platforms within the Pasteur network; open to Tunisian and regional groups."
+  },
+  {
+   "id": "99b7b0",
+   "facility": "MRC/UVRI and LSHTM Uganda Research Unit",
+   "institution": "Medical Research Council",
+   "city": "Entebbe",
+   "region": "Wakiso",
+   "region_label": "district",
+   "country": "Uganda",
+   "continent": "Africa",
+   "group": null,
+   "access": "both",
+   "url": "https://www.mrcuganda.org/",
+   "techniques": [
+    "sequencing",
+    "flow cytometry",
+    "bioinformatics",
+    "biobanking",
+    "metagenomics"
+   ],
+   "notes": "Long-established research unit with immunology, genomics and a large biorepository."
   },
   {
    "id": "8ccbdc",
