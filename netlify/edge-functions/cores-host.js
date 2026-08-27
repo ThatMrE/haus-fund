@@ -22,13 +22,21 @@ export function targetFor(hostname) {
 }
 
 export default async (request, context) => {
-  const url = new URL(request.url);
-  const target = targetFor(url.hostname);
+  // Fail open. This function sits in front of "/" for every hostname, so the
+  // homepage depends on it not throwing. Anything unexpected here should cost
+  // the subdomain its rewrite, never cost haus.fund its front page.
+  try {
+    const url = new URL(request.url);
+    const target = targetFor(url.hostname);
 
-  // Any other host — haus.fund, a deploy preview, the .netlify.app name —
-  // falls through to the normal homepage.
-  if (!target || url.pathname !== "/") return context.next();
+    // Any other host — haus.fund, a deploy preview, the .netlify.app name —
+    // falls through to the normal homepage.
+    if (!target || url.pathname !== "/") return await context.next();
 
-  url.pathname = target;
-  return context.nextRequest(new Request(url, request));
+    url.pathname = target;
+    return await context.nextRequest(new Request(url, request));
+  } catch (err) {
+    console.error("cores-host: falling through to the default route", err);
+    return await context.next();
+  }
 };
