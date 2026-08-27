@@ -474,11 +474,21 @@ def cmd_verify(args):
         return
 
     today = dt.date.today().isoformat()
-    ok = 0
+    ok = unreachable = 0
     print(f"Verifying {len(targets)} facility page(s). This hits live sites — be "
           f"considerate with --limit.\n")
     for fac in targets:
         status, emails, final = harvest(fac["url"], args.timeout)
+
+        # A request that never completed tells us nothing about the facility.
+        # Recording it would stamp a `checked` date on a page we never read,
+        # which reads later as "checked, no address found". Report and move on.
+        if status is None:
+            unreachable += 1
+            print(f"  {c('!!!', '31')} {fac['id']}  {fac['facility'][:44]:<44} "
+                  f"{'  n/a':>5}  unreachable")
+            continue
+
         emails = rank_emails(emails)
         channels = [{"kind": "email", "label": "published on facility page", "value": e}
                     for e in emails]
@@ -489,14 +499,26 @@ def cmd_verify(args):
             "source": final or fac["url"],
             "channels": channels,
         }
-        mark = green("ok ") if emails else (amber("---") if status == 200 else c("!!!", "31"))
+        mark = green("ok ") if emails else amber("---")
         print(f"  {mark} {fac['id']}  {fac['facility'][:44]:<44} "
-              f"{str(status or 'error'):>5}  {len(emails)} address(es)")
+              f"{status:>5}  {len(emails)} address(es)")
         if emails:
             ok += 1
-    save_contacts(store)
-    print(f"\n{ok}/{len(targets)} facilities now have at least one address. "
-          f"Written to {CONTACTS.relative_to(ROOT)}")
+
+    reached = len(targets) - unreachable
+    if reached:
+        save_contacts(store)
+        print(f"\n{ok}/{reached} reachable facilities now have at least one address. "
+              f"Written to {CONTACTS.relative_to(ROOT)}")
+    else:
+        print("\nNothing written — no facility page could be reached at all.")
+    if unreachable:
+        print(f"{unreachable} page(s) unreachable; nothing was recorded for them, "
+              f"so a later run retries them.")
+        if unreachable == len(targets):
+            print(amber("Every request failed. That usually means this machine "
+                        "cannot reach the open internet (proxy or egress policy) "
+                        "rather than that the sites are down."))
 
 
 # ── misc ──────────────────────────────────────────────────────────────────
