@@ -15,6 +15,13 @@
   path = "/lp/*"
   function = "lp-auth"
 
+# ── cores.haus.fund: serve the Core Facility Finder at the root ──
+# Runs on "/" only, and only rewrites when the Host is cores.haus.fund.
+# _redirects cannot branch on Host, hence the edge function.
+[[edge_functions]]
+  path = "/"
+  function = "cores-host"
+
 # ── Mentors: server-side Airtable proxy ──
 # The token stays server-side; only whitelisted mentor fields are returned.
 [[edge_functions]]
