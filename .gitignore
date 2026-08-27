@@ -16,3 +16,8 @@ _parts.*
 *.pptx
 *.pdf
 *.key
+
+# Harvested contact addresses. Ignored on purpose: publish = "." would serve
+# them at haus.fund, and a harvest can pick up named individuals as well as
+# generic inboxes. Review it, then `git add -f` it when you mean to publish.
+tools/core-facility-finder/data/contacts.json
