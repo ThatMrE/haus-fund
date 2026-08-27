@@ -12,7 +12,7 @@ no build step, no framework.
 | `mentors.html` | Mentor roster and mentor signup |
 | `expansion.html` | Global Nodes — node protocol, active nodes, candidate cities |
 | `design-system.html` | Living style reference — tokens, type, components |
-| `cores.html` | Core Facility Finder — draft tool, `noindex`, not in the nav |
+| `cores.html` | Core Facility Finder — served at `cores.haus.fund`, `noindex`, not in the nav |
 | `fund-portal/` | Separate internal React portal (not linked from the public nav) |
 
 ## Structure

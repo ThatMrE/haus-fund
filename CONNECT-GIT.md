@@ -72,6 +72,43 @@ The deploy key is read-only: it lets Netlify clone, never push.
 Check [githubstatus.com](https://www.githubstatus.com) first — a GitHub incident
 produces similar-looking failures and needs no config change at all.
 
+## Subdomains
+
+`cores.haus.fund` serves the Core Facility Finder. It is a **domain alias of
+this same Netlify project**, not a separate site — both hostnames resolve to the
+same publish directory, and `netlify/edge-functions/cores-host.js` rewrites `/`
+to `/cores.html` when the Host is `cores.haus.fund`. Every other path is left
+alone, so the shared assets, fonts and data files work on both hostnames.
+
+`_redirects` cannot branch on the Host header, only on path — that is why the
+host check is an edge function rather than a redirect rule.
+
+Note that `fightclub.haus.fund` uses the other pattern: its own Netlify project
+(`pitch-fight-club`) with its own repo. Either is fine. The alias is right when
+the page already lives in this repo and shares its design system; a separate
+project is right when the thing is genuinely independent.
+
+### Pointing a new subdomain
+
+Two steps, both outside this repo:
+
+1. **Netlify** → [Domain management](https://app.netlify.com/projects/haus-fund/configuration/domain)
+   → *Add a domain alias* → `cores.haus.fund`. Netlify then tells you which
+   record it wants.
+2. **DNS** — wherever haus.fund's zone is hosted:
+   - *If the zone is on Netlify DNS*, adding the alias creates the record for
+     you. Nothing else to do.
+   - *If the zone is at an external registrar*, add a `CNAME` for `cores`
+     pointing at `haus-fund.netlify.app`. Do not point it at an IP; Netlify's
+     load balancer addresses change.
+
+TLS is provisioned automatically once the record resolves, usually within a few
+minutes. Until then the subdomain serves a certificate warning, which is
+expected and clears on its own.
+
+To add another tool subdomain later, add a line to `HOSTS` in
+`netlify/edge-functions/cores-host.js` and repeat the two steps above.
+
 ## Checking a deploy
 
 ```bash
