@@ -100,4 +100,6 @@ the same seed always produces the same ids, and a rename produces a new one.
   Every record is a lead to confirm, not a citation.
 - **`verify` is a scraper.** It reads one page per facility and will miss
   addresses behind contact forms, JavaScript or images. A `page only` badge
-  means "not found by the scraper", not "has no email".
+  means "not found by the scraper", not "has no email". A page it could not
+  reach at all is reported but not recorded, so nothing carries a `checked`
+  date for a page that was never read, and a later run retries it.
