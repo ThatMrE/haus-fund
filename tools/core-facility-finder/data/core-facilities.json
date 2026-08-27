@@ -1,14 +1,16 @@
 {
  "schema": 1,
  "generated_by": "scripts/build_dataset.py",
- "count": 187,
+ "count": 240,
  "techniques": [
+  "analytics",
   "animal models",
   "antibody discovery",
   "ATAC-seq",
   "biobanking",
   "bioinformatics",
   "biophysics",
+  "bioprocess development",
   "bulk RNA-seq",
   "cell line engineering",
   "cell sorting",
@@ -58,6 +60,7 @@
   "multiplex imaging",
   "nanofabrication",
   "native mass spectrometry",
+  "neutron scattering",
   "NMR",
   "oligo synthesis",
   "organoids",
@@ -187,12 +190,15 @@
   "shotgun metagenomics": "metagenomics"
  },
  "countries": [
+  "Argentina",
   "Australia",
   "Austria",
   "Belgium",
   "Brazil",
   "Canada",
+  "Chile",
   "China",
+  "Colombia",
   "Czechia",
   "Denmark",
   "Finland",
@@ -204,11 +210,16 @@
   "Israel",
   "Italy",
   "Japan",
+  "Jordan",
   "Kenya",
+  "Malaysia",
+  "Mexico",
   "Netherlands",
   "New Zealand",
   "Norway",
+  "Peru",
   "Portugal",
+  "Qatar",
   "Saudi Arabia",
   "Singapore",
   "South Africa",
@@ -217,11 +228,84 @@
   "Sweden",
   "Switzerland",
   "Taiwan",
+  "Thailand",
+  "United Arab Emirates",
   "United Kingdom",
-  "United States"
+  "United States",
+  "Uruguay"
+ ],
+ "groups": [
+  "Latin America",
+  "Middle East"
  ],
  "note": "Metadata is hand-curated from public institutional pages and is offered as a starting point, not a verified registry. Contact addresses are not seeded here -- run `cores.py verify` to harvest them from each facility's own page into data/contacts.json.",
  "facilities": [
+  {
+   "id": "f3312b",
+   "facility": "Centro Cientifico Tecnologico core services",
+   "institution": "CONICET",
+   "city": "Buenos Aires",
+   "region": "Buenos Aires",
+   "region_label": "province",
+   "country": "Argentina",
+   "continent": "South America",
+   "group": "Latin America",
+   "access": "both",
+   "url": "https://www.conicet.gov.ar/",
+   "techniques": [
+    "electron microscopy",
+    "mass spectrometry",
+    "NMR",
+    "sequencing",
+    "imaging",
+    "bioinformatics"
+   ],
+   "notes": "CONICET's regional CCT centres operate shared instrumentation across Argentina."
+  },
+  {
+   "id": "7549ce",
+   "facility": "Fundacion Instituto Leloir core facilities",
+   "institution": "Fundacion Instituto Leloir",
+   "city": "Buenos Aires",
+   "region": "Buenos Aires",
+   "region_label": "province",
+   "country": "Argentina",
+   "continent": "South America",
+   "group": "Latin America",
+   "access": "both",
+   "url": "https://www.leloir.org.ar/",
+   "techniques": [
+    "mass spectrometry",
+    "proteomics",
+    "light microscopy",
+    "imaging",
+    "protein production",
+    "bioinformatics"
+   ],
+   "notes": "Leading Argentine biomedical institute with shared analytical and imaging equipment."
+  },
+  {
+   "id": "c54ca2",
+   "facility": "Instituto de Investigaciones Biotecnologicas",
+   "institution": "Universidad Nacional de San Martin",
+   "city": "Buenos Aires",
+   "region": "Buenos Aires",
+   "region_label": "province",
+   "country": "Argentina",
+   "continent": "South America",
+   "group": "Latin America",
+   "access": "both",
+   "url": "https://iib.unsam.edu.ar/",
+   "techniques": [
+    "protein production",
+    "mass spectrometry",
+    "proteomics",
+    "imaging",
+    "sequencing",
+    "structural biology"
+   ],
+   "notes": "IIB-UNSAM; structural biology and proteomics capacity in the Buenos Aires cluster."
+  },
   {
    "id": "f33e04",
    "facility": "Australian Genome Research Facility",
@@ -231,6 +315,7 @@
    "region_label": "state",
    "country": "Australia",
    "continent": "Oceania",
+   "group": null,
    "access": "commercial",
    "url": "https://www.agrf.org.au/",
    "techniques": [
@@ -252,6 +337,7 @@
    "region_label": "state",
    "country": "Australia",
    "continent": "Oceania",
+   "group": null,
    "access": "open",
    "url": "https://www.ansto.gov.au/facilities/australian-synchrotron",
    "techniques": [
@@ -273,6 +359,7 @@
    "region_label": "state",
    "country": "Australia",
    "continent": "Oceania",
+   "group": null,
    "access": "both",
    "url": "https://www.garvan.org.au/research/garvan-weizmann",
    "techniques": [
@@ -293,6 +380,7 @@
    "region_label": "state",
    "country": "Australia",
    "continent": "Oceania",
+   "group": null,
    "access": "both",
    "url": "https://www.monash.edu/researchinfrastructure/cryo-em",
    "techniques": [
@@ -312,6 +400,7 @@
    "region_label": "state",
    "country": "Australia",
    "continent": "Oceania",
+   "group": null,
    "access": "both",
    "url": "https://www.ramaciotti.unsw.edu.au/",
    "techniques": [
@@ -332,6 +421,7 @@
    "region_label": "state",
    "country": "Australia",
    "continent": "Oceania",
+   "group": null,
    "access": "both",
    "url": "https://www.wehi.edu.au/research/technologies/",
    "techniques": [
@@ -354,6 +444,7 @@
    "region_label": "state",
    "country": "Austria",
    "continent": "Europe",
+   "group": null,
    "access": "both",
    "url": "https://www.viennabiocenter.org/vbcf/",
    "techniques": [
@@ -377,6 +468,7 @@
    "region_label": "region",
    "country": "Belgium",
    "continent": "Europe",
+   "group": null,
    "access": "both",
    "url": "https://www.vib.be/labs/vib-proteomics-core",
    "techniques": [
@@ -396,6 +488,7 @@
    "region_label": "region",
    "country": "Belgium",
    "continent": "Europe",
+   "group": null,
    "access": "both",
    "url": "https://nucleomics.be/",
    "techniques": [
@@ -408,6 +501,28 @@
    "notes": "One of VIB's technology core facilities; well-established external service."
   },
   {
+   "id": "30bae5",
+   "facility": "Brazilian Biorenewables National Laboratory",
+   "institution": "CNPEM",
+   "city": "Campinas",
+   "region": "Sao Paulo",
+   "region_label": "state",
+   "country": "Brazil",
+   "continent": "South America",
+   "group": "Latin America",
+   "access": "open",
+   "url": "https://lnbr.cnpem.br/",
+   "techniques": [
+    "metagenomics",
+    "sequencing",
+    "protein production",
+    "metabolomics",
+    "fermentation",
+    "bioinformatics"
+   ],
+   "notes": "LNBR; enzyme discovery and bioprocess development, open by proposal."
+  },
+  {
    "id": "14ceb8",
    "facility": "Brazilian Biosciences National Laboratory",
    "institution": "CNPEM",
@@ -416,6 +531,7 @@
    "region_label": "state",
    "country": "Brazil",
    "continent": "South America",
+   "group": "Latin America",
    "access": "open",
    "url": "https://lnbio.cnpem.br/",
    "techniques": [
@@ -430,6 +546,27 @@
    "notes": "Open national laboratory; access by proposal, co-located with the Sirius synchrotron."
   },
   {
+   "id": "5a639e",
+   "facility": "Brazilian Nanotechnology National Laboratory",
+   "institution": "CNPEM",
+   "city": "Campinas",
+   "region": "Sao Paulo",
+   "region_label": "state",
+   "country": "Brazil",
+   "continent": "South America",
+   "group": "Latin America",
+   "access": "open",
+   "url": "https://lnnano.cnpem.br/",
+   "techniques": [
+    "electron microscopy",
+    "nanofabrication",
+    "imaging",
+    "materials characterisation",
+    "X-ray tomography"
+   ],
+   "notes": "LNNano; open by proposal, on the same campus as Sirius and LNBio."
+  },
+  {
    "id": "768787",
    "facility": "Sirius",
    "institution": "CNPEM Brazilian Synchrotron Light Laboratory",
@@ -438,6 +575,7 @@
    "region_label": "state",
    "country": "Brazil",
    "continent": "South America",
+   "group": "Latin America",
    "access": "open",
    "url": "https://lnls.cnpem.br/",
    "techniques": [
@@ -451,6 +589,73 @@
    "notes": "Fourth-generation synchrotron; free beamtime by peer review for open research."
   },
   {
+   "id": "40cc4a",
+   "facility": "Technological Platforms Network (RPT)",
+   "institution": "Fiocruz",
+   "city": "Rio de Janeiro",
+   "region": "Rio de Janeiro",
+   "region_label": "state",
+   "country": "Brazil",
+   "continent": "South America",
+   "group": "Latin America",
+   "access": "both",
+   "url": "https://plataformas.fiocruz.br/",
+   "techniques": [
+    "sequencing",
+    "mass spectrometry",
+    "proteomics",
+    "flow cytometry",
+    "light microscopy",
+    "imaging",
+    "animal models",
+    "bioinformatics"
+   ],
+   "notes": "Fiocruz's national platform network, spread across its units and open to Brazilian researchers."
+  },
+  {
+   "id": "fbca91",
+   "facility": "Genomics and molecular biology platforms",
+   "institution": "Hospital Israelita Albert Einstein",
+   "city": "Sao Paulo",
+   "region": "Sao Paulo",
+   "region_label": "state",
+   "country": "Brazil",
+   "continent": "South America",
+   "group": "Latin America",
+   "access": "both",
+   "url": "https://www.einstein.br/en/research",
+   "techniques": [
+    "whole-genome sequencing",
+    "sequencing",
+    "single-cell RNA-seq",
+    "bioinformatics",
+    "biobanking"
+   ],
+   "notes": "Hospital-based research genomics with clinical-grade pipelines."
+  },
+  {
+   "id": "5eaf8e",
+   "facility": "CEFAP-USP",
+   "institution": "Universidade de Sao Paulo",
+   "city": "Sao Paulo",
+   "region": "Sao Paulo",
+   "region_label": "state",
+   "country": "Brazil",
+   "continent": "South America",
+   "group": "Latin America",
+   "access": "both",
+   "url": "https://cefap.icb.usp.br/",
+   "techniques": [
+    "sequencing",
+    "flow cytometry",
+    "light microscopy",
+    "mass spectrometry",
+    "imaging",
+    "bioinformatics"
+   ],
+   "notes": "Core facility centre at the Institute of Biomedical Sciences; bookable by outside groups."
+  },
+  {
    "id": "bca707",
    "facility": "Michael Smith Genome Sciences Centre",
    "institution": "BC Cancer",
@@ -459,6 +664,7 @@
    "region_label": "province",
    "country": "Canada",
    "continent": "North America",
+   "group": null,
    "access": "both",
    "url": "https://www.bcgsc.ca/",
    "techniques": [
@@ -480,6 +686,7 @@
    "region_label": "province",
    "country": "Canada",
    "continent": "North America",
+   "group": null,
    "access": "both",
    "url": "https://www.mcgillgenomecentre.ca/",
    "techniques": [
@@ -501,6 +708,7 @@
    "region_label": "province",
    "country": "Canada",
    "continent": "North America",
+   "group": null,
    "access": "both",
    "url": "https://www.sickkids.ca/en/research/technology-platforms/",
    "techniques": [
@@ -520,6 +728,7 @@
    "region_label": "province",
    "country": "Canada",
    "continent": "North America",
+   "group": null,
    "access": "both",
    "url": "https://www.tcag.ca/",
    "techniques": [
@@ -541,6 +750,7 @@
    "region_label": "province",
    "country": "Canada",
    "continent": "North America",
+   "group": null,
    "access": "open",
    "url": "https://www.lightsource.ca/",
    "techniques": [
@@ -562,6 +772,7 @@
    "region_label": "province",
    "country": "Canada",
    "continent": "North America",
+   "group": null,
    "access": "open",
    "url": "https://www.thesgc.org/",
    "techniques": [
@@ -574,6 +785,114 @@
    "notes": "Open-science model: structures and chemical probes released without restriction."
   },
   {
+   "id": "8809d4",
+   "facility": "Fundacion Ciencia & Vida",
+   "institution": "Fundacion Ciencia & Vida",
+   "city": "Santiago",
+   "region": "Santiago Metropolitan",
+   "region_label": "region",
+   "country": "Chile",
+   "continent": "South America",
+   "group": "Latin America",
+   "access": "both",
+   "url": "https://www.cienciavida.org/",
+   "techniques": [
+    "sequencing",
+    "bioinformatics",
+    "protein production",
+    "flow cytometry",
+    "imaging"
+   ],
+   "notes": "Independent Chilean research foundation with genomics and bioinformatics services."
+  },
+  {
+   "id": "cefce4",
+   "facility": "Genomics and bioinformatics platforms",
+   "institution": "Pontificia Universidad Catolica de Chile",
+   "city": "Santiago",
+   "region": "Santiago Metropolitan",
+   "region_label": "region",
+   "country": "Chile",
+   "continent": "South America",
+   "group": "Latin America",
+   "access": "both",
+   "url": "https://www.uc.cl/en/research",
+   "techniques": [
+    "sequencing",
+    "bulk RNA-seq",
+    "bioinformatics",
+    "flow cytometry",
+    "imaging"
+   ],
+   "notes": "Shared research platforms across the UC faculties of biological sciences and medicine."
+  },
+  {
+   "id": "2fbc54",
+   "facility": "BGI Genomics",
+   "institution": "BGI",
+   "city": "Shenzhen",
+   "region": "Guangdong",
+   "region_label": "province",
+   "country": "China",
+   "continent": "Asia",
+   "group": null,
+   "access": "commercial",
+   "url": "https://www.bgi.com/global",
+   "techniques": [
+    "whole-genome sequencing",
+    "sequencing",
+    "bulk RNA-seq",
+    "single-cell RNA-seq",
+    "spatial transcriptomics",
+    "metagenomics",
+    "proteomics"
+   ],
+   "notes": "One of the largest sequencing providers in the world; own DNBSEQ platform."
+  },
+  {
+   "id": "49da86",
+   "facility": "China National GeneBank",
+   "institution": "BGI",
+   "city": "Shenzhen",
+   "region": "Guangdong",
+   "region_label": "province",
+   "country": "China",
+   "continent": "Asia",
+   "group": null,
+   "access": "both",
+   "url": "https://www.cngb.org/",
+   "techniques": [
+    "biobanking",
+    "sequencing",
+    "whole-genome sequencing",
+    "bioinformatics",
+    "metagenomics"
+   ],
+   "notes": "National biobank and sequence archive operated alongside BGI's sequencing capacity."
+  },
+  {
+   "id": "06807e",
+   "facility": "National Center for Protein Sciences Beijing",
+   "institution": "Chinese Academy of Sciences",
+   "city": "Beijing",
+   "region": "Beijing",
+   "region_label": "province",
+   "country": "China",
+   "continent": "Asia",
+   "group": null,
+   "access": "open",
+   "url": "http://www.ncpsb.org.cn/",
+   "techniques": [
+    "mass spectrometry",
+    "proteomics",
+    "metabolomics",
+    "protein production",
+    "bioinformatics",
+    "high-throughput screening"
+   ],
+   "notes": "National proteomics user facility; home of the Human Liver Proteome work."
+  },
+  {
    "id": "9171d6",
    "facility": "National Facility for Protein Science in Shanghai",
    "institution": "Chinese Academy of Sciences",
@@ -582,6 +901,7 @@
    "region_label": "province",
    "country": "China",
    "continent": "Asia",
+   "group": null,
    "access": "open",
    "url": "http://www.nfps.ac.cn/",
    "techniques": [
@@ -604,6 +924,7 @@
    "region_label": "province",
    "country": "China",
    "continent": "Asia",
+   "group": null,
    "access": "open",
    "url": "http://ssrf.sari.ac.cn/en/",
    "techniques": [
@@ -616,6 +937,96 @@
    "notes": "China's main third-generation synchrotron; proposal-based beamtime."
   },
   {
+   "id": "23f80d",
+   "facility": "Center for Biological Imaging",
+   "institution": "Institute of Biophysics, Chinese Academy of Sciences",
+   "city": "Beijing",
+   "region": "Beijing",
+   "region_label": "province",
+   "country": "China",
+   "continent": "Asia",
+   "group": null,
+   "access": "academic",
+   "url": "http://cbi.ibp.ac.cn/en/",
+   "techniques": [
+    "electron microscopy",
+    "cryo-EM",
+    "cryo-ET",
+    "light microscopy",
+    "super-resolution microscopy",
+    "correlative microscopy"
+   ],
+   "notes": "CAS imaging centre spanning light, electron and correlative microscopy."
+  },
+  {
+   "id": "72606f",
+   "facility": "Novogene",
+   "institution": "Novogene",
+   "city": "Beijing",
+   "region": "Beijing",
+   "region_label": "province",
+   "country": "China",
+   "continent": "Asia",
+   "group": null,
+   "access": "commercial",
+   "url": "https://www.novogene.com/",
+   "techniques": [
+    "sequencing",
+    "bulk RNA-seq",
+    "single-cell RNA-seq",
+    "whole-genome sequencing",
+    "metagenomics",
+    "bioinformatics"
+   ],
+   "notes": "High-volume commercial sequencing with labs in China, the UK, US and Singapore."
+  },
+  {
+   "id": "77fb41",
+   "facility": "Core Facilities of Life Sciences",
+   "institution": "Peking University",
+   "city": "Beijing",
+   "region": "Beijing",
+   "region_label": "province",
+   "country": "China",
+   "continent": "Asia",
+   "group": null,
+   "access": "academic",
+   "url": "https://cls.pku.edu.cn/en/",
+   "techniques": [
+    "cryo-EM",
+    "mass spectrometry",
+    "proteomics",
+    "imaging",
+    "flow cytometry",
+    "sequencing",
+    "protein production"
+   ],
+   "notes": "One of the better-equipped Chinese university core networks, including cryo-EM."
+  },
+  {
+   "id": "47d2be",
+   "facility": "Core Research Facilities",
+   "institution": "Southern University of Science and Technology",
+   "city": "Shenzhen",
+   "region": "Guangdong",
+   "region_label": "province",
+   "country": "China",
+   "continent": "Asia",
+   "group": null,
+   "access": "both",
+   "url": "https://crf.sustech.edu.cn/",
+   "techniques": [
+    "cryo-EM",
+    "mass spectrometry",
+    "NMR",
+    "electron microscopy",
+    "nanofabrication",
+    "imaging",
+    "sequencing"
+   ],
+   "notes": "SUSTech's shared instrumentation, openly catalogued and bookable."
+  },
+  {
    "id": "c1696c",
    "facility": "Cryo-EM Facility",
    "institution": "Tsinghua University",
@@ -624,6 +1035,7 @@
    "region_label": "province",
    "country": "China",
    "continent": "Asia",
+   "group": null,
    "access": "academic",
    "url": "https://www.tsinghua.edu.cn/en/",
    "techniques": [
@@ -635,6 +1047,47 @@
    "notes": "One of the largest academic cryo-EM installations worldwide; access mainly via collaboration."
   },
   {
+   "id": "9a38c2",
+   "facility": "Cryo-EM Facility",
+   "institution": "Westlake University",
+   "city": "Hangzhou",
+   "region": "Zhejiang",
+   "region_label": "province",
+   "country": "China",
+   "continent": "Asia",
+   "group": null,
+   "access": "academic",
+   "url": "https://en.westlake.edu.cn/",
+   "techniques": [
+    "cryo-EM",
+    "cryo-ET",
+    "structural biology",
+    "electron microscopy"
+   ],
+   "notes": "Large Krios installation at a young private research university."
+  },
+  {
+   "id": "120691",
+   "facility": "Genomics core",
+   "institution": "Universidad de los Andes",
+   "city": "Bogota",
+   "region": "Bogota",
+   "region_label": "department",
+   "country": "Colombia",
+   "continent": "South America",
+   "group": "Latin America",
+   "access": "both",
+   "url": "https://uniandes.edu.co/en",
+   "techniques": [
+    "sequencing",
+    "bulk RNA-seq",
+    "metagenomics",
+    "bioinformatics",
+    "genotyping"
+   ],
+   "notes": "One of the more active sequencing and bioinformatics groups in Colombia."
+  },
+  {
    "id": "465774",
    "facility": "CEITEC Core Facilities",
    "institution": "Masaryk University",
@@ -643,6 +1096,7 @@
    "region_label": "region",
    "country": "Czechia",
    "continent": "Europe",
+   "group": null,
    "access": "both",
    "url": "https://www.ceitec.eu/core-facilities/",
    "techniques": [
@@ -666,6 +1120,7 @@
    "region_label": "region",
    "country": "Denmark",
    "continent": "Europe",
+   "group": null,
    "access": "both",
    "url": "https://www.biosustain.dtu.dk/",
    "techniques": [
@@ -686,6 +1141,7 @@
    "region_label": "region",
    "country": "Denmark",
    "continent": "Europe",
+   "group": null,
    "access": "both",
    "url": "https://www.cpr.ku.dk/",
    "techniques": [
@@ -706,6 +1162,7 @@
    "region_label": "region",
    "country": "Finland",
    "continent": "Europe",
+   "group": null,
    "access": "both",
    "url": "https://www.helsinki.fi/en/infrastructures/genome-analysis/infrastructures/fimm-technology-centre",
    "techniques": [
@@ -727,6 +1184,7 @@
    "region_label": "region",
    "country": "France",
    "continent": "Europe",
+   "group": null,
    "access": "open",
    "url": "https://jacob.cea.fr/drf/ifrancoisjacob/english/Pages/Departments/Genoscope.aspx",
    "techniques": [
@@ -747,6 +1205,7 @@
    "region_label": "region",
    "country": "France",
    "continent": "Europe",
+   "group": null,
    "access": "open",
    "url": "https://www.esrf.fr/",
    "techniques": [
@@ -768,6 +1227,7 @@
    "region_label": "region",
    "country": "France",
    "continent": "Europe",
+   "group": null,
    "access": "both",
    "url": "https://www.igbmc.fr/en/plateformes-technologiques",
    "techniques": [
@@ -788,6 +1248,7 @@
    "region_label": "region",
    "country": "France",
    "continent": "Europe",
+   "group": null,
    "access": "both",
    "url": "https://science.institut-curie.org/platforms/genomics/",
    "techniques": [
@@ -808,6 +1269,7 @@
    "region_label": "region",
    "country": "France",
    "continent": "Europe",
+   "group": null,
    "access": "both",
    "url": "https://research.pasteur.fr/en/team/biomics/",
    "techniques": [
@@ -828,6 +1290,7 @@
    "region_label": "region",
    "country": "France",
    "continent": "Europe",
+   "group": null,
    "access": "both",
    "url": "https://research.pasteur.fr/en/center/c2rt/",
    "techniques": [
@@ -850,6 +1313,7 @@
    "region_label": "region",
    "country": "France",
    "continent": "Europe",
+   "group": null,
    "access": "both",
    "url": "https://www.ibs.fr/en/platforms/",
    "techniques": [
@@ -872,6 +1336,7 @@
    "region_label": "state",
    "country": "Germany",
    "continent": "Europe",
+   "group": null,
    "access": "academic",
    "url": "https://www.bihealth.org/en/research/core-facilities",
    "techniques": [
@@ -892,6 +1357,7 @@
    "region_label": "state",
    "country": "Germany",
    "continent": "Europe",
+   "group": null,
    "access": "open",
    "url": "https://photon-science.desy.de/facilities/petra_iii/",
    "techniques": [
@@ -912,6 +1378,7 @@
    "region_label": "state",
    "country": "Germany",
    "continent": "Europe",
+   "group": null,
    "access": "both",
    "url": "https://www.embl.org/groups/electron-microscopy/",
    "techniques": [
@@ -932,6 +1399,7 @@
    "region_label": "state",
    "country": "Germany",
    "continent": "Europe",
+   "group": null,
    "access": "both",
    "url": "https://www.embl.org/groups/genomics/",
    "techniques": [
@@ -952,6 +1420,7 @@
    "region_label": "state",
    "country": "Germany",
    "continent": "Europe",
+   "group": null,
    "access": "both",
    "url": "https://www.embl.org/groups/proteomics/",
    "techniques": [
@@ -972,6 +1441,7 @@
    "region_label": "state",
    "country": "Germany",
    "continent": "Europe",
+   "group": null,
    "access": "both",
    "url": "https://www.dkfz.de/en/genomics-and-proteomics/",
    "techniques": [
@@ -993,6 +1463,7 @@
    "region_label": "state",
    "country": "Germany",
    "continent": "Europe",
+   "group": null,
    "access": "both",
    "url": "https://www.helmholtz-munich.de/en/core-facility-genomics",
    "techniques": [
@@ -1013,6 +1484,7 @@
    "region_label": "state",
    "country": "Germany",
    "continent": "Europe",
+   "group": null,
    "access": "academic",
    "url": "https://www.bmc.med.lmu.de/en/core-facilities/",
    "techniques": [
@@ -1033,6 +1505,7 @@
    "region_label": "state",
    "country": "Germany",
    "continent": "Europe",
+   "group": null,
    "access": "academic",
    "url": "https://www.mdc-berlin.de/genomics",
    "techniques": [
@@ -1053,6 +1526,7 @@
    "region_label": "state",
    "country": "Germany",
    "continent": "Europe",
+   "group": null,
    "access": "academic",
    "url": "https://www.biochem.mpg.de/en/cryo-em",
    "techniques": [
@@ -1072,6 +1546,7 @@
    "region_label": "state",
    "country": "Germany",
    "continent": "Europe",
+   "group": null,
    "access": "both",
    "url": "https://www.mpi-cbg.de/services-facilities",
    "techniques": [
@@ -1084,6 +1559,28 @@
    "notes": "MPI-CBG's service network also covers light microscopy, EM and protein expression."
   },
   {
+   "id": "95e1e6",
+   "facility": "Biosciences Central Research Facility",
+   "institution": "Hong Kong University of Science and Technology",
+   "city": "Hong Kong",
+   "region": "New Territories",
+   "region_label": "district",
+   "country": "Hong Kong",
+   "continent": "Asia",
+   "group": null,
+   "access": "both",
+   "url": "https://biocrf.hkust.edu.hk/",
+   "techniques": [
+    "sequencing",
+    "flow cytometry",
+    "light microscopy",
+    "mass spectrometry",
+    "proteomics",
+    "imaging"
+   ],
+   "notes": "BioCRF is openly catalogued and takes users from outside HKUST."
+  },
+  {
    "id": "77ae19",
    "facility": "Centre for PanorOmic Sciences",
    "institution": "University of Hong Kong",
@@ -1092,6 +1589,7 @@
    "region_label": "district",
    "country": "Hong Kong",
    "continent": "Asia",
+   "group": null,
    "access": "both",
    "url": "https://www.med.hku.hk/en/research/core-facilities",
    "techniques": [
@@ -1105,6 +1603,28 @@
    "notes": "CPOS combines genomics, proteomics, imaging and flow cytometry in one centre."
   },
   {
+   "id": "0feb39",
+   "facility": "CSIR-CCMB core facilities",
+   "institution": "CSIR-Centre for Cellular and Molecular Biology",
+   "city": "Hyderabad",
+   "region": "Telangana",
+   "region_label": "state",
+   "country": "India",
+   "continent": "Asia",
+   "group": null,
+   "access": "both",
+   "url": "https://www.ccmb.res.in/",
+   "techniques": [
+    "sequencing",
+    "imaging",
+    "electron microscopy",
+    "mass spectrometry",
+    "animal models",
+    "bioinformatics"
+   ],
+   "notes": "Long-established CSIR institute with sequencing, imaging and animal facilities."
+  },
+  {
    "id": "b04460",
    "facility": "CSIR-IGIB Genomics Facility",
    "institution": "CSIR-Institute of Genomics and Integrative Biology",
@@ -1113,6 +1633,7 @@
    "region_label": "state",
    "country": "India",
    "continent": "Asia",
+   "group": null,
    "access": "both",
    "url": "https://www.igib.res.in/",
    "techniques": [
@@ -1125,6 +1646,48 @@
    "notes": "National genomics institute with sequencing and diagnostics services."
   },
   {
+   "id": "2a3180",
+   "facility": "Sophisticated Analytical Instrument Facility",
+   "institution": "IIT Bombay",
+   "city": "Mumbai",
+   "region": "Maharashtra",
+   "region_label": "state",
+   "country": "India",
+   "continent": "Asia",
+   "group": null,
+   "access": "both",
+   "url": "https://www.iitb.ac.in/saif/",
+   "techniques": [
+    "NMR",
+    "mass spectrometry",
+    "electron microscopy",
+    "X-ray crystallography",
+    "imaging"
+   ],
+   "notes": "One of a national SAIF network of open analytical instrumentation centres."
+  },
+  {
+   "id": "d27ab4",
+   "facility": "Advanced Facility for Microscopy and Microanalysis",
+   "institution": "Indian Institute of Science",
+   "city": "Bangalore",
+   "region": "Karnataka",
+   "region_label": "state",
+   "country": "India",
+   "continent": "Asia",
+   "group": null,
+   "access": "both",
+   "url": "https://cense.iisc.ac.in/",
+   "techniques": [
+    "electron microscopy",
+    "imaging",
+    "nanofabrication",
+    "materials characterisation",
+    "X-ray tomography"
+   ],
+   "notes": "AFMM serves IISc and external users across southern India."
+  },
+  {
    "id": "825e7b",
    "facility": "Central Imaging and Flow Facility",
    "institution": "National Centre for Biological Sciences",
@@ -1133,6 +1696,7 @@
    "region_label": "state",
    "country": "India",
    "continent": "Asia",
+   "group": null,
    "access": "both",
    "url": "https://www.ncbs.res.in/facilities",
    "techniques": [
@@ -1146,6 +1710,72 @@
    "notes": "NCBS/inStem shared facilities, open to users across India."
   },
   {
+   "id": "df05d0",
+   "facility": "Advanced Technology Platform Centre",
+   "institution": "Regional Centre for Biotechnology",
+   "city": "Faridabad",
+   "region": "Haryana",
+   "region_label": "state",
+   "country": "India",
+   "continent": "Asia",
+   "group": null,
+   "access": "both",
+   "url": "https://www.rcb.res.in/atpc",
+   "techniques": [
+    "cryo-EM",
+    "mass spectrometry",
+    "proteomics",
+    "X-ray crystallography",
+    "imaging",
+    "biophysics",
+    "structural biology"
+   ],
+   "notes": "National platform centre; the main open cryo-EM and proteomics resource in India."
+  },
+  {
+   "id": "f5e664",
+   "facility": "Syngene International",
+   "institution": "Syngene International",
+   "city": "Bangalore",
+   "region": "Karnataka",
+   "region_label": "state",
+   "country": "India",
+   "continent": "Asia",
+   "group": null,
+   "access": "commercial",
+   "url": "https://www.syngeneintl.com/",
+   "techniques": [
+    "medicinal chemistry",
+    "DMPK",
+    "high-throughput screening",
+    "protein production",
+    "drug discovery",
+    "antibody discovery",
+    "GMP cell manufacturing"
+   ],
+   "notes": "Large integrated discovery and development CRO; full preclinical package."
+  },
+  {
+   "id": "e931cb",
+   "facility": "National Facility for High Field NMR",
+   "institution": "Tata Institute of Fundamental Research",
+   "city": "Mumbai",
+   "region": "Maharashtra",
+   "region_label": "state",
+   "country": "India",
+   "continent": "Asia",
+   "group": null,
+   "access": "open",
+   "url": "https://www.tifr.res.in/~nmrfacility/",
+   "techniques": [
+    "NMR",
+    "structural biology",
+    "biophysics",
+    "metabolomics"
+   ],
+   "notes": "National NMR facility; time allocated to users across India by application."
+  },
+  {
    "id": "a493f8",
    "facility": "Conway Institute Core Technologies",
    "institution": "University College Dublin",
@@ -1154,6 +1784,7 @@
    "region_label": "county",
    "country": "Ireland",
    "continent": "Europe",
+   "group": null,
    "access": "both",
    "url": "https://www.ucd.ie/conway/corefacilities/",
    "techniques": [
@@ -1175,6 +1806,7 @@
    "region_label": "district",
    "country": "Israel",
    "continent": "Asia",
+   "group": "Middle East",
    "access": "academic",
    "url": "https://en.genomics.huji.ac.il/",
    "techniques": [
@@ -1194,6 +1826,7 @@
    "region_label": "district",
    "country": "Israel",
    "continent": "Asia",
+   "group": "Middle East",
    "access": "both",
    "url": "https://tgc.net.technion.ac.il/",
    "techniques": [
@@ -1213,6 +1846,7 @@
    "region_label": "district",
    "country": "Israel",
    "continent": "Asia",
+   "group": "Middle East",
    "access": "both",
    "url": "https://www.weizmann.ac.il/INCPM/",
    "techniques": [
@@ -1235,6 +1869,7 @@
    "region_label": "district",
    "country": "Israel",
    "continent": "Asia",
+   "group": "Middle East",
    "access": "academic",
    "url": "https://www.weizmann.ac.il/Biological_Services/",
    "techniques": [
@@ -1256,6 +1891,7 @@
    "region_label": "region",
    "country": "Italy",
    "continent": "Europe",
+   "group": null,
    "access": "open",
    "url": "https://www.elettra.eu/",
    "techniques": [
@@ -1276,6 +1912,7 @@
    "region_label": "region",
    "country": "Italy",
    "continent": "Europe",
+   "group": null,
    "access": "both",
    "url": "https://humantechnopole.it/en/facilities/",
    "techniques": [
@@ -1289,6 +1926,28 @@
    "notes": "New national research institute; facilities open to Italian and international users by call."
   },
   {
+   "id": "13becb",
+   "facility": "Global Facility Center",
+   "institution": "Hokkaido University",
+   "city": "Sapporo",
+   "region": "Hokkaido",
+   "region_label": "prefecture",
+   "country": "Japan",
+   "continent": "Asia",
+   "group": null,
+   "access": "both",
+   "url": "https://www.gfc.hokudai.ac.jp/en/",
+   "techniques": [
+    "NMR",
+    "mass spectrometry",
+    "electron microscopy",
+    "imaging",
+    "flow cytometry",
+    "X-ray crystallography"
+   ],
+   "notes": "Consolidated open-access instrumentation, deliberately marketed to outside users."
+  },
+  {
    "id": "05985d",
    "facility": "Human Genome Center",
    "institution": "Institute of Medical Science, University of Tokyo",
@@ -1297,6 +1956,7 @@
    "region_label": "prefecture",
    "country": "Japan",
    "continent": "Asia",
+   "group": null,
    "access": "academic",
    "url": "https://www.hgc.jp/english/",
    "techniques": [
@@ -1309,6 +1969,69 @@
    "notes": "Sequencing plus the SHIROKANE supercomputer for genome analysis."
   },
   {
+   "id": "797e51",
+   "facility": "Open Facility Center",
+   "institution": "Institute of Science Tokyo",
+   "city": "Tokyo",
+   "region": "Tokyo",
+   "region_label": "prefecture",
+   "country": "Japan",
+   "continent": "Asia",
+   "group": null,
+   "access": "both",
+   "url": "https://www.isct.ac.jp/en",
+   "techniques": [
+    "NMR",
+    "mass spectrometry",
+    "electron microscopy",
+    "nanofabrication",
+    "imaging",
+    "X-ray crystallography"
+   ],
+   "notes": "Shared instrumentation across the former Tokyo Tech and Tokyo Medical and Dental campuses."
+  },
+  {
+   "id": "02a173",
+   "facility": "J-PARC Materials and Life Science Facility",
+   "institution": "J-PARC Center",
+   "city": "Tokai",
+   "region": "Ibaraki",
+   "region_label": "prefecture",
+   "country": "Japan",
+   "continent": "Asia",
+   "group": null,
+   "access": "open",
+   "url": "https://j-parc.jp/c/en/",
+   "techniques": [
+    "neutron scattering",
+    "SAXS",
+    "structural biology",
+    "materials characterisation"
+   ],
+   "notes": "Neutron and muon beamlines; deuterated-protein work by peer-reviewed proposal."
+  },
+  {
+   "id": "005a79",
+   "facility": "Kazusa DNA Research Institute",
+   "institution": "Kazusa DNA Research Institute",
+   "city": "Kisarazu",
+   "region": "Chiba",
+   "region_label": "prefecture",
+   "country": "Japan",
+   "continent": "Asia",
+   "group": null,
+   "access": "both",
+   "url": "https://www.kazusa.or.jp/e/",
+   "techniques": [
+    "sequencing",
+    "long-read sequencing",
+    "genome assembly",
+    "bioinformatics",
+    "metagenomics"
+   ],
+   "notes": "Plant and microbial genome specialists; runs a clone resource distribution service."
+  },
+  {
    "id": "91bb01",
    "facility": "CiRA Foundation",
    "institution": "Kyoto University",
@@ -1317,6 +2040,7 @@
    "region_label": "prefecture",
    "country": "Japan",
    "continent": "Asia",
+   "group": null,
    "access": "both",
    "url": "https://www.cira-foundation.or.jp/e/",
    "techniques": [
@@ -1329,6 +2053,27 @@
    "notes": "Clinical-grade iPS cell stocks and contract iPSC manufacturing."
   },
   {
+   "id": "d5f1e0",
+   "facility": "National Institute of Genetics core facilities",
+   "institution": "National Institute of Genetics",
+   "city": "Mishima",
+   "region": "Shizuoka",
+   "region_label": "prefecture",
+   "country": "Japan",
+   "continent": "Asia",
+   "group": null,
+   "access": "academic",
+   "url": "https://www.nig.ac.jp/nig/research/collaboration-research",
+   "techniques": [
+    "sequencing",
+    "long-read sequencing",
+    "bioinformatics",
+    "animal models",
+    "genome assembly"
+   ],
+   "notes": "Also runs the DDBJ sequence archive and a joint-use research programme."
+  },
+  {
    "id": "69a91f",
    "facility": "OIST Research Support Divisions",
    "institution": "Okinawa Institute of Science and Technology",
@@ -1337,6 +2082,7 @@
    "region_label": "prefecture",
    "country": "Japan",
    "continent": "Asia",
+   "group": null,
    "access": "both",
    "url": "https://www.oist.jp/research/research-support",
    "techniques": [
@@ -1359,6 +2105,7 @@
    "region_label": "prefecture",
    "country": "Japan",
    "continent": "Asia",
+   "group": null,
    "access": "both",
    "url": "https://www.protein.osaka-u.ac.jp/en/",
    "techniques": [
@@ -1372,6 +2119,71 @@
    "notes": "National joint-usage structural biology centre with high-end cryo-EM."
   },
   {
+   "id": "2a0a03",
+   "facility": "Research Center for Ultra-High Voltage Electron Microscopy",
+   "institution": "Osaka University",
+   "city": "Suita",
+   "region": "Osaka",
+   "region_label": "prefecture",
+   "country": "Japan",
+   "continent": "Asia",
+   "group": null,
+   "access": "both",
+   "url": "https://www.uhvem.osaka-u.ac.jp/en/",
+   "techniques": [
+    "electron microscopy",
+    "cryo-ET",
+    "imaging",
+    "materials characterisation"
+   ],
+   "notes": "Ultra-high-voltage TEM for thick specimens; a national joint-usage facility."
+  },
+  {
+   "id": "855bd4",
+   "facility": "BioResource Research Center",
+   "institution": "RIKEN",
+   "city": "Tsukuba",
+   "region": "Ibaraki",
+   "region_label": "prefecture",
+   "country": "Japan",
+   "continent": "Asia",
+   "group": null,
+   "access": "both",
+   "url": "https://web.brc.riken.jp/en/",
+   "techniques": [
+    "cell line engineering",
+    "transgenic mouse models",
+    "biobanking",
+    "iPSC",
+    "animal models",
+    "genome editing"
+   ],
+   "notes": "National bioresource bank: mouse strains, cell lines, DNA and microbes shipped worldwide."
+  },
+  {
+   "id": "ccf115",
+   "facility": "RIKEN Center for Biosystems Dynamics Research",
+   "institution": "RIKEN",
+   "city": "Kobe",
+   "region": "Hyogo",
+   "region_label": "prefecture",
+   "country": "Japan",
+   "continent": "Asia",
+   "group": null,
+   "access": "academic",
+   "url": "https://www.bdr.riken.jp/en/",
+   "techniques": [
+    "light microscopy",
+    "light-sheet microscopy",
+    "imaging",
+    "NMR",
+    "organoids",
+    "iPSC",
+    "electron microscopy"
+   ],
+   "notes": "Live imaging and biosystems dynamics; several platforms accept external collaboration."
+  },
+  {
    "id": "8234a9",
    "facility": "Genomics Platform",
    "institution": "RIKEN Center for Integrative Medical Sciences",
@@ -1380,6 +2192,7 @@
    "region_label": "prefecture",
    "country": "Japan",
    "continent": "Asia",
+   "group": null,
    "access": "academic",
    "url": "https://www.riken.jp/en/research/labs/ims/",
    "techniques": [
@@ -1392,6 +2205,26 @@
    "notes": "Home of the FANTOM consortium and CAGE technology; collaboration-led access."
   },
   {
+   "id": "05b2d9",
+   "facility": "SACLA",
+   "institution": "RIKEN SPring-8 Center",
+   "city": "Sayo",
+   "region": "Hyogo",
+   "region_label": "prefecture",
+   "country": "Japan",
+   "continent": "Asia",
+   "group": null,
+   "access": "open",
+   "url": "http://xfel.riken.jp/eng/",
+   "techniques": [
+    "XFEL",
+    "serial femtosecond crystallography",
+    "structural biology",
+    "ultrafast spectroscopy"
+   ],
+   "notes": "Compact X-ray free-electron laser next to SPring-8; beamtime by proposal."
+  },
+  {
    "id": "8a55bb",
    "facility": "SPring-8",
    "institution": "RIKEN SPring-8 Center",
@@ -1400,6 +2233,7 @@
    "region_label": "prefecture",
    "country": "Japan",
    "continent": "Asia",
+   "group": null,
    "access": "open",
    "url": "http://www.spring8.or.jp/en/",
    "techniques": [
@@ -1412,6 +2246,27 @@
    "notes": "One of the largest synchrotrons in the world; co-located with the SACLA XFEL."
   },
   {
+   "id": "f8274d",
+   "facility": "SESAME",
+   "institution": "SESAME",
+   "city": "Allan",
+   "region": "Balqa",
+   "region_label": "governorate",
+   "country": "Jordan",
+   "continent": "Asia",
+   "group": "Middle East",
+   "access": "open",
+   "url": "https://www.sesame.org.jo/",
+   "techniques": [
+    "synchrotron",
+    "macromolecular crystallography",
+    "X-ray tomography",
+    "spectroscopy",
+    "imaging"
+   ],
+   "notes": "Intergovernmental synchrotron for the Middle East; free beamtime by peer review."
+  },
+  {
    "id": "c05277",
    "facility": "Sequencing and Genomics Platform",
    "institution": "International Livestock Research Institute",
@@ -1420,6 +2275,7 @@
    "region_label": "county",
    "country": "Kenya",
    "continent": "Africa",
+   "group": null,
    "access": "both",
    "url": "https://www.ilri.org/research/facilities",
    "techniques": [
@@ -1432,6 +2288,114 @@
    "notes": "Azrieli/BecA-ILRI hub platforms serving agricultural and health research across Africa."
   },
   {
+   "id": "b5eb68",
+   "facility": "Malaysia Genome and Vaccine Institute",
+   "institution": "NIBM Malaysia",
+   "city": "Kajang",
+   "region": "Selangor",
+   "region_label": "state",
+   "country": "Malaysia",
+   "continent": "Asia",
+   "group": null,
+   "access": "both",
+   "url": "https://mgvi.nibm.my/",
+   "techniques": [
+    "sequencing",
+    "whole-genome sequencing",
+    "bioinformatics",
+    "metagenomics",
+    "biobanking"
+   ],
+   "notes": "National genomics institute providing sequencing services across Malaysia."
+  },
+  {
+   "id": "a5bb24",
+   "facility": "LANGEBIO",
+   "institution": "CINVESTAV",
+   "city": "Irapuato",
+   "region": "Guanajuato",
+   "region_label": "state",
+   "country": "Mexico",
+   "continent": "North America",
+   "group": "Latin America",
+   "access": "both",
+   "url": "https://www.langebio.cinvestav.mx/",
+   "techniques": [
+    "sequencing",
+    "whole-genome sequencing",
+    "bulk RNA-seq",
+    "metagenomics",
+    "bioinformatics",
+    "genome assembly"
+   ],
+   "notes": "National genomics laboratory for biodiversity; a main sequencing route in Mexico."
+  },
+  {
+   "id": "3f2ce8",
+   "facility": "Instituto Nacional de Medicina Genomica",
+   "institution": "INMEGEN",
+   "city": "Mexico City",
+   "region": "Mexico City",
+   "region_label": "state",
+   "country": "Mexico",
+   "continent": "North America",
+   "group": "Latin America",
+   "access": "both",
+   "url": "https://www.inmegen.gob.mx/",
+   "techniques": [
+    "sequencing",
+    "whole-genome sequencing",
+    "genotyping",
+    "single-cell RNA-seq",
+    "bioinformatics",
+    "biobanking"
+   ],
+   "notes": "Mexico's national genomic medicine institute; runs core sequencing services."
+  },
+  {
+   "id": "8a1cc5",
+   "facility": "Instituto de Biotecnologia core units",
+   "institution": "Universidad Nacional Autonoma de Mexico",
+   "city": "Cuernavaca",
+   "region": "Morelos",
+   "region_label": "state",
+   "country": "Mexico",
+   "continent": "North America",
+   "group": "Latin America",
+   "access": "both",
+   "url": "https://www.ibt.unam.mx/",
+   "techniques": [
+    "protein production",
+    "mass spectrometry",
+    "proteomics",
+    "sequencing",
+    "bioinformatics",
+    "X-ray crystallography"
+   ],
+   "notes": "UNAM's biotechnology institute; well-equipped protein and analytical units."
+  },
+  {
+   "id": "c20570",
+   "facility": "Laboratorio Nacional de Microscopia Avanzada",
+   "institution": "Universidad Nacional Autonoma de Mexico",
+   "city": "Mexico City",
+   "region": "Mexico City",
+   "region_label": "state",
+   "country": "Mexico",
+   "continent": "North America",
+   "group": "Latin America",
+   "access": "both",
+   "url": "https://www.lnma.unam.mx/",
+   "techniques": [
+    "light microscopy",
+    "super-resolution microscopy",
+    "light-sheet microscopy",
+    "imaging",
+    "electron microscopy"
+   ],
+   "notes": "National advanced microscopy laboratory, open to users across Mexico."
+  },
+  {
    "id": "2d20c3",
    "facility": "Center for Biomics",
    "institution": "Erasmus MC",
@@ -1440,6 +2404,7 @@
    "region_label": "province",
    "country": "Netherlands",
    "continent": "Europe",
+   "group": null,
    "access": "academic",
    "url": "https://www.erasmusmc.nl/en/research/core-facilities",
    "techniques": [
@@ -1460,6 +2425,7 @@
    "region_label": "province",
    "country": "Netherlands",
    "continent": "Europe",
+   "group": null,
    "access": "both",
    "url": "https://www.necen.nl/",
    "techniques": [
@@ -1479,6 +2445,7 @@
    "region_label": "province",
    "country": "Netherlands",
    "continent": "Europe",
+   "group": null,
    "access": "academic",
    "url": "https://www.nki.nl/research/research-infrastructure/core-facilities/",
    "techniques": [
@@ -1499,6 +2466,7 @@
    "region_label": "province",
    "country": "Netherlands",
    "continent": "Europe",
+   "group": null,
    "access": "both",
    "url": "https://www.uu.nl/en/research/biomolecular-mass-spectrometry-and-proteomics",
    "techniques": [
@@ -1519,6 +2487,7 @@
    "region_label": "region",
    "country": "New Zealand",
    "continent": "Oceania",
+   "group": null,
    "access": "both",
    "url": "https://www.otago.ac.nz/genomics/",
    "techniques": [
@@ -1539,6 +2508,7 @@
    "region_label": "county",
    "country": "Norway",
    "continent": "Europe",
+   "group": null,
    "access": "both",
    "url": "https://www.sequencing.uio.no/",
    "techniques": [
@@ -1551,6 +2521,27 @@
    "notes": "Norway's national sequencing infrastructure; Illumina and Nanopore/PacBio platforms."
   },
   {
+   "id": "0fe0bd",
+   "facility": "Laboratorios de Investigacion y Desarrollo",
+   "institution": "Universidad Peruana Cayetano Heredia",
+   "city": "Lima",
+   "region": "Lima",
+   "region_label": "region",
+   "country": "Peru",
+   "continent": "South America",
+   "group": "Latin America",
+   "access": "both",
+   "url": "https://www.cayetano.edu.pe/",
+   "techniques": [
+    "sequencing",
+    "metagenomics",
+    "genotyping",
+    "bioinformatics",
+    "biobanking"
+   ],
+   "notes": "LID; genomics and infectious-disease research capacity serving the Andean region."
+  },
+  {
    "id": "8bab4d",
    "facility": "Champalimaud Scientific Platforms",
    "institution": "Champalimaud Foundation",
@@ -1559,6 +2550,7 @@
    "region_label": "region",
    "country": "Portugal",
    "continent": "Europe",
+   "group": null,
    "access": "both",
    "url": "https://research.fchampalimaud.org/facilities/",
    "techniques": [
@@ -1580,6 +2572,7 @@
    "region_label": "region",
    "country": "Portugal",
    "continent": "Europe",
+   "group": null,
    "access": "both",
    "url": "https://gulbenkian.pt/ciencia/facilities/",
    "techniques": [
@@ -1593,6 +2586,28 @@
    "notes": "Compact but complete core network serving Portugal's life-science community."
   },
   {
+   "id": "5cb993",
+   "facility": "Sidra Medicine research facilities",
+   "institution": "Sidra Medicine",
+   "city": "Doha",
+   "region": "Doha",
+   "region_label": "municipality",
+   "country": "Qatar",
+   "continent": "Asia",
+   "group": "Middle East",
+   "access": "both",
+   "url": "https://www.sidra.org/research",
+   "techniques": [
+    "whole-genome sequencing",
+    "sequencing",
+    "single-cell RNA-seq",
+    "bioinformatics",
+    "biobanking",
+    "flow cytometry"
+   ],
+   "notes": "Clinical genomics and research cores; works closely with Qatar Biobank."
+  },
+  {
    "id": "fe1d93",
    "facility": "KAUST Core Labs",
    "institution": "King Abdullah University of Science and Technology",
@@ -1601,6 +2616,7 @@
    "region_label": "province",
    "country": "Saudi Arabia",
    "continent": "Asia",
+   "group": "Middle East",
    "access": "both",
    "url": "https://corelabs.kaust.edu.sa/",
    "techniques": [
@@ -1616,6 +2632,27 @@
    "notes": "Unusually well-equipped and openly documented core labs; external users accepted."
   },
   {
+   "id": "3d7012",
+   "facility": "Bioprocessing Technology Institute",
+   "institution": "A*STAR",
+   "city": "Singapore",
+   "region": "Central",
+   "region_label": "region",
+   "country": "Singapore",
+   "continent": "Asia",
+   "group": null,
+   "access": "both",
+   "url": "https://www.a-star.edu.sg/bti",
+   "techniques": [
+    "GMP cell manufacturing",
+    "protein production",
+    "bioprocess development",
+    "cell line engineering",
+    "analytics"
+   ],
+   "notes": "Process development and pilot-scale manufacture for biologics and cell therapies."
+  },
+  {
    "id": "a0e4c1",
    "facility": "Genome Institute of Singapore",
    "institution": "A*STAR",
@@ -1624,6 +2661,7 @@
    "region_label": "region",
    "country": "Singapore",
    "continent": "Asia",
+   "group": null,
    "access": "both",
    "url": "https://www.a-star.edu.sg/gis",
    "techniques": [
@@ -1644,6 +2682,7 @@
    "region_label": "region",
    "country": "Singapore",
    "continent": "Asia",
+   "group": null,
    "access": "both",
    "url": "https://www.a-star.edu.sg/imcb",
    "techniques": [
@@ -1657,6 +2696,28 @@
    "notes": "Protein production, structural biology and antibody engineering platforms."
   },
   {
+   "id": "cce596",
+   "facility": "NTU Institute of Structural Biology",
+   "institution": "Nanyang Technological University",
+   "city": "Singapore",
+   "region": "Central",
+   "region_label": "region",
+   "country": "Singapore",
+   "continent": "Asia",
+   "group": null,
+   "access": "both",
+   "url": "https://www.ntu.edu.sg/nisb",
+   "techniques": [
+    "cryo-EM",
+    "NMR",
+    "X-ray crystallography",
+    "biophysics",
+    "protein production",
+    "structural biology"
+   ],
+   "notes": "Structural biology instrumentation including cryo-EM and high-field NMR."
+  },
+  {
    "id": "052cd2",
    "facility": "Centre for Proteomic and Genomic Research",
    "institution": "CPGR",
@@ -1665,6 +2726,7 @@
    "region_label": "province",
    "country": "South Africa",
    "continent": "Africa",
+   "group": null,
    "access": "commercial",
    "url": "https://cpgr.org.za/",
    "techniques": [
@@ -1678,6 +2740,28 @@
    "notes": "Not-for-profit genomics service company serving African research and clinical projects."
   },
   {
+   "id": "f6a44d",
+   "facility": "Research Solution Center",
+   "institution": "Institute for Basic Science",
+   "city": "Daejeon",
+   "region": "Daejeon",
+   "region_label": "province",
+   "country": "South Korea",
+   "continent": "Asia",
+   "group": null,
+   "access": "academic",
+   "url": "https://www.ibs.re.kr/eng.do",
+   "techniques": [
+    "cryo-EM",
+    "electron microscopy",
+    "mass spectrometry",
+    "imaging",
+    "NMR",
+    "structural biology"
+   ],
+   "notes": "Shared high-end instrumentation for IBS centres and collaborating groups."
+  },
+  {
    "id": "b7afcd",
    "facility": "Korea Basic Science Institute",
    "institution": "KBSI",
@@ -1686,6 +2770,7 @@
    "region_label": "province",
    "country": "South Korea",
    "continent": "Asia",
+   "group": null,
    "access": "both",
    "url": "https://www.kbsi.re.kr/eng/",
    "techniques": [
@@ -1699,6 +2784,28 @@
    "notes": "National analytical instrumentation institute; open to Korean and international users."
   },
   {
+   "id": "7b65d0",
+   "facility": "Korea Research Institute of Bioscience and Biotechnology",
+   "institution": "KRIBB",
+   "city": "Daejeon",
+   "region": "Daejeon",
+   "region_label": "province",
+   "country": "South Korea",
+   "continent": "Asia",
+   "group": null,
+   "access": "both",
+   "url": "https://www.kribb.re.kr/eng/",
+   "techniques": [
+    "sequencing",
+    "protein production",
+    "compound screening",
+    "animal models",
+    "biobanking",
+    "bioinformatics"
+   ],
+   "notes": "National biotech institute; runs bioresource banks and screening platforms."
+  },
+  {
    "id": "01138d",
    "facility": "Pohang Accelerator Laboratory",
    "institution": "POSTECH",
@@ -1707,6 +2814,7 @@
    "region_label": "province",
    "country": "South Korea",
    "continent": "Asia",
+   "group": null,
    "access": "open",
    "url": "https://pal.postech.ac.kr/paleng/",
    "techniques": [
@@ -1719,6 +2827,28 @@
    "notes": "Operates both a synchrotron and a hard X-ray free-electron laser."
   },
   {
+   "id": "e3c643",
+   "facility": "National Instrumentation Center for Environmental Management",
+   "institution": "Seoul National University",
+   "city": "Seoul",
+   "region": "Seoul",
+   "region_label": "province",
+   "country": "South Korea",
+   "continent": "Asia",
+   "group": null,
+   "access": "both",
+   "url": "https://nicem.snu.ac.kr/",
+   "techniques": [
+    "mass spectrometry",
+    "NMR",
+    "electron microscopy",
+    "imaging",
+    "sequencing",
+    "flow cytometry"
+   ],
+   "notes": "NICEM is SNU's open analytical centre, used well beyond the university."
+  },
+  {
    "id": "fcfe78",
    "facility": "ALBA Synchrotron",
    "institution": "ALBA",
@@ -1727,6 +2857,7 @@
    "region_label": "community",
    "country": "Spain",
    "continent": "Europe",
+   "group": null,
    "access": "open",
    "url": "https://www.albasynchrotron.es/",
    "techniques": [
@@ -1747,6 +2878,7 @@
    "region_label": "community",
    "country": "Spain",
    "continent": "Europe",
+   "group": null,
    "access": "both",
    "url": "https://www.cnag.eu/",
    "techniques": [
@@ -1768,6 +2900,7 @@
    "region_label": "community",
    "country": "Spain",
    "continent": "Europe",
+   "group": null,
    "access": "both",
    "url": "https://www.crg.eu/en/programmes-groups/genomics-unit",
    "techniques": [
@@ -1788,6 +2921,7 @@
    "region_label": "community",
    "country": "Spain",
    "continent": "Europe",
+   "group": null,
    "access": "both",
    "url": "https://www.cnio.es/en/research/support-units/",
    "techniques": [
@@ -1809,6 +2943,7 @@
    "region_label": "county",
    "country": "Sweden",
    "continent": "Europe",
+   "group": null,
    "access": "both",
    "url": "https://www.scilifelab.se/units/eukaryotic-single-cell-genomics/",
    "techniques": [
@@ -1828,6 +2963,7 @@
    "region_label": "county",
    "country": "Sweden",
    "continent": "Europe",
+   "group": null,
    "access": "open",
    "url": "https://www.maxiv.lu.se/",
    "techniques": [
@@ -1849,6 +2985,7 @@
    "region_label": "county",
    "country": "Sweden",
    "continent": "Europe",
+   "group": null,
    "access": "both",
    "url": "https://www.scilifelab.se/units/ngi/",
    "techniques": [
@@ -1870,6 +3007,7 @@
    "region_label": "canton",
    "country": "Switzerland",
    "continent": "Europe",
+   "group": null,
    "access": "academic",
    "url": "https://www.epfl.ch/research/facilities/gene-expression-core-facility/",
    "techniques": [
@@ -1889,6 +3027,7 @@
    "region_label": "canton",
    "country": "Switzerland",
    "continent": "Europe",
+   "group": null,
    "access": "both",
    "url": "https://www.epfl.ch/research/facilities/ptpsp/",
    "techniques": [
@@ -1910,6 +3049,7 @@
    "region_label": "canton",
    "country": "Switzerland",
    "continent": "Europe",
+   "group": null,
    "access": "both",
    "url": "https://scopem.ethz.ch/",
    "techniques": [
@@ -1931,6 +3071,7 @@
    "region_label": "canton",
    "country": "Switzerland",
    "continent": "Europe",
+   "group": null,
    "access": "both",
    "url": "https://fgcz.ch/",
    "techniques": [
@@ -1953,6 +3094,7 @@
    "region_label": "canton",
    "country": "Switzerland",
    "continent": "Europe",
+   "group": null,
    "access": "both",
    "url": "https://www.health2030genome.ch/",
    "techniques": [
@@ -1973,6 +3115,7 @@
    "region_label": "canton",
    "country": "Switzerland",
    "continent": "Europe",
+   "group": null,
    "access": "open",
    "url": "https://www.psi.ch/en/sls",
    "techniques": [
@@ -1994,6 +3137,7 @@
    "region_label": "canton",
    "country": "Switzerland",
    "continent": "Europe",
+   "group": null,
    "access": "academic",
    "url": "https://scicore.unibas.ch/",
    "techniques": [
@@ -2013,6 +3157,7 @@
    "region_label": "city",
    "country": "Taiwan",
    "continent": "Asia",
+   "group": null,
    "access": "both",
    "url": "https://www.sinica.edu.tw/en",
    "techniques": [
@@ -2027,6 +3172,93 @@
    "notes": "Large shared instrumentation network including a national cryo-EM centre."
   },
   {
+   "id": "a6bb96",
+   "facility": "National Synchrotron Radiation Research Center",
+   "institution": "NSRRC",
+   "city": "Hsinchu",
+   "region": "Hsinchu",
+   "region_label": "city",
+   "country": "Taiwan",
+   "continent": "Asia",
+   "group": null,
+   "access": "open",
+   "url": "https://www.nsrrc.org.tw/english/index.aspx",
+   "techniques": [
+    "synchrotron",
+    "macromolecular crystallography",
+    "X-ray crystallography",
+    "SAXS",
+    "X-ray tomography",
+    "spectroscopy"
+   ],
+   "notes": "Operates the Taiwan Photon Source; proposal-based and proprietary beamtime."
+  },
+  {
+   "id": "bf2632",
+   "facility": "BIOTEC core facilities",
+   "institution": "National Science and Technology Development Agency",
+   "city": "Pathum Thani",
+   "region": "Pathum Thani",
+   "region_label": "province",
+   "country": "Thailand",
+   "continent": "Asia",
+   "group": null,
+   "access": "both",
+   "url": "https://www.biotec.or.th/en/",
+   "techniques": [
+    "sequencing",
+    "metagenomics",
+    "protein production",
+    "bioinformatics",
+    "compound screening",
+    "imaging"
+   ],
+   "notes": "Thailand's national biotech centre; platforms serve academia and agri-industry."
+  },
+  {
+   "id": "2bf323",
+   "facility": "Synchrotron Light Research Institute",
+   "institution": "SLRI",
+   "city": "Nakhon Ratchasima",
+   "region": "Nakhon Ratchasima",
+   "region_label": "province",
+   "country": "Thailand",
+   "continent": "Asia",
+   "group": null,
+   "access": "open",
+   "url": "https://www.slri.or.th/en/",
+   "techniques": [
+    "synchrotron",
+    "macromolecular crystallography",
+    "X-ray tomography",
+    "spectroscopy",
+    "imaging"
+   ],
+   "notes": "Southeast Asia's synchrotron; free proposal-based access plus paid industrial service."
+  },
+  {
+   "id": "8ccbdc",
+   "facility": "Khalifa University core labs",
+   "institution": "Khalifa University",
+   "city": "Abu Dhabi",
+   "region": "Abu Dhabi",
+   "region_label": "emirate",
+   "country": "United Arab Emirates",
+   "continent": "Asia",
+   "group": "Middle East",
+   "access": "both",
+   "url": "https://www.ku.ac.ae/research/core-labs",
+   "techniques": [
+    "sequencing",
+    "mass spectrometry",
+    "imaging",
+    "electron microscopy",
+    "nanofabrication",
+    "bioinformatics"
+   ],
+   "notes": "Shared analytical and fabrication instrumentation open to regional users."
+  },
+  {
    "id": "01e798",
    "facility": "Babraham Institute Facilities",
    "institution": "Babraham Institute",
@@ -2035,6 +3267,7 @@
    "region_label": "nation",
    "country": "United Kingdom",
    "continent": "Europe",
+   "group": null,
    "access": "both",
    "url": "https://www.babraham.ac.uk/science-services",
    "techniques": [
@@ -2057,6 +3290,7 @@
    "region_label": "nation",
    "country": "United Kingdom",
    "continent": "Europe",
+   "group": null,
    "access": "open",
    "url": "https://www.diamond.ac.uk/",
    "techniques": [
@@ -2078,6 +3312,7 @@
    "region_label": "nation",
    "country": "United Kingdom",
    "continent": "Europe",
+   "group": null,
    "access": "open",
    "url": "https://www.diamond.ac.uk/Instruments/Biological-Cryo-Imaging/eBIC.html",
    "techniques": [
@@ -2098,6 +3333,7 @@
    "region_label": "nation",
    "country": "United Kingdom",
    "continent": "Europe",
+   "group": null,
    "access": "both",
    "url": "https://www.earlham.ac.uk/genomics-pipelines",
    "techniques": [
@@ -2119,6 +3355,7 @@
    "region_label": "nation",
    "country": "United Kingdom",
    "continent": "Europe",
+   "group": null,
    "access": "both",
    "url": "https://www.kcl.ac.uk/research/facilities/genomics-facility",
    "techniques": [
@@ -2138,6 +3375,7 @@
    "region_label": "nation",
    "country": "United Kingdom",
    "continent": "Europe",
+   "group": null,
    "access": "academic",
    "url": "https://www2.mrc-lmb.cam.ac.uk/research/scientific-facilities/electron-microscopy/",
    "techniques": [
@@ -2157,6 +3395,7 @@
    "region_label": "nation",
    "country": "United Kingdom",
    "continent": "Europe",
+   "group": null,
    "access": "both",
    "url": "https://www.rfi.ac.uk/",
    "techniques": [
@@ -2178,6 +3417,7 @@
    "region_label": "nation",
    "country": "United Kingdom",
    "continent": "Europe",
+   "group": null,
    "access": "academic",
    "url": "https://www.crick.ac.uk/research/platforms-and-facilities",
    "techniques": [
@@ -2198,6 +3438,7 @@
    "region_label": "nation",
    "country": "United Kingdom",
    "continent": "Europe",
+   "group": null,
    "access": "academic",
    "url": "https://www.crick.ac.uk/research/platforms-and-facilities/structural-biology",
    "techniques": [
@@ -2219,6 +3460,7 @@
    "region_label": "nation",
    "country": "United Kingdom",
    "continent": "Europe",
+   "group": null,
    "access": "both",
    "url": "https://www.ucl.ac.uk/child-health/research/genetics-and-genomic-medicine-department/ucl-genomics",
    "techniques": [
@@ -2238,6 +3480,7 @@
    "region_label": "nation",
    "country": "United Kingdom",
    "continent": "Europe",
+   "group": null,
    "access": "both",
    "url": "https://caic.bio.cam.ac.uk/",
    "techniques": [
@@ -2258,6 +3501,7 @@
    "region_label": "nation",
    "country": "United Kingdom",
    "continent": "Europe",
+   "group": null,
    "access": "academic",
    "url": "https://www.cruk.cam.ac.uk/core-facilities",
    "techniques": [
@@ -2278,6 +3522,7 @@
    "region_label": "nation",
    "country": "United Kingdom",
    "continent": "Europe",
+   "group": null,
    "access": "both",
    "url": "https://drugdiscovery.dundee.ac.uk/",
    "techniques": [
@@ -2299,6 +3544,7 @@
    "region_label": "nation",
    "country": "United Kingdom",
    "continent": "Europe",
+   "group": null,
    "access": "both",
    "url": "https://genomics.ed.ac.uk/",
    "techniques": [
@@ -2320,6 +3566,7 @@
    "region_label": "nation",
    "country": "United Kingdom",
    "continent": "Europe",
+   "group": null,
    "access": "both",
    "url": "https://www.bmsf.manchester.ac.uk/",
    "techniques": [
@@ -2339,6 +3586,7 @@
    "region_label": "nation",
    "country": "United Kingdom",
    "continent": "Europe",
+   "group": null,
    "access": "both",
    "url": "https://www.well.ox.ac.uk/ogc/",
    "techniques": [
@@ -2360,6 +3608,7 @@
    "region_label": "nation",
    "country": "United Kingdom",
    "continent": "Europe",
+   "group": null,
    "access": "both",
    "url": "https://www.sanger.ac.uk/collaboration/",
    "techniques": [
@@ -2381,6 +3630,7 @@
    "region_label": "state",
    "country": "United States",
    "continent": "North America",
+   "group": null,
    "access": "academic",
    "url": "https://www.einsteinmed.edu/research/shared-facilities/analytical-imaging/",
    "techniques": [
@@ -2401,6 +3651,7 @@
    "region_label": "state",
    "country": "United States",
    "continent": "North America",
+   "group": null,
    "access": "open",
    "url": "https://www.aps.anl.gov/",
    "techniques": [
@@ -2421,6 +3672,7 @@
    "region_label": "state",
    "country": "United States",
    "continent": "North America",
+   "group": null,
    "access": "both",
    "url": "https://www.hgsc.bcm.edu/",
    "techniques": [
@@ -2441,6 +3693,7 @@
    "region_label": "state",
    "country": "United States",
    "continent": "North America",
+   "group": null,
    "access": "both",
    "url": "https://www.broadinstitute.org/cdot",
    "techniques": [
@@ -2461,6 +3714,7 @@
    "region_label": "state",
    "country": "United States",
    "continent": "North America",
+   "group": null,
    "access": "both",
    "url": "https://www.broadinstitute.org/genetic-perturbation-platform",
    "techniques": [
@@ -2480,6 +3734,7 @@
    "region_label": "state",
    "country": "United States",
    "continent": "North America",
+   "group": null,
    "access": "both",
    "url": "https://www.broadinstitute.org/genomics",
    "techniques": [
@@ -2501,6 +3756,7 @@
    "region_label": "state",
    "country": "United States",
    "continent": "North America",
+   "group": null,
    "access": "open",
    "url": "https://www.bnl.gov/nsls2/",
    "techniques": [
@@ -2522,6 +3778,7 @@
    "region_label": "state",
    "country": "United States",
    "continent": "North America",
+   "group": null,
    "access": "academic",
    "url": "https://bioimaging.caltech.edu/",
    "techniques": [
@@ -2541,6 +3798,7 @@
    "region_label": "state",
    "country": "United States",
    "continent": "North America",
+   "group": null,
    "access": "academic",
    "url": "https://www.bbe.caltech.edu/research/research-facilities",
    "techniques": [
@@ -2560,6 +3818,7 @@
    "region_label": "state",
    "country": "United States",
    "continent": "North America",
+   "group": null,
    "access": "both",
    "url": "https://caglab.org/",
    "techniques": [
@@ -2580,6 +3839,7 @@
    "region_label": "state",
    "country": "United States",
    "continent": "North America",
+   "group": null,
    "access": "both",
    "url": "https://www.cshl.edu/research/shared-resources/",
    "techniques": [
@@ -2600,6 +3860,7 @@
    "region_label": "state",
    "country": "United States",
    "continent": "North America",
+   "group": null,
    "access": "both",
    "url": "https://systemsbiology.columbia.edu/genome-center-sequencing-core",
    "techniques": [
@@ -2620,6 +3881,7 @@
    "region_label": "state",
    "country": "United States",
    "continent": "North America",
+   "group": null,
    "access": "both",
    "url": "https://www.biotech.cornell.edu/core-facilities",
    "techniques": [
@@ -2642,6 +3904,7 @@
    "region_label": "state",
    "country": "United States",
    "continent": "North America",
+   "group": null,
    "access": "academic",
    "url": "https://mbcf.dfci.harvard.edu/",
    "techniques": [
@@ -2662,6 +3925,7 @@
    "region_label": "state",
    "country": "United States",
    "continent": "North America",
+   "group": null,
    "access": "both",
    "url": "https://genome.duke.edu/cores/sequencing-and-genomic-technologies",
    "techniques": [
@@ -2682,6 +3946,7 @@
    "region_label": "state",
    "country": "United States",
    "continent": "North America",
+   "group": null,
    "access": "academic",
    "url": "https://med.emory.edu/departments/human-genetics/research/core-facilities/integrated-genomics.html",
    "techniques": [
@@ -2701,6 +3966,7 @@
    "region_label": "state",
    "country": "United States",
    "continent": "North America",
+   "group": null,
    "access": "open",
    "url": "https://nationalmaglab.org/",
    "techniques": [
@@ -2721,6 +3987,7 @@
    "region_label": "state",
    "country": "United States",
    "continent": "North America",
+   "group": null,
    "access": "academic",
    "url": "https://sharedresources.fredhutch.org/core-facilities/genomics-bioinformatics",
    "techniques": [
@@ -2741,6 +4008,7 @@
    "region_label": "state",
    "country": "United States",
    "continent": "North America",
+   "group": null,
    "access": "academic",
    "url": "https://nic.med.harvard.edu/",
    "techniques": [
@@ -2760,6 +4028,7 @@
    "region_label": "state",
    "country": "United States",
    "continent": "North America",
+   "group": null,
    "access": "academic",
    "url": "https://singlecellcore.hms.harvard.edu/",
    "techniques": [
@@ -2779,6 +4048,7 @@
    "region_label": "state",
    "country": "United States",
    "continent": "North America",
+   "group": null,
    "access": "both",
    "url": "https://taplin.hms.harvard.edu/",
    "techniques": [
@@ -2797,6 +4067,7 @@
    "region_label": "state",
    "country": "United States",
    "continent": "North America",
+   "group": null,
    "access": "academic",
    "url": "https://bauercore.fas.harvard.edu/",
    "techniques": [
@@ -2818,6 +4089,7 @@
    "region_label": "state",
    "country": "United States",
    "continent": "North America",
+   "group": null,
    "access": "both",
    "url": "https://cns1.rc.fas.harvard.edu/",
    "techniques": [
@@ -2838,6 +4110,7 @@
    "region_label": "state",
    "country": "United States",
    "continent": "North America",
+   "group": null,
    "access": "academic",
    "url": "https://icahn.mssm.edu/research/portal/resources/deans-cores/genomics",
    "techniques": [
@@ -2857,6 +4130,7 @@
    "region_label": "state",
    "country": "United States",
    "continent": "North America",
+   "group": null,
    "access": "both",
    "url": "https://grcf.jhmi.edu/",
    "techniques": [
@@ -2878,6 +4152,7 @@
    "region_label": "state",
    "country": "United States",
    "continent": "North America",
+   "group": null,
    "access": "both",
    "url": "https://massspec.jhmi.edu/",
    "techniques": [
@@ -2898,6 +4173,7 @@
    "region_label": "state",
    "country": "United States",
    "continent": "North America",
+   "group": null,
    "access": "both",
    "url": "https://ki.mit.edu/sbc",
    "techniques": [
@@ -2920,6 +4196,7 @@
    "region_label": "state",
    "country": "United States",
    "continent": "North America",
+   "group": null,
    "access": "open",
    "url": "https://als.lbl.gov/",
    "techniques": [
@@ -2941,6 +4218,7 @@
    "region_label": "state",
    "country": "United States",
    "continent": "North America",
+   "group": null,
    "access": "open",
    "url": "https://jgi.doe.gov/",
    "techniques": [
@@ -2962,6 +4240,7 @@
    "region_label": "state",
    "country": "United States",
    "continent": "North America",
+   "group": null,
    "access": "academic",
    "url": "https://www.mdanderson.org/research/research-resources/core-facilities/advanced-technology-genomics-core.html",
    "techniques": [
@@ -2982,6 +4261,7 @@
    "region_label": "state",
    "country": "United States",
    "continent": "North America",
+   "group": null,
    "access": "both",
    "url": "https://www.mayo.edu/research/core-resources/medical-genome-facility/overview",
    "techniques": [
@@ -3002,6 +4282,7 @@
    "region_label": "state",
    "country": "United States",
    "continent": "North America",
+   "group": null,
    "access": "academic",
    "url": "https://www.mskcc.org/research/ski/core-facilities/integrated-genomics",
    "techniques": [
@@ -3022,6 +4303,7 @@
    "region_label": "state",
    "country": "United States",
    "continent": "North America",
+   "group": null,
    "access": "academic",
    "url": "https://www.mskcc.org/research/ski/core-facilities/molecular-cytology",
    "techniques": [
@@ -3042,6 +4324,7 @@
    "region_label": "state",
    "country": "United States",
    "continent": "North America",
+   "group": null,
    "access": "academic",
    "url": "https://med.nyu.edu/research/scientific-cores-shared-resources/cytometry-cell-sorting-laboratory",
    "techniques": [
@@ -3061,6 +4344,7 @@
    "region_label": "state",
    "country": "United States",
    "continent": "North America",
+   "group": null,
    "access": "both",
    "url": "https://med.nyu.edu/research/scientific-cores-shared-resources/genome-technology-center",
    "techniques": [
@@ -3081,6 +4365,7 @@
    "region_label": "state",
    "country": "United States",
    "continent": "North America",
+   "group": null,
    "access": "open",
    "url": "https://nysbc.org/facilities/",
    "techniques": [
@@ -3100,6 +4385,7 @@
    "region_label": "state",
    "country": "United States",
    "continent": "North America",
+   "group": null,
    "access": "academic",
    "url": "https://www.feinberg.northwestern.edu/sites/nuseq/",
    "techniques": [
@@ -3120,6 +4406,7 @@
    "region_label": "state",
    "country": "United States",
    "continent": "North America",
+   "group": null,
    "access": "both",
    "url": "https://sbf.northwestern.edu/",
    "techniques": [
@@ -3140,6 +4427,7 @@
    "region_label": "state",
    "country": "United States",
    "continent": "North America",
+   "group": null,
    "access": "open",
    "url": "https://www.ornl.gov/facility/cnms",
    "techniques": [
@@ -3160,6 +4448,7 @@
    "region_label": "state",
    "country": "United States",
    "continent": "North America",
+   "group": null,
    "access": "academic",
    "url": "https://www.ohsu.edu/knight-cancer-institute/massively-parallel-sequencing-shared-resource",
    "techniques": [
@@ -3179,6 +4468,7 @@
    "region_label": "state",
    "country": "United States",
    "continent": "North America",
+   "group": null,
    "access": "open",
    "url": "https://pncc.ohsu.edu/",
    "techniques": [
@@ -3198,6 +4488,7 @@
    "region_label": "state",
    "country": "United States",
    "continent": "North America",
+   "group": null,
    "access": "open",
    "url": "https://www.emsl.pnnl.gov/",
    "techniques": [
@@ -3220,6 +4511,7 @@
    "region_label": "state",
    "country": "United States",
    "continent": "North America",
+   "group": null,
    "access": "academic",
    "url": "https://lsi.princeton.edu/genomics",
    "techniques": [
@@ -3239,6 +4531,7 @@
    "region_label": "state",
    "country": "United States",
    "continent": "North America",
+   "group": null,
    "access": "open",
    "url": "https://lcls.slac.stanford.edu/",
    "techniques": [
@@ -3258,6 +4551,7 @@
    "region_label": "state",
    "country": "United States",
    "continent": "North America",
+   "group": null,
    "access": "open",
    "url": "https://www-ssrl.slac.stanford.edu/",
    "techniques": [
@@ -3278,6 +4572,7 @@
    "region_label": "state",
    "country": "United States",
    "continent": "North America",
+   "group": null,
    "access": "open",
    "url": "https://cryoem.slac.stanford.edu/s2c2",
    "techniques": [
@@ -3297,6 +4592,7 @@
    "region_label": "state",
    "country": "United States",
    "continent": "North America",
+   "group": null,
    "access": "academic",
    "url": "https://www.salk.edu/science/core-facilities/next-generation-sequencing-core/",
    "techniques": [
@@ -3317,6 +4613,7 @@
    "region_label": "state",
    "country": "United States",
    "continent": "North America",
+   "group": null,
    "access": "both",
    "url": "https://www.sbpdiscovery.org/core-facilities/prebys-center",
    "techniques": [
@@ -3337,6 +4634,7 @@
    "region_label": "state",
    "country": "United States",
    "continent": "North America",
+   "group": null,
    "access": "both",
    "url": "https://masspec.scripps.edu/",
    "techniques": [
@@ -3356,6 +4654,7 @@
    "region_label": "state",
    "country": "United States",
    "continent": "North America",
+   "group": null,
    "access": "academic",
    "url": "https://www.stjude.org/research/shared-resources/hartwell-center.html",
    "techniques": [
@@ -3377,6 +4676,7 @@
    "region_label": "state",
    "country": "United States",
    "continent": "North America",
+   "group": null,
    "access": "academic",
    "url": "https://med.stanford.edu/csif.html",
    "techniques": [
@@ -3397,6 +4697,7 @@
    "region_label": "state",
    "country": "United States",
    "continent": "North America",
+   "group": null,
    "access": "academic",
    "url": "https://chemh.stanford.edu/",
    "techniques": [
@@ -3418,6 +4719,7 @@
    "region_label": "state",
    "country": "United States",
    "continent": "North America",
+   "group": null,
    "access": "both",
    "url": "https://genomics.stanford.edu/",
    "techniques": [
@@ -3438,6 +4740,7 @@
    "region_label": "state",
    "country": "United States",
    "continent": "North America",
+   "group": null,
    "access": "both",
    "url": "https://www.jax.org/research-and-faculty/resources/genome-technologies",
    "techniques": [
@@ -3458,6 +4761,7 @@
    "region_label": "state",
    "country": "United States",
    "continent": "North America",
+   "group": null,
    "access": "academic",
    "url": "https://www.rockefeller.edu/genomics/",
    "techniques": [
@@ -3477,6 +4781,7 @@
    "region_label": "state",
    "country": "United States",
    "continent": "North America",
+   "group": null,
    "access": "academic",
    "url": "https://www.rockefeller.edu/proteomics/",
    "techniques": [
@@ -3497,6 +4802,7 @@
    "region_label": "state",
    "country": "United States",
    "continent": "North America",
+   "group": null,
    "access": "academic",
    "url": "https://wistar.org/our-scientists/shared-resources",
    "techniques": [
@@ -3517,6 +4823,7 @@
    "region_label": "state",
    "country": "United States",
    "continent": "North America",
+   "group": null,
    "access": "academic",
    "url": "https://www.umassmed.edu/cryoem/",
    "techniques": [
@@ -3536,6 +4843,7 @@
    "region_label": "state",
    "country": "United States",
    "continent": "North America",
+   "group": null,
    "access": "academic",
    "url": "https://www.utsouthwestern.edu/research/core-facilities/",
    "techniques": [
@@ -3555,6 +4863,7 @@
    "region_label": "state",
    "country": "United States",
    "continent": "North America",
+   "group": null,
    "access": "both",
    "url": "https://qb3.berkeley.edu/facility/cal-cryo/",
    "techniques": [
@@ -3574,6 +4883,7 @@
    "region_label": "state",
    "country": "United States",
    "continent": "North America",
+   "group": null,
    "access": "both",
    "url": "https://qb3.berkeley.edu/facility/genomics/",
    "techniques": [
@@ -3594,6 +4904,7 @@
    "region_label": "state",
    "country": "United States",
    "continent": "North America",
+   "group": null,
    "access": "both",
    "url": "https://tcgb.ucla.edu/",
    "techniques": [
@@ -3614,6 +4925,7 @@
    "region_label": "state",
    "country": "United States",
    "continent": "North America",
+   "group": null,
    "access": "both",
    "url": "https://igm.ucsd.edu/genomics/",
    "techniques": [
@@ -3634,6 +4946,7 @@
    "region_label": "state",
    "country": "United States",
    "continent": "North America",
+   "group": null,
    "access": "academic",
    "url": "https://cat.ucsf.edu/",
    "techniques": [
@@ -3654,6 +4967,7 @@
    "region_label": "state",
    "country": "United States",
    "continent": "North America",
+   "group": null,
    "access": "academic",
    "url": "https://nic.ucsf.edu/",
    "techniques": [
@@ -3673,6 +4987,7 @@
    "region_label": "state",
    "country": "United States",
    "continent": "North America",
+   "group": null,
    "access": "academic",
    "url": "https://voices.uchicago.edu/genomics/",
    "techniques": [
@@ -3693,6 +5008,7 @@
    "region_label": "state",
    "country": "United States",
    "continent": "North America",
+   "group": null,
    "access": "academic",
    "url": "https://medschool.cuanschutz.edu/colorado-cancer-center/research/shared-resources/genomics",
    "techniques": [
@@ -3712,6 +5028,7 @@
    "region_label": "state",
    "country": "United States",
    "continent": "North America",
+   "group": null,
    "access": "both",
    "url": "https://brcf.medicine.umich.edu/cores/advanced-genomics/",
    "techniques": [
@@ -3732,6 +5049,7 @@
    "region_label": "state",
    "country": "United States",
    "continent": "North America",
+   "group": null,
    "access": "both",
    "url": "https://genomics.umn.edu/",
    "techniques": [
@@ -3752,6 +5070,7 @@
    "region_label": "state",
    "country": "United States",
    "continent": "North America",
+   "group": null,
    "access": "academic",
    "url": "https://www.med.unc.edu/htsf/",
    "techniques": [
@@ -3771,6 +5090,7 @@
    "region_label": "state",
    "country": "United States",
    "continent": "North America",
+   "group": null,
    "access": "academic",
    "url": "https://ngsc.med.upenn.edu/",
    "techniques": [
@@ -3791,6 +5111,7 @@
    "region_label": "state",
    "country": "United States",
    "continent": "North America",
+   "group": null,
    "access": "academic",
    "url": "https://www.hsseq.pitt.edu/",
    "techniques": [
@@ -3810,6 +5131,7 @@
    "region_label": "state",
    "country": "United States",
    "continent": "North America",
+   "group": null,
    "access": "academic",
    "url": "https://sites.usc.edu/nlgenomics/",
    "techniques": [
@@ -3829,6 +5151,7 @@
    "region_label": "state",
    "country": "United States",
    "continent": "North America",
+   "group": null,
    "access": "both",
    "url": "https://research.utexas.edu/gsaf/",
    "techniques": [
@@ -3849,6 +5172,7 @@
    "region_label": "state",
    "country": "United States",
    "continent": "North America",
+   "group": null,
    "access": "both",
    "url": "https://biotech.wisc.edu/",
    "techniques": [
@@ -3870,6 +5194,7 @@
    "region_label": "state",
    "country": "United States",
    "continent": "North America",
+   "group": null,
    "access": "both",
    "url": "https://www.vumc.org/vantage/",
    "techniques": [
@@ -3891,6 +5216,7 @@
    "region_label": "state",
    "country": "United States",
    "continent": "North America",
+   "group": null,
    "access": "both",
    "url": "https://wucci.wustl.edu/",
    "techniques": [
@@ -3911,6 +5237,7 @@
    "region_label": "state",
    "country": "United States",
    "continent": "North America",
+   "group": null,
    "access": "both",
    "url": "https://www.genome.wustl.edu/",
    "techniques": [
@@ -3931,6 +5258,7 @@
    "region_label": "state",
    "country": "United States",
    "continent": "North America",
+   "group": null,
    "access": "both",
    "url": "https://cores.weill.cornell.edu/genomics-resources-core-facility",
    "techniques": [
@@ -3951,6 +5279,7 @@
    "region_label": "state",
    "country": "United States",
    "continent": "North America",
+   "group": null,
    "access": "academic",
    "url": "https://wi.mit.edu/research/core-facilities",
    "techniques": [
@@ -3970,6 +5299,7 @@
    "region_label": "state",
    "country": "United States",
    "continent": "North America",
+   "group": null,
    "access": "both",
    "url": "https://medicine.yale.edu/keck/",
    "techniques": [
@@ -3991,6 +5321,7 @@
    "region_label": "state",
    "country": "United States",
    "continent": "North America",
+   "group": null,
    "access": "both",
    "url": "https://ycga.yale.edu/",
    "techniques": [
@@ -4002,6 +5333,29 @@
     "sequencing"
    ],
    "notes": "Illumina plus long-read platforms; publishes an external academic and commercial rate card."
+  },
+  {
+   "id": "1685d9",
+   "facility": "Technological Platforms",
+   "institution": "Institut Pasteur de Montevideo",
+   "city": "Montevideo",
+   "region": "Montevideo",
+   "region_label": "department",
+   "country": "Uruguay",
+   "continent": "South America",
+   "group": "Latin America",
+   "access": "both",
+   "url": "https://pasteur.uy/en/platforms/",
+   "techniques": [
+    "mass spectrometry",
+    "proteomics",
+    "light microscopy",
+    "imaging",
+    "transgenic mouse models",
+    "bioinformatics",
+    "protein production"
+   ],
+   "notes": "The most openly documented core-facility network in the Southern Cone; regional users welcome."
   }
  ]
 }

@@ -8,7 +8,7 @@ user-invocable: true
 
 Founders and academics burn weeks discovering that the instrument they need is
 already sitting, paid for, twenty minutes away. This skill searches a curated
-directory of 187 core facilities across 32 countries and drafts the enquiry for
+directory of 240 core facilities across 43 countries and drafts the enquiry for
 you.
 
 ## Commands
@@ -28,8 +28,12 @@ Standard library only — no install step, no dependencies.
 ### search
 
 Filters: `--state` (also `--region`; matches state, province, canton or city),
-`--country`, `--continent`, `--access` (`open`, `academic`, `both`,
-`commercial`), `--email-only`, `--limit`, `--json`.
+`--country`, `--continent` (also `--group`), `--access` (`open`, `academic`,
+`both`, `commercial`), `--email-only`, `--limit`, `--json`.
+
+`--continent` also accepts the cross-cutting groupings **Latin America** and
+**Middle East**, because the geographic answer is the unhelpful one: Mexico is
+in North America, but nobody searching Latin America means to exclude it.
 
 Queries run through a synonym table, so `scRNA-seq`, `10x`, `single cell` and
 `single-cell RNA sequencing` all land on the same canonical technique. Run

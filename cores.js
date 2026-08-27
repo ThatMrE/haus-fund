@@ -118,7 +118,7 @@ function matches() {
   const terms = expandQuery(f.q);
   const hits = [];
   for (const fac of DATA.facilities) {
-    if (f.continent && fac.continent !== f.continent) continue;
+    if (f.continent && fac.continent !== f.continent && fac.group !== f.continent) continue;
     if (f.country && fac.country !== f.country) continue;
     if (f.access && fac.access !== f.access) continue;
     if (f.shortOnly && !SHORTLIST.has(fac.id)) continue;
@@ -302,10 +302,11 @@ $('slCopyDrafts').onclick = () => {
 
 $('slCsv').onclick = () => {
   const rows = [['id', 'facility', 'institution', 'city', 'region', 'country',
-                 'access', 'techniques', 'email', 'url']];
+                 'group', 'access', 'techniques', 'email', 'url']];
   for (const f of shortlisted()) {
-    rows.push([f.id, f.facility, f.institution, f.city, f.region, f.country, f.access,
-               f.techniques.join('; '), emailsOf(f).join('; '), f.url]);
+    rows.push([f.id, f.facility, f.institution, f.city, f.region, f.country,
+               f.group || '', f.access, f.techniques.join('; '),
+               emailsOf(f).join('; '), f.url]);
   }
   const csv = rows.map((r) => r.map((c) =>
     `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\n');
@@ -363,8 +364,15 @@ async function boot() {
 
   $('techList').innerHTML = DATA.techniques
     .map((t) => `<option value="${esc(t)}">`).join('');
-  $('fContinent').innerHTML += [...new Set(DATA.facilities.map((f) => f.continent))]
-    .sort().map((c) => `<option value="${esc(c)}">${esc(c)}</option>`).join('');
+  const continents = [...new Set(DATA.facilities.map((f) => f.continent))].sort();
+  const opts = (list) => list.map((c) => `<option value="${esc(c)}">${esc(c)}</option>`).join('');
+  $('fContinent').innerHTML += opts(continents);
+  // Groups cut across continents — Mexico is in North America but nobody
+  // searching Latin America means to exclude it.
+  if ((DATA.groups || []).length) {
+    $('fContinent').innerHTML +=
+      `<optgroup label="Also">${opts(DATA.groups)}</optgroup>`;
+  }
   $('fCountry').innerHTML += DATA.countries
     .map((c) => `<option value="${esc(c)}">${esc(c)}</option>`).join('');
 

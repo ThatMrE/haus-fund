@@ -148,8 +148,13 @@ def run_search(args, data, contacts) -> list[tuple[int, dict]]:
             continue
         if args.state and not region_match(fac, args.state):
             continue
-        if args.continent and args.continent.strip().lower() not in fac["continent"].lower():
-            continue
+        if args.continent:
+            want = args.continent.strip().lower()
+            where = [fac["continent"].lower()]
+            if fac.get("group"):
+                where.append(fac["group"].lower())
+            if not any(want in w for w in where):
+                continue
         if args.access and fac["access"] != args.access:
             continue
         mails = emails_of(fac, contacts)
@@ -226,8 +231,9 @@ def cmd_show(args):
     print(bold(fac["facility"]))
     print(dim(f"{fac['id']}  ·  {fac['institution']}"))
     print()
+    where = fac["continent"] + (f" · {fac['group']}" if fac.get("group") else "")
     print(f"  Location   {fac['city']}, {fac['region'] or '-'} ({fac['region_label']}), "
-          f"{fac['country']} · {fac['continent']}")
+          f"{fac['country']} · {where}")
     print(f"  Access     {fac['access']}")
     print(f"  Page       {fac['url']}")
     print()
@@ -352,7 +358,8 @@ def cmd_export(args):
             "id": fac["id"], "facility": fac["facility"],
             "institution": fac["institution"], "city": fac["city"],
             "region": fac["region"], "country": fac["country"],
-            "continent": fac["continent"], "access": fac["access"],
+            "continent": fac["continent"], "group": fac.get("group") or "",
+            "access": fac["access"],
             "techniques": "; ".join(fac["techniques"]),
             "email": mails[0] if mails else "",
             "all_emails": "; ".join(mails), "url": fac["url"],
@@ -508,6 +515,15 @@ def cmd_stats(args):
     print()
     for cont, n in sorted(by_continent.items(), key=lambda p: -p[1]):
         print(f"    {cont:<16} {n:>4}  {'#' * (n * 40 // len(facs))}")
+    by_group: dict[str, int] = {}
+    for f in facs:
+        if f.get("group"):
+            by_group[f["group"]] = by_group.get(f["group"], 0) + 1
+    if by_group:
+        print()
+        print(dim("    cutting across the above"))
+        for g, n in sorted(by_group.items(), key=lambda p: -p[1]):
+            print(f"    {g:<16} {n:>4}")
     print()
 
 
@@ -530,7 +546,9 @@ def add_filters(p):
     p.add_argument("--state", "--region", dest="state", metavar="NAME",
                    help="state, province, canton or city (whatever the country uses)")
     p.add_argument("--country", metavar="NAME")
-    p.add_argument("--continent", metavar="NAME")
+    p.add_argument("--continent", "--group", dest="continent", metavar="NAME",
+                   help="continent, or a grouping such as 'Latin America' "
+                        "or 'Middle East'")
     p.add_argument("--access", choices=["open", "academic", "both", "commercial"],
                    help="who can buy time: open proposal, academic, both, commercial")
     p.add_argument("--email-only", action="store_true",
