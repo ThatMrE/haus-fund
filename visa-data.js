@@ -34,14 +34,22 @@ var VISA_DATA = (function () {
     name: "Biopunk House Accelerator Program",
     cohort: "Cohort 3",
     start: "September 15, 2026",
-    end: "December 15, 2026",
+    end: "December 12, 2026",
     days: null,             // derived below from start/end; drives the 90-day ceilings
     weeks: 12,
     city: "San Francisco, California",
     summary:
-      "a twelve-week live-in accelerator for early-stage biotechnology founders, " +
+      "a live-in accelerator for early-stage biotechnology founders, " +
       "combining shared laboratory access, structured mentorship, and a residential cohort"
   };
+
+  /* Programme policy: no cohort may run longer than this.
+     89 is not arbitrary. Three separate regimes cap a stay at 90 days — US Visa
+     Waiver Program admission, Schengen short stays, and Japanese Temporary
+     Visitor status — so a cohort of 89 days lets a participant complete the
+     whole programme on the lightest available route in all three. Raise it past
+     90 and all three break at once, for every participant, silently. */
+  var MAX_COHORT_DAYS = 89;
 
   /* ── issuing entities ─────────────────────────────────────────────────────
      legalName is what goes on the letter. Consular officers check the letterhead
@@ -115,6 +123,17 @@ var VISA_DATA = (function () {
   /* Derived, never hand-written: change the cohort dates above and every
      ceiling check and every piece of guidance prose follows automatically. */
   PROGRAM.days = spanDays(PROGRAM.start, PROGRAM.end);
+
+  /* Editing PROGRAM is the one change most likely to break this tool, and it
+     would break it quietly: every letter would still generate, and every one
+     would describe a stay the participant's route does not permit. Say so
+     loudly instead. */
+  if (PROGRAM.days !== null && PROGRAM.days > MAX_COHORT_DAYS && typeof console !== "undefined") {
+    console.error("visa-data: " + PROGRAM.cohort + " runs " + PROGRAM.days +
+      " days, over the " + MAX_COHORT_DAYS + "-day cohort maximum. Participants " +
+      "would exceed the 90-day ceilings on the US Visa Waiver Program, Schengen " +
+      "short stays and Japanese Temporary Visitor status. Shorten PROGRAM.end.");
+  }
 
   /* ── field definitions ────────────────────────────────────────────────────
      Grouped so the form can render them in sections. `req: true` means the
@@ -232,6 +251,20 @@ var VISA_DATA = (function () {
       }
       return null;
     },
+    function withinCohortPolicy(f) {
+      var n = spanDays(f.startDate, f.endDate);
+      if (n !== null && n > MAX_COHORT_DAYS) {
+        return {
+          level: "warn",
+          msg: "These dates cover " + n + " days. Programme policy caps a cohort at " +
+               MAX_COHORT_DAYS + " days precisely so participants stay inside the 90-day " +
+               "ceilings on the US Visa Waiver Program, Schengen short stays and Japanese " +
+               "Temporary Visitor status. Confirm this letter describes something other than " +
+               "a standard cohort before issuing it."
+        };
+      }
+      return null;
+    },
     function nameMatchesPassport(f) {
       if (has(f.fullName) && /[a-z]/.test(f.fullName) === false) {
         return { level: "note", msg: "The name is all capitals. Reproduce it exactly as it appears in the passport's machine-readable zone, including the order of given and family names." };
@@ -240,11 +273,29 @@ var VISA_DATA = (function () {
     }
   ];
 
+  /* Used by every route that runs against a 90-day ceiling. The cohort is set
+     at MAX_COHORT_DAYS so it clears that ceiling — but by a single day, and the
+     travel days are what eat the margin. Both the day of arrival and the day of
+     departure count as days of presence in all three regimes, which is the part
+     participants get wrong. */
+  function ninetyDayMargin(f) {
+    var n = spanDays(f.startDate, f.endDate);
+    if (n === null || n > 90 || n < 45) return null;
+    var slack = 90 - n;
+    return {
+      level: slack <= 2 ? "warn" : "note",
+      msg: "These dates occupy " + n + " of the 90 days permitted, leaving " + slack +
+           " day" + (slack === 1 ? "" : "s") + " of margin. The day of arrival and the day " +
+           "of departure both count as days of presence, so a flight moved even slightly can " +
+           "put the participant over. Confirm the actual travel dates, not just the programme dates."
+    };
+  }
+
   /* ═══════════════════════════════════════════════════════════════════════
      UNITED STATES — San Francisco
-     The programme runs 92 days, which is the single most consequential fact
-     in this file: it is one day past the 90-day ceiling of the Visa Waiver
-     Program, so a participant entering on ESTA cannot lawfully complete it.
+     The programme is deliberately set at 89 days so that it clears the 90-day
+     ceiling of the Visa Waiver Program. That margin is one day wide, and the
+     travel days are what consume it — see ninetyDayMargin above.
      ═══════════════════════════════════════════════════════════════════════ */
 
   var US = {
@@ -273,7 +324,7 @@ var VISA_DATA = (function () {
         "A direct telephone number and email for the signer, so the post can verify the letter."
       ],
       watchOuts: [
-        "<b>" + PROGRAM.days + " days versus 90.</b> " + PROGRAM.cohort + " runs " + PROGRAM.start + " to " + PROGRAM.end + " — " + PROGRAM.days + " days. A participant admitted under the Visa Waiver Program gets a maximum of 90 days with no extension, so they cannot complete the full cohort on ESTA. Either they enter on a B-1 visa, or their participation is scheduled to end within the admitted period.",
+        "<b>" + PROGRAM.days + " days against a 90-day ceiling.</b> " + PROGRAM.cohort + " runs " + PROGRAM.start + " to " + PROGRAM.end + " — " + PROGRAM.days + " days, set deliberately inside the 90-day limit on Visa Waiver Program admission so a participant can complete a full cohort without needing a visa that permits longer. The margin is " + (90 - PROGRAM.days) + " day" + ((90 - PROGRAM.days) === 1 ? "" : "s") + ", and both the arrival and departure days count against it. Arriving early, leaving late, or adding any side trip puts the participant over, and Visa Waiver admission cannot be extended once granted.",
         "<b>Bench work is productive labour.</b> Running experiments in the shared lab is not \"independent research\" in the loose sense a founder might mean it. Where a participant will do hands-on work that produces value for a US entity, the visitor routes are the wrong instrument.",
         "<b>Reimbursement is not salary.</b> A US source may cover or reimburse a B-1 visitor's expenses. It may not pay them for services. Letters that blur the two invite a finding of unauthorised employment.",
         "<b>Unpaid does not mean unregulated.</b> An unpaid internship at a for-profit entity has to satisfy the primary-beneficiary test under the Fair Labor Standards Act, independently of immigration status."
@@ -377,7 +428,8 @@ var VISA_DATA = (function () {
               };
             }
             return null;
-          }
+          },
+          ninetyDayMargin
         ]
       },
 
@@ -828,7 +880,7 @@ var VISA_DATA = (function () {
         "The inviting organisation's full name, registered address, telephone, representative and the signer's position."
       ],
       watchOuts: [
-        "<b>Ninety days is the ceiling for Temporary Visitor.</b> The twelve-week cohort is " + PROGRAM.days + " days. A Kobe cohort run on Temporary Visitor status has to be scheduled to end within 90 days, or the participant needs a Certificate of Eligibility.",
+        "<b>Ninety days is the ceiling for Temporary Visitor.</b> The cohort is set at " + PROGRAM.days + " days to sit inside it, so a Kobe cohort can run on Temporary Visitor status with " + (90 - PROGRAM.days) + " day" + ((90 - PROGRAM.days) === 1 ? "" : "s") + " to spare. A participant who wants to arrive early, stay on afterwards, or extend for any reason falls outside it and needs a Certificate of Eligibility instead — which is filed in Japan by the host and takes one to three months, so it is not a decision that can be left late.",
         "<b>No paid work on Temporary Visitor status.</b> Remunerated activity requires a work status; there is no equivalent of an incidental-work allowance.",
         "<b>The Certificate of Eligibility is filed in Japan, by the host.</b> Allow one to three months. A letter alone does not start the clock.",
         "<b>The Kobe start-up route wants a Japanese-language business plan</b> assessed by the city, not an English pitch deck. Budget time for translation and for the city's review."
@@ -912,7 +964,8 @@ var VISA_DATA = (function () {
           },
           function sendToApplicant(f) {
             return { level: "note", msg: "Send the completed set to the applicant, not to the embassy or consulate. The applicant files them with their own application." };
-          }
+          },
+          ninetyDayMargin
         ]
       },
 
@@ -963,7 +1016,8 @@ var VISA_DATA = (function () {
               return { level: "stop", msg: "This schedule covers " + n + " days, past the 90-day Temporary Visitor ceiling. Shorten it or move to a Certificate of Eligibility route." };
             }
             return null;
-          }
+          },
+          ninetyDayMargin
         ]
       },
 
@@ -1224,11 +1278,25 @@ var VISA_DATA = (function () {
       return null;
     },
     function priorSchengenDays(f) {
-      return { level: "note", msg: "The 90 days are counted across the whole Schengen area over a rolling 180-day window, not per country. Ask the participant what other Schengen time they have used in the preceding six months before committing to these dates." };
+      var base = "The 90 days are counted across the whole Schengen area over a rolling 180-day " +
+                 "window, not per country. ";
+      var n = spanDays(f.startDate, f.endDate);
+      var slack = (n === null) ? null : 90 - n;
+      if (slack !== null && slack >= 0 && slack <= 5) {
+        return {
+          level: "warn",
+          msg: base + "These dates already use " + n + " of them, so as little as " + (slack + 1) +
+               " day" + (slack === 0 ? "" : "s") + " spent anywhere in the Schengen area in the " +
+               "preceding 180 days would put the participant over. Ask what prior Schengen time " +
+               "they have before committing to these dates — this is the margin that actually bites."
+        };
+      }
+      return { level: "note", msg: base + "Ask the participant what other Schengen time they have used in the preceding six months before committing to these dates." };
     },
     function insurance(f) {
       return { level: "note", msg: "Travel medical insurance of at least €30,000, valid across the Schengen area and covering the entire stay including emergency treatment and repatriation, is a legal condition of the visa under Article 15 of the Visa Code. Confirm the participant holds it." };
-    }
+    },
+    ninetyDayMargin
   ];
 
   /* ── MEXICO — Monterrey node ─────────────────────────────────────────── */
@@ -1445,7 +1513,7 @@ var VISA_DATA = (function () {
         "The undertaking on costs, and the host's registration details and contact."
       ],
       watchOuts: [
-        "<b>The 90 days are Schengen-wide.</b> Time already spent in any Schengen state in the preceding 180 days counts against the allowance. The twelve-week cohort at " + PROGRAM.days + " days does not fit inside a single short-stay allowance.",
+        "<b>The 90 days are Schengen-wide.</b> The cohort is set at " + PROGRAM.days + " days, which fits — but only for a participant who has spent no more than " + (90 - PROGRAM.days) + " day" + ((90 - PROGRAM.days) === 1 ? "" : "s") + " anywhere in the Schengen area in the preceding 180 days. Time in any Schengen state counts against the same rolling allowance, so a single prior conference trip can be enough to break it. Ask before you commit to dates.",
         "<b>Travel medical insurance of €30,000 is a legal condition</b> under Article 15 of the Visa Code, valid across the Schengen area for the whole stay, covering emergency treatment and repatriation.",
         "<b>An invitation letter is not an attestation d'accueil.</b> If the participant stays in private accommodation, only the mairie-validated document will do.",
         "<b>No remunerated activity on a short-stay visa.</b> Paid work needs a work authorisation and the corresponding long-stay route."
@@ -1589,7 +1657,8 @@ var VISA_DATA = (function () {
           },
           function form1415(f) {
             return { level: "note", msg: "Remind the applicant to complete Form 1415 for the Business Visitor stream. This letter supports that form; it does not replace it." };
-          }
+          },
+          ninetyDayMargin
         ]
       })
     ]
@@ -1727,7 +1796,7 @@ var VISA_DATA = (function () {
       ],
       watchOuts: [
         "<b>The declaration of sponsorship is not a letter you write.</b> It is a cantonal form, obtained from the migration authority, with a solvency assessment behind it and a liability period attached. The coverage amount and the period are set by the authority — take them from the form, not from a template.",
-        "<b>The 90 days are Schengen-wide.</b> Time in any Schengen state in the preceding 180 days counts.",
+        "<b>The 90 days are Schengen-wide.</b> At " + PROGRAM.days + " days the cohort leaves " + (90 - PROGRAM.days) + " day" + ((90 - PROGRAM.days) === 1 ? "" : "s") + " of allowance, and time in any Schengen state in the preceding 180 days counts against it.",
         "<b>Travel medical insurance of €30,000</b> valid across the Schengen area is a legal condition of the visa.",
         "<b>Work needs cantonal authorisation first.</b> The visa follows the labour-market decision, not the other way round."
       ],

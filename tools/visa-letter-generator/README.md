@@ -44,7 +44,7 @@ var PROGRAM = {
   name: "Biopunk House Accelerator Program",
   cohort: "Cohort 3",
   start: "September 15, 2026",
-  end:   "December 15, 2026",
+  end:   "December 12, 2026",
   ...
 };
 ```
@@ -55,10 +55,28 @@ Schengen cap, the 90-day Japanese Temporary Visitor cap, the 180-day Mexican
 visitor cap) and every piece of guidance prose reads from it, so changing the
 cohort dates updates all of them at once.
 
-> Cohort 3 runs 92 days. That is two days past the 90-day ceiling on the US
-> Visa Waiver Program, on Schengen short stays, and on Japanese Temporary
-> Visitor status. It is the single most consequential fact in the file, and the
-> reason several routes hard-block on the full cohort dates.
+### The 89-day cap
+
+`MAX_COHORT_DAYS = 89` is programme policy, and it is enforced: change
+`PROGRAM` so a cohort runs longer and the tool logs an error to the console,
+and any letter whose dates exceed it raises a compliance warning.
+
+89 is not arbitrary. Three separate regimes cap a stay at 90 days — US Visa
+Waiver Program admission, Schengen short stays, and Japanese Temporary Visitor
+status — so an 89-day cohort lets a participant complete the whole programme on
+the lightest available route in all three. Raise it past 90 and all three break
+at once, for every participant, silently.
+
+> The margin is **one day**, and the arrival and departure days both count as
+> days of presence. A flight moved by a day puts a participant over. That is
+> what `ninetyDayMargin` warns about on every route with a 90-day ceiling, and
+> it is why the Schengen check now computes how much prior Schengen time a
+> participant can have before the cohort no longer fits — at 89 days, the
+> answer is one day.
+
+Cohort dates are also published on `index.html`, `sponsors.html` and
+`femhaus.html`. Keep them in step: a letter whose dates contradict the public
+programme page is a discrepancy an adjudicator can find.
 
 ## Adding a letter type
 
