@@ -223,14 +223,6 @@ nav.scrolled .nav-burger span,nav.scrolled .nav-burger span::before,nav.scrolled
   text-transform:uppercase;color:#B0ADA6;}
 .spec-v{font-size:17px;color:#0D0D0D;font-weight:500;}
 
-/* Palette swatches */
-.sw{display:grid;grid-template-columns:repeat(4,1fr);gap:20px;}
-.sw-c{border:1px solid #E5E1D9;border-radius:10px;overflow:hidden;background:#fff;}
-.sw-chip{height:104px;}
-.sw-b{padding:16px 18px 18px;}
-.sw-n{font-family:'Barlow',sans-serif;font-weight:700;font-size:17px;color:#0D0D0D;}
-.sw-h{font-family:'DM Mono',monospace;font-size:12px;color:#727272;letter-spacing:0.06em;margin:3px 0 8px;}
-
 /* Tables */
 .tw{overflow-x:auto;-webkit-overflow-scrolling:touch;border:1px solid #E5E1D9;border-radius:10px;background:#fff;}
 table.t{width:100%;border-collapse:collapse;min-width:640px;}
@@ -264,15 +256,11 @@ ul.li li::before{content:"";position:absolute;left:0;top:9px;width:6px;height:6p
 .dark ul.li li{color:rgba(255,255,255,0.68);}
 .dark ul.li li::before{background:var(--teal);}
 
-.card-teal{border-top:3px solid var(--teal);}
-
 @media (max-width:1100px){
-  .sw{grid-template-columns:repeat(2,1fr);}
   .spec-r{grid-template-columns:1fr;gap:4px;}
   .jr-i{grid-template-columns:1fr;gap:6px;}
 }
 @media (max-width:680px){
-  .sw{grid-template-columns:1fr;}
   .jr-i{padding-left:22px;}
 }
 </style>
@@ -350,49 +338,11 @@ ul.li li::before{content:"";position:absolute;left:0;top:9px;width:6px;height:6p
   </div>
   <div class="note" style="margin-top:44px;">
     <div class="h3">The first edition</div>
-    <div class="body" style="font-size:16px;">Biopunk 2050: S26 Final Showcase ran at Mabuhay Gardens on 15 August 2026 under the theme &ldquo;2050: Visions of an Optimistic Future&rdquo; &mdash; the first time the room was built. What follows is the venue design brief for the full-scale build: the aesthetic, the layout, the production spec, and what exhibitors are held to.</div>
+    <div class="body" style="font-size:16px;">Biopunk 2050: S26 Final Showcase ran at Mabuhay Gardens on 15 August 2026 under the theme &ldquo;2050: Visions of an Optimistic Future&rdquo; &mdash; the first time the room was built. What follows is the venue design brief for the full-scale build: the layout, the production spec, and what exhibitors are held to.</div>
   </div>
 </section>
 
-<!-- ═══ 2 · Design direction ═══ -->
-<section class="wrap-sm" style="background:#fff;border-top:1px solid #E5E1D9;border-bottom:1px solid #E5E1D9;">
-  <div style="max-width:760px;margin-bottom:40px;">
-    <div class="over">Design direction</div>
-    <div class="h2">Research lab meets gallery opening</div>
-    <div class="body">The aesthetic is optimistic futurism &mdash; clean, science-forward, and warm rather than cold or dystopian. Polished surfaces, living materials, projected data, organic forms. The space should feel like stepping into 2050 as we hope it will be, not the version that keeps us up at night.</div>
-  </div>
-
-  <div class="over" style="margin-bottom:16px;">Palette</div>
-  <div class="sw">
-    <div class="sw-c"><div class="sw-chip" style="background:#0A1628;"></div><div class="sw-b"><div class="sw-n">Deep Navy</div><div class="sw-h">#0A1628</div><div class="sm">Primary. The grounding colour &mdash; stage backdrops, signage backgrounds, booth headers.</div></div></div>
-    <div class="sw-c"><div class="sw-chip" style="background:#00BFA5;"></div><div class="sw-b"><div class="sw-n">Teal</div><div class="sw-h">#00BFA5</div><div class="sm">Accent. Energy and wayfinding &mdash; arrows, edge-lighting, accent bars.</div></div></div>
-    <div class="sw-c"><div class="sw-chip" style="background:#00E5FF;"></div><div class="sw-b"><div class="sw-n">Electric Cyan</div><div class="sw-h">#00E5FF</div><div class="sm">Highlight. Digital elements and the moments that need to spike.</div></div></div>
-    <div class="sw-c"><div class="sw-chip" style="background:#F5F0E8;border-bottom:1px solid #E5E1D9;"></div><div class="sw-b"><div class="sw-n">Warm White</div><div class="sw-h">#F5F0E8</div><div class="sm">Neutral. Keeps the palette from reading cold or sterile.</div></div></div>
-  </div>
-
-  <div class="g2" style="margin-top:40px;">
-    <div class="card card-teal">
-      <div class="h3">Typography</div>
-      <ul class="li" style="margin-top:10px;">
-        <li><strong>Primary</strong> &mdash; a clean geometric sans-serif (Inter, DM Sans, or Outfit).</li>
-        <li><strong>Display</strong> &mdash; a bolder weight of the same family for stage titles and signage.</li>
-        <li><strong>Avoid</strong> &mdash; overly techy or sci-fi typefaces. The content is futuristic enough.</li>
-      </ul>
-    </div>
-    <div class="card card-teal">
-      <div class="h3">Materials &amp; textures</div>
-      <ul class="li" style="margin-top:10px;">
-        <li>Matte black and brushed metal structures.</li>
-        <li>Translucent acrylic panels with edge-lit LED.</li>
-        <li>Living greenery worked into booth dividers and stage edges.</li>
-        <li>Projected light textures on floors and walls &mdash; data streams, organic patterns.</li>
-        <li>Fabric scrims for soft zoning and ambient light diffusion.</li>
-      </ul>
-    </div>
-  </div>
-</section>
-
-<!-- ═══ 3 · Layout ═══ -->
+<!-- ═══ 2 · Layout ═══ -->
 <section class="wrap">
   <div style="max-width:760px;margin-bottom:40px;">
     <div class="over">Venue layout</div>
@@ -509,7 +459,7 @@ ul.li li::before{content:"";position:absolute;left:0;top:9px;width:6px;height:6p
   </div>
 </section>
 
-<!-- ═══ 4 · Booths ═══ -->
+<!-- ═══ 3 · Booths ═══ -->
 <section class="wrap-sm" style="background:#fff;border-top:1px solid #E5E1D9;border-bottom:1px solid #E5E1D9;">
   <div style="max-width:760px;margin-bottom:32px;">
     <div class="over">Exhibition</div>
@@ -533,7 +483,7 @@ ul.li li::before{content:"";position:absolute;left:0;top:9px;width:6px;height:6p
   </div>
 </section>
 
-<!-- ═══ 5 · The day ═══ -->
+<!-- ═══ 4 · The day ═══ -->
 <section class="wrap">
   <div style="max-width:760px;margin-bottom:36px;">
     <div class="over">Attendee journey</div>
@@ -579,7 +529,7 @@ ul.li li::before{content:"";position:absolute;left:0;top:9px;width:6px;height:6p
   </div>
 </section>
 
-<!-- ═══ 6 · Production spec ═══ -->
+<!-- ═══ 5 · Production spec ═══ -->
 <section class="wrap dark">
   <div style="max-width:760px;margin-bottom:40px;">
     <div class="over over-w">Production spec</div>
@@ -625,7 +575,7 @@ ul.li li::before{content:"";position:absolute;left:0;top:9px;width:6px;height:6p
   </div>
 </section>
 
-<!-- ═══ 7 · Branding ═══ -->
+<!-- ═══ 6 · Branding ═══ -->
 <section class="wrap-sm" style="background:#fff;border-bottom:1px solid #E5E1D9;">
   <div style="max-width:760px;margin-bottom:20px;">
     <div class="over">Branding touchpoints</div>
@@ -638,7 +588,7 @@ ul.li li::before{content:"";position:absolute;left:0;top:9px;width:6px;height:6p
   <div class="num"><div class="num-n">05</div><div><div class="h3">Digital presence</div><div class="body" style="font-size:16px;">#2050Showcase on every screen. Two to three branded photo walls or installations. A live social feed running in the networking lounge.</div></div></div>
 </section>
 
-<!-- ═══ 8 · Exhibitor guidelines ═══ -->
+<!-- ═══ 7 · Exhibitor guidelines ═══ -->
 <section class="wrap">
   <div style="max-width:760px;margin-bottom:36px;">
     <div class="over">For exhibitors</div>
@@ -655,7 +605,7 @@ ul.li li::before{content:"";position:absolute;left:0;top:9px;width:6px;height:6p
   </div>
 </section>
 
-<!-- ═══ 9 · Logistics ═══ -->
+<!-- ═══ 8 · Logistics ═══ -->
 <section class="wrap-sm" style="background:#fff;border-top:1px solid #E5E1D9;border-bottom:1px solid #E5E1D9;">
   <div style="max-width:760px;margin-bottom:32px;">
     <div class="over">Logistics &amp; operations</div>
