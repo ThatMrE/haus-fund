@@ -13,6 +13,7 @@ no build step, no framework.
 | `expansion.html` | Global Nodes — node protocol, active nodes, candidate cities |
 | `design-system.html` | Living style reference — tokens, type, components |
 | `cores.html` | Core Facility Finder — served at `cores.haus.fund`, `noindex`, not in the nav |
+| `visa.html` | Visa Desk — immigration support letters, served at `visa.haus.fund`, `noindex`, not in the nav |
 | `fund-portal/` | Separate internal React portal (not linked from the public nav) |
 
 ## Structure
@@ -20,11 +21,13 @@ no build step, no framework.
 ```
 website/
 ├── index.html · sponsors.html · mentors.html · expansion.html
+├── cores.html · cores.js            # Core Facility Finder
+├── visa.html · visa.js · visa-data.js  # Visa Desk (visa-data.js is the data layer)
 ├── design-system.html
 ├── fund-portal/          # internal portal (JSX)
 ├── assets/               # logos, photos (web/ and thumb/ variants)
 ├── tokens/               # colors, typography, spacing, effects
-├── tools/                # standalone tools (see core-facility-finder/README.md)
+├── tools/                # tool docs (core-facility-finder/, visa-letter-generator/)
 ├── fonts.css · styles.css
 ├── netlify.toml          # publish dir, redirects, security headers
 └── _redirects            # www → apex, catch-all to homepage

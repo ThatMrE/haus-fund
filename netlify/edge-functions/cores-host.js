@@ -1,19 +1,21 @@
-// Serves the Core Facility Finder at the root of cores.haus.fund.
+// Serves each tool subdomain at its own root.
 //
-// WHY AN EDGE FUNCTION: cores.haus.fund is a domain alias of the same Netlify
-// project as haus.fund, so both hostnames resolve to the same publish
+// WHY AN EDGE FUNCTION: the tool subdomains are domain aliases of the same
+// Netlify project as haus.fund, so every hostname resolves to the same publish
 // directory. Without this, cores.haus.fund/ would serve the marketing
 // homepage. Netlify's _redirects file cannot branch on the Host header — only
 // on path — so the host check has to happen here.
 //
-// Everything except "/" is left alone, so cores.js, the facility JSON, the
-// fonts and the shared assets all resolve normally on both hostnames.
+// Everything except "/" is left alone, so cores.js, visa.js, visa-data.js, the
+// facility JSON, the fonts and the shared assets all resolve normally on every
+// hostname.
 //
-// Adding a second tool subdomain later means adding a line to HOSTS, nothing
-// more.
+// Adding another tool subdomain means adding a line to HOSTS and adding the
+// hostname as a domain alias in the Netlify project — nothing more.
 
 const HOSTS = {
   "cores.haus.fund": "/cores.html",
+  "visa.haus.fund": "/visa.html",
 };
 
 // Pure so it can be unit-tested without the edge runtime.

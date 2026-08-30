@@ -15,9 +15,11 @@
   path = "/lp/*"
   function = "lp-auth"
 
-# ── cores.haus.fund: serve the Core Facility Finder at the root ──
-# Runs on "/" only, and only rewrites when the Host is cores.haus.fund.
+# ── tool subdomains: serve each tool at the root of its own hostname ──
+# Runs on "/" only, and rewrites only for the hostnames listed in the function
+# (cores.haus.fund → cores.html, visa.haus.fund → visa.html).
 # _redirects cannot branch on Host, hence the edge function.
+# Each hostname must also be added as a domain alias in the Netlify project.
 [[edge_functions]]
   path = "/"
   function = "cores-host"
