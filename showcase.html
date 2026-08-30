@@ -1,0 +1,795 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>2050 Final Showcase &mdash; Venue Design Brief &middot; Haus</title>
+<meta name="description" content="The venue design brief for the 2050 Final Showcase at Mabuhay Gardens, San Francisco &mdash; two stages, an immersive booth zone, and an all-day programme of optimistic futurism.">
+<link rel="canonical" href="https://haus.fund/showcase">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Haus">
+<meta property="og:url" content="https://haus.fund/showcase">
+<meta property="og:title" content="2050 Final Showcase &mdash; Venue Design Brief &middot; Haus">
+<meta property="og:description" content="The venue design brief for the 2050 Final Showcase at Mabuhay Gardens, San Francisco &mdash; two stages, an immersive booth zone, and an all-day programme of optimistic futurism.">
+<meta property="og:image" content="https://haus.fund/assets/og-haus.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Haus logo">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://haus.fund/assets/og-haus.jpg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700;800;900&family=Barlow+Condensed:wght@600;700;800;900&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600&family=DM+Mono:wght@400;500&display=swap">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html{scroll-behavior:smooth;}
+body{font-family:'DM Sans',sans-serif;background:#F8F7F3;color:#0D0D0D;line-height:1.6;}
+a{color:inherit;text-decoration:none;}
+img{display:block;}
+nav{position:fixed;top:0;left:0;right:0;z-index:200;transition:background 200ms,border-color 200ms;border-bottom:1px solid transparent;}
+nav.scrolled{background:#F8F7F3;border-bottom-color:#E5E1D9;}
+.nav-inner{max-width:1440px;margin:0 auto;padding:0 56px;height:72px;display:flex;align-items:center;justify-content:space-between;}
+.nav-logo{height:28px;object-fit:contain;filter:invert(1) brightness(100);transition:filter 200ms;}
+nav.scrolled .nav-logo{filter:none;}
+.nav-links{display:flex;align-items:center;gap:26px;}
+.nav-links > a,.nav-drop-t{font-size:14px;font-weight:500;color:rgba(255,255,255,0.65);transition:color 150ms;letter-spacing:0.01em;}
+.nav-links > a:hover,.nav-drop-t:hover{color:white;}
+nav.scrolled .nav-links > a,nav.scrolled .nav-drop-t{color:#3A3A3A;}
+nav.scrolled .nav-links > a:hover,nav.scrolled .nav-drop-t:hover{color:#1C3B2D;}
+.nav-apply{background:rgba(255,255,255,0.12);color:white;padding:8px 18px;border-radius:6px;font-size:13px;font-weight:600;border:1.5px solid rgba(255,255,255,0.3);transition:all 200ms;letter-spacing:0.01em;}
+.nav-apply:hover{background:rgba(255,255,255,0.2);border-color:rgba(255,255,255,0.5);}
+nav.scrolled .nav-apply{background:#1C3B2D;border-color:#1C3B2D;color:white;}
+nav.scrolled .nav-apply:hover{background:#2A5C46;}
+/* dropdown */
+.nav-drop{position:relative;}
+.nav-drop-t{background:none;border:none;cursor:pointer;font-family:inherit;display:inline-flex;align-items:center;gap:5px;padding:0;}
+.nav-drop-menu{position:absolute;top:calc(100% + 10px);left:-16px;min-width:210px;background:#FFFFFF;border:1px solid #E5E1D9;border-radius:9px;padding:8px;box-shadow:0 12px 34px rgba(13,13,13,0.14);display:none;}
+.nav-drop-menu::before{content:"";position:absolute;top:-12px;left:0;right:0;height:12px;}
+.nav-drop:hover .nav-drop-menu,.nav-drop:focus-within .nav-drop-menu,.nav-drop.open .nav-drop-menu{display:block;}
+.nav-drop-menu a{display:block;padding:9px 12px;border-radius:6px;font-size:14px;font-weight:500;color:#3A3A3A;transition:background 130ms,color 130ms;}
+.nav-drop-menu a:hover{background:#F0EDE6;color:#1C3B2D;}
+.wrap{max-width:1440px;margin:0 auto;padding:100px 80px;}
+.wrap-sm{max-width:1440px;margin:0 auto;padding:80px 80px;}
+.over{font-size:12px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:#727272;margin-bottom:12px;}
+.over-w{color:rgba(255,255,255,0.45);}
+.h2{font-family:'Barlow',sans-serif;font-size:52px;font-weight:700;line-height:1.08;letter-spacing:-0.01em;color:#0D0D0D;margin-bottom:20px;}
+.h2-w{color:white;}
+.h3{font-family:'Barlow',sans-serif;font-size:24px;font-weight:700;color:#0D0D0D;line-height:1.2;margin-bottom:8px;}
+.body{font-size:18px;line-height:1.65;color:#3A3A3A;}
+.sm{font-size:15px;line-height:1.55;color:#727272;}
+.xs{font-size:12px;color:#B0ADA6;}
+.mono{font-family:'DM Mono',monospace;}
+.card{background:#fff;border:1px solid #E5E1D9;border-radius:10px;padding:28px 32px;}
+.card-t{border-top:3px solid #1C3B2D;}
+.btn-f{display:inline-flex;align-items:center;gap:8px;background:#1C3B2D;color:white;padding:14px 28px;border-radius:6px;font-size:15px;font-weight:600;transition:background 150ms;cursor:pointer;border:none;}
+.btn-f:hover{background:#2A5C46;}
+.btn-ol{display:inline-flex;align-items:center;gap:8px;background:transparent;color:rgba(255,255,255,0.75);padding:14px 28px;border-radius:6px;font-size:15px;font-weight:500;border:1.5px solid rgba(255,255,255,0.3);transition:all 150ms;cursor:pointer;}
+.btn-ol:hover{border-color:rgba(255,255,255,0.7);color:white;}
+.btn-w{background:#fff;color:#1C3B2D;}
+.btn-w:hover{background:#E5E1D9;}
+.g2{display:grid;grid-template-columns:repeat(2,1fr);gap:24px;}
+.g3{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;}
+.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:20px;}
+.tag{display:inline-flex;align-items:center;padding:3px 9px;border-radius:4px;font-size:11px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;background:#F0EDE6;color:#727272;}
+.tag-f{background:#BDDDD3;color:#1C3B2D;}
+.tag-br{background:#F2E8D5;color:#6B4E2A;}
+@keyframes tick{0%{transform:translateX(0);}100%{transform:translateX(-50%);}}
+.ticker{overflow:hidden;background:#0D0D0D;height:44px;display:flex;align-items:center;}
+.ticker-inner{display:flex;white-space:nowrap;animation:tick 34s linear infinite;}
+.ti{font-family:'DM Mono',monospace;font-size:11px;letter-spacing:0.06em;padding:0 20px;color:rgba(255,255,255,0.25);}
+.ti-b{font-weight:600;letter-spacing:0.12em;color:rgba(255,255,255,0.65);}
+/* hero */
+#top{background:#1C3B2D;min-height:88vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:150px 80px 90px;position:relative;overflow:hidden;}
+.hero-mark{font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:800;letter-spacing:0.30em;color:rgba(255,255,255,0.5);margin-bottom:22px;text-transform:uppercase;}
+.hero-h1{font-family:'Barlow Condensed',sans-serif;font-size:84px;font-weight:900;color:white;letter-spacing:0.03em;line-height:0.95;text-transform:uppercase;max-width:1000px;margin-bottom:26px;}
+.hero-lede{font-size:19px;line-height:1.6;color:rgba(255,255,255,0.72);max-width:640px;margin:0 auto 40px;}
+.chips{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;margin-bottom:40px;}
+.chip{border:1px solid rgba(255,255,255,0.18);border-radius:8px;padding:12px 20px;min-width:150px;}
+.chip-l{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:rgba(255,255,255,0.4);margin-bottom:3px;}
+.chip-v{font-size:15px;font-weight:600;color:white;}
+.hero-ctas{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;}
+/* protocol */
+.proto{display:grid;grid-template-columns:repeat(2,1fr);gap:20px;}
+.proto-c{background:#fff;border:1px solid #E5E1D9;border-radius:10px;padding:26px 28px;display:flex;gap:18px;}
+.proto-i{width:38px;height:38px;flex:0 0 38px;border-radius:8px;background:#1C3B2D;color:#fff;display:flex;align-items:center;justify-content:center;font-family:'Barlow',sans-serif;font-weight:800;font-size:15px;}
+/* numbered */
+.num{display:grid;grid-template-columns:64px 1fr;border-top:1px solid #E5E1D9;padding:26px 0;gap:8px;}
+.num-n{font-family:'DM Mono',monospace;font-size:12px;color:#B0ADA6;letter-spacing:0.10em;padding-top:5px;}
+/* timeline */
+.tl{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;}
+.tl-c{background:#fff;border:1px solid #E5E1D9;border-top:3px solid #B8924A;border-radius:10px;padding:26px 28px;}
+.tl-p{font-family:'DM Mono',monospace;font-size:11px;letter-spacing:0.10em;text-transform:uppercase;color:#B8924A;margin-bottom:10px;}
+/* note */
+.note{background:#F0EDE6;border:1px solid #E5E1D9;border-left:3px solid #B8924A;border-radius:10px;padding:30px 34px;}
+/* cta */
+.cta{background:#0D0D0D;text-align:center;}
+.cta-h{font-family:'Barlow Condensed',sans-serif;font-size:80px;font-weight:900;color:white;letter-spacing:0.03em;line-height:0.95;text-transform:uppercase;margin-bottom:22px;}
+/* footer */
+.site-footer{background:#0D0D0D;border-top:1px solid rgba(255,255,255,0.06);padding:32px 80px;}
+.footer-inner{max-width:1440px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:24px;flex-wrap:wrap;}
+.fcap{color:rgba(255,255,255,0.2);letter-spacing:0.08em;text-transform:uppercase;}
+.flinks{display:flex;gap:22px;flex-wrap:wrap;}
+.flinks a{font-family:'DM Mono',monospace;font-size:12px;color:rgba(255,255,255,0.25);letter-spacing:0.06em;text-transform:uppercase;transition:color 150ms;}
+.flinks a:hover{color:rgba(255,255,255,0.75);}
+@media (max-width:1100px){
+  .nav-inner{padding:0 32px;}
+  .nav-links{gap:18px;}
+  .wrap,.wrap-sm{padding:80px 40px;}
+  .h2{font-size:40px;}
+  .proto,.g2,.g3,.tl{grid-template-columns:1fr;}
+  .hero-h1{font-size:62px;}
+  .cta-h{font-size:58px;}
+}
+@media (max-width:680px){
+  .nav-inner{padding:0 18px;height:60px;}
+  .nav-links{display:none;}
+  .nav-logo{height:24px;}
+  .nav-apply{padding:7px 14px;font-size:12px;}
+  .wrap,.wrap-sm{padding:56px 20px;}
+  .h2{font-size:32px;}
+  .h3{font-size:21px;}
+  .body{font-size:16px;}
+  #top{min-height:auto;padding:104px 20px 64px;}
+  .hero-h1{font-size:44px;}
+  .cta-h{font-size:42px;}
+  .chip{min-width:0;flex:1 1 140px;}
+  .hero-ctas a{width:100%;justify-content:center;}
+  .footer-inner{flex-direction:column;text-align:center;}
+  .flinks{justify-content:center;}
+  html,body{overflow-x:hidden;}
+}
+
+/* ══ Mobile navigation + cross-OS fixes ══ */
+/* Footer link row must wrap — it holds 11 links and overflowed on tablets */
+.footer-inner{flex-wrap:wrap;row-gap:14px;}
+.footer-inner > div{flex-wrap:wrap;row-gap:6px;}
+@media(max-width:900px){.footer-inner{justify-content:center;text-align:center;}
+  .footer-inner > div{justify-content:center;}}
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%;}
+body{-webkit-font-smoothing:antialiased;}
+/* Respect the notch / rounded corners on iOS */
+.nav-inner{padding-left:max(18px,env(safe-area-inset-left));padding-right:max(18px,env(safe-area-inset-right));}
+@media(min-width:681px){.nav-inner{padding-left:max(56px,env(safe-area-inset-left));padding-right:max(56px,env(safe-area-inset-right));}}
+/* Taller viewport units where supported (iOS address-bar shrink) */
+@supports (height:100dvh){#top{min-height:100dvh;}}
+@media(max-width:680px){@supports (height:100dvh){#top{min-height:auto;}}}
+
+.nav-burger{display:none;background:none;border:none;cursor:pointer;padding:8px;margin-left:4px;
+  width:44px;height:44px;align-items:center;justify-content:center;flex:0 0 auto;-webkit-tap-highlight-color:transparent;}
+.nav-burger span{display:block;position:relative;width:22px;height:2px;background:#fff;border-radius:2px;transition:background 200ms;}
+.nav-burger span::before,.nav-burger span::after{content:"";position:absolute;left:0;width:22px;height:2px;background:#fff;border-radius:2px;transition:transform 200ms,background 200ms;}
+.nav-burger span::before{top:-7px;}
+.nav-burger span::after{top:7px;}
+nav.scrolled .nav-burger span,nav.scrolled .nav-burger span::before,nav.scrolled .nav-burger span::after{background:#0D0D0D;}
+.nav-burger[aria-expanded="true"] span{background:transparent;}
+.nav-burger[aria-expanded="true"] span::before{transform:translateY(7px) rotate(45deg);background:#0D0D0D;}
+.nav-burger[aria-expanded="true"] span::after{transform:translateY(-7px) rotate(-45deg);background:#0D0D0D;}
+
+.nav-mobile{display:none;}
+@media(max-width:900px){
+  /* 900 not 680: between 681-780 the full nav needs ~746px and pushed Apply off-screen */
+  .nav-burger{display:inline-flex;}
+  .nav-links{display:none !important;}
+  /* With the links hidden, space-between stranded Apply mid-nav */
+  .nav-apply{margin-left:auto;}
+  .nav-mobile{position:absolute;top:100%;left:0;right:0;background:#F8F7F3;border-bottom:1px solid #E5E1D9;
+    box-shadow:0 14px 34px rgba(13,13,13,0.16);padding:6px 0 14px;
+    max-height:calc(100vh - 60px);overflow-y:auto;-webkit-overflow-scrolling:touch;}
+  @supports (max-height:100dvh){.nav-mobile{max-height:calc(100dvh - 60px);}}
+  .nav-mobile.open{display:block;}
+  .nav-mobile a{display:block;padding:15px max(20px,env(safe-area-inset-left));font-size:16px;font-weight:500;
+    color:#0D0D0D !important;border-bottom:1px solid #E8E4DC;-webkit-tap-highlight-color:rgba(28,59,45,0.08);}
+  .nav-mobile a:last-child{border-bottom:none;}
+  .nav-mobile a:active{background:#F0EDE6;}
+  .nav-mobile .nm-grp{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;
+    color:#8A8A8A;padding:16px max(20px,env(safe-area-inset-left)) 6px;}
+  .nav-mobile .nm-sub{padding-left:max(34px,calc(env(safe-area-inset-left) + 14px)) !important;}
+  .nav-mobile .nm-apply{margin:14px max(20px,env(safe-area-inset-left)) 4px;background:#1C3B2D;color:#fff !important;
+    text-align:center;border-radius:6px;border-bottom:none;font-weight:600;padding:15px 20px;}
+  /* Tap targets: 44px minimum (Apple HIG / Android a11y) */
+  .footer-inner a,footer a{display:inline-flex;align-items:center;min-height:44px;padding:10px 6px;}
+  .nav-inner > a:first-child{display:inline-flex;align-items:center;min-height:44px;}
+  .nav-apply{display:inline-flex;align-items:center;min-height:44px;padding:11px 16px;}
+  /* Micro-labels: 10px is too small on a phone */
+  .chip-l,.nav-mobile .nm-grp{font-size:11px;}
+  /* Standalone inline links need a real tap area */
+  a.mono.xs{display:inline-flex;align-items:center;min-height:44px;}
+}
+</style><style>
+/* ══ 2050 Final Showcase — page-specific ══
+   The event carries its own identity (deep navy, teal, cyan) as set out in the
+   design brief. It is used for the dark sections and accents only; the body of
+   the page stays on the Haus canvas/ink/forest/bronze system. */
+:root{--navy:#0A1628;--teal:#00BFA5;--cyan:#00E5FF;--warm:#F5F0E8;}
+
+#top{background:var(--navy);}
+#top::after{content:"";position:absolute;left:0;right:0;bottom:0;height:3px;
+  background:linear-gradient(90deg,var(--teal) 0%,var(--cyan) 100%);}
+.hero-h1{letter-spacing:0.02em;}
+.hero-mark{color:var(--cyan);opacity:0.75;}
+
+/* Section shells */
+.dark{background:var(--navy);}
+.dark .h2,.dark .h3{color:#fff;}
+.dark .sm{color:rgba(255,255,255,0.55);}
+.dark .body{color:rgba(255,255,255,0.72);}
+.dark .over{color:var(--cyan);opacity:0.8;}
+
+/* Spec rows — the top-line facts from the brief */
+.spec{border-top:1px solid #E5E1D9;}
+.spec-r{display:grid;grid-template-columns:200px 1fr;gap:12px 28px;
+  border-bottom:1px solid #E5E1D9;padding:16px 0;align-items:baseline;}
+.spec-k{font-family:'DM Mono',monospace;font-size:11px;letter-spacing:0.12em;
+  text-transform:uppercase;color:#B0ADA6;}
+.spec-v{font-size:17px;color:#0D0D0D;font-weight:500;}
+
+/* Palette swatches */
+.sw{display:grid;grid-template-columns:repeat(4,1fr);gap:20px;}
+.sw-c{border:1px solid #E5E1D9;border-radius:10px;overflow:hidden;background:#fff;}
+.sw-chip{height:104px;}
+.sw-b{padding:16px 18px 18px;}
+.sw-n{font-family:'Barlow',sans-serif;font-weight:700;font-size:17px;color:#0D0D0D;}
+.sw-h{font-family:'DM Mono',monospace;font-size:12px;color:#727272;letter-spacing:0.06em;margin:3px 0 8px;}
+
+/* Tables */
+.tw{overflow-x:auto;-webkit-overflow-scrolling:touch;border:1px solid #E5E1D9;border-radius:10px;background:#fff;}
+table.t{width:100%;border-collapse:collapse;min-width:640px;}
+table.t th{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:0.12em;text-transform:uppercase;
+  color:#727272;text-align:left;padding:14px 20px;background:#F0EDE6;border-bottom:1px solid #E5E1D9;
+  white-space:nowrap;}
+table.t td{padding:16px 20px;font-size:15px;line-height:1.5;color:#3A3A3A;border-bottom:1px solid #F0EDE6;
+  vertical-align:top;}
+table.t tr:last-child td{border-bottom:none;}
+table.t td:first-child{font-weight:600;color:#0D0D0D;white-space:nowrap;}
+table.t td.num-cell{font-family:'DM Mono',monospace;color:#0D0D0D;}
+
+/* Schematic */
+.plan{background:#fff;border:1px solid #E5E1D9;border-radius:10px;padding:26px;overflow-x:auto;}
+.plan svg{display:block;min-width:660px;width:100%;height:auto;}
+
+/* Journey timeline */
+.jr{border-left:2px solid #E5E1D9;padding-left:0;}
+.jr-i{display:grid;grid-template-columns:150px 1fr;gap:10px 28px;padding:22px 0 22px 28px;
+  position:relative;border-bottom:1px solid #E5E1D9;}
+.jr-i:last-child{border-bottom:none;}
+.jr-i::before{content:"";position:absolute;left:-7px;top:30px;width:12px;height:12px;border-radius:50%;
+  background:#1C3B2D;border:3px solid #F8F7F3;}
+.jr-t{font-family:'DM Mono',monospace;font-size:12px;letter-spacing:0.08em;color:#B8924A;padding-top:3px;}
+
+/* Bulleted lists that match the site's type scale */
+ul.li{list-style:none;padding:0;margin:0;}
+ul.li li{position:relative;padding:0 0 10px 20px;font-size:15px;line-height:1.55;color:#3A3A3A;}
+ul.li li::before{content:"";position:absolute;left:0;top:9px;width:6px;height:6px;border-radius:1px;
+  background:#B8924A;}
+.dark ul.li li{color:rgba(255,255,255,0.68);}
+.dark ul.li li::before{background:var(--teal);}
+
+.card-teal{border-top:3px solid var(--teal);}
+
+@media (max-width:1100px){
+  .sw{grid-template-columns:repeat(2,1fr);}
+  .spec-r{grid-template-columns:1fr;gap:4px;}
+  .jr-i{grid-template-columns:1fr;gap:6px;}
+}
+@media (max-width:680px){
+  .sw{grid-template-columns:1fr;}
+  .jr-i{padding-left:22px;}
+}
+</style>
+</head>
+<body>
+
+<nav id="nav">
+  <div class="nav-inner">
+    <a href="index.html#top"><img src="assets/logo-mark.svg" class="nav-logo" alt="Haus"></a>
+    <div class="nav-links">
+      <a href="index.html#program">Program</a>
+      <a href="index.html#stack">What You Get</a>
+      <div class="nav-drop">
+        <button class="nav-drop-t" aria-expanded="false" aria-haspopup="true">Houses <span aria-hidden="true">&#9662;</span></button>
+        <div class="nav-drop-menu">
+      <a href="punkhaus.html">PunkHaus</a>
+      <a href="femhaus.html">FemHaus</a>
+      <a href="safehaus.html">SafeHaus</a>
+      <a href="cellhaus.html">CellHaus</a>
+      <a href="pharmhaus.html">PharmHaus</a>
+        </div>
+      </div>
+      <div class="nav-drop">
+        <button class="nav-drop-t" aria-expanded="false" aria-haspopup="true">About <span aria-hidden="true">&#9662;</span></button>
+        <div class="nav-drop-menu">
+          <a href="team.html">Team</a>
+          <a href="portfolio.html">Portfolio</a>
+          <a href="careers.html">Careers</a>
+          <a href="showcase.html" style="color:white;">2050 Showcase</a>
+        </div>
+      </div>
+      <a href="mentors.html">Mentors</a>
+      <a href="expansion.html">Global &#8599;</a>
+      <a href="sponsors.html">Sponsors</a>
+    </div>
+    <a href="https://airtable.com/app9STfjol4NHGEWj/pag6vvU75E9mWLH49/form" class="nav-apply">Apply</a>
+    <button class="nav-burger" aria-expanded="false" aria-controls="navMobile" aria-label="Menu"><span></span></button>
+  </div>
+  <div class="nav-mobile" id="navMobile"></div>
+</nav>
+
+<section id="top">
+  <div class="hero-mark">Mabuhay Gardens &middot; 443 Broadway, San Francisco</div>
+  <h1 class="hero-h1">2050<br>Final Showcase</h1>
+  <div class="hero-lede">The capstone of the cohort. An all-day, two-stage event where founders stand up and make a room of strangers feel a future &mdash; then let them walk into it, booth by booth.</div>
+  <div class="chips">
+    <div class="chip"><div class="chip-l">Venue</div><div class="chip-v">Mabuhay Gardens</div></div>
+    <div class="chip"><div class="chip-l">Format</div><div class="chip-v">All-day &middot; 10:00&ndash;22:00</div></div>
+    <div class="chip"><div class="chip-l">Stages</div><div class="chip-v">Two, concurrent</div></div>
+    <div class="chip"><div class="chip-l">Exhibition</div><div class="chip-v">15&ndash;25 booths</div></div>
+  </div>
+  <div class="hero-ctas">
+    <a href="mailto:elliot@haus.fund?subject=2050%20Showcase%20%E2%80%94%20exhibiting" class="btn-f btn-w">Exhibit or sponsor &#8594;</a>
+    <a href="#brief" class="btn-ol">Read the brief &#8595;</a>
+  </div>
+</section>
+
+<div class="ticker"><div class="ticker-inner"><span class="ti ti-b">OPTIMISTIC FUTURISM</span><span class="ti">ATGCCATTGGACCTTAAGCG</span><span class="ti ti-b">TWO STAGES</span><span class="ti">ATGCCATTGGACCTTAAGCG</span><span class="ti ti-b">IMMERSIVE BOOTHS</span><span class="ti">ATGCCATTGGACCTTAAGCG</span><span class="ti ti-b">443 BROADWAY</span><span class="ti">ATGCCATTGGACCTTAAGCG</span><span class="ti ti-b">ARTIFACTS FROM 2050</span><span class="ti">ATGCCATTGGACCTTAAGCG</span><span class="ti ti-b">#2050SHOWCASE</span><span class="ti">ATGCCATTGGACCTTAAGCG</span><span class="ti ti-b">OPTIMISTIC FUTURISM</span><span class="ti">ATGCCATTGGACCTTAAGCG</span><span class="ti ti-b">TWO STAGES</span><span class="ti">ATGCCATTGGACCTTAAGCG</span><span class="ti ti-b">IMMERSIVE BOOTHS</span><span class="ti">ATGCCATTGGACCTTAAGCG</span><span class="ti ti-b">443 BROADWAY</span><span class="ti">ATGCCATTGGACCTTAAGCG</span><span class="ti ti-b">ARTIFACTS FROM 2050</span><span class="ti">ATGCCATTGGACCTTAAGCG</span><span class="ti ti-b">#2050SHOWCASE</span><span class="ti">ATGCCATTGGACCTTAAGCG</span></div></div>
+
+<!-- ═══ 1 · Overview ═══ -->
+<section class="wrap" id="brief">
+  <div style="max-width:760px;margin-bottom:44px;">
+    <div class="over">The event</div>
+    <div class="h2">An all-day walk into 2050</div>
+    <div class="body">The 2050 Final Showcase brings together innovators, researchers, founders, and visionaries to present the ideas that will shape the next quarter-century. Mabuhay Gardens is turned into a future-forward experience space: two stages of TED-style programming running concurrently, wrapped around a curated zone of immersive, interactive booths.</div>
+  </div>
+  <div class="spec">
+    <div class="spec-r"><div class="spec-k">Event</div><div class="spec-v">2050 Final Showcase</div></div>
+    <div class="spec-r"><div class="spec-k">Venue</div><div class="spec-v">Mabuhay Gardens, 443 Broadway, San Francisco &mdash; both rooms</div></div>
+    <div class="spec-r"><div class="spec-k">Format</div><div class="spec-v">All-day, 10:00&ndash;22:00</div></div>
+    <div class="spec-r"><div class="spec-k">Stages</div><div class="spec-v">Two, running concurrent programming</div></div>
+    <div class="spec-r"><div class="spec-k">Exhibition</div><div class="spec-v">Immersive booth zone with interactive installations</div></div>
+    <div class="spec-r"><div class="spec-k">Theme</div><div class="spec-v">Optimistic futurism &mdash; grounded in science, human-centred, forward-looking</div></div>
+    <div class="spec-r"><div class="spec-k">Capacity</div><div class="spec-v">400&ndash;600 concurrent across all zones</div></div>
+  </div>
+  <div class="note" style="margin-top:44px;">
+    <div class="h3">The first edition</div>
+    <div class="body" style="font-size:16px;">Biopunk 2050: S26 Final Showcase ran at Mabuhay Gardens on 15 August 2026 under the theme &ldquo;2050: Visions of an Optimistic Future&rdquo; &mdash; the first time the room was built. What follows is the venue design brief for the full-scale build: the aesthetic, the layout, the production spec, and what exhibitors are held to.</div>
+  </div>
+</section>
+
+<!-- ═══ 2 · Design direction ═══ -->
+<section class="wrap-sm" style="background:#fff;border-top:1px solid #E5E1D9;border-bottom:1px solid #E5E1D9;">
+  <div style="max-width:760px;margin-bottom:40px;">
+    <div class="over">Design direction</div>
+    <div class="h2">Research lab meets gallery opening</div>
+    <div class="body">The aesthetic is optimistic futurism &mdash; clean, science-forward, and warm rather than cold or dystopian. Polished surfaces, living materials, projected data, organic forms. The space should feel like stepping into 2050 as we hope it will be, not the version that keeps us up at night.</div>
+  </div>
+
+  <div class="over" style="margin-bottom:16px;">Palette</div>
+  <div class="sw">
+    <div class="sw-c"><div class="sw-chip" style="background:#0A1628;"></div><div class="sw-b"><div class="sw-n">Deep Navy</div><div class="sw-h">#0A1628</div><div class="sm">Primary. The grounding colour &mdash; stage backdrops, signage backgrounds, booth headers.</div></div></div>
+    <div class="sw-c"><div class="sw-chip" style="background:#00BFA5;"></div><div class="sw-b"><div class="sw-n">Teal</div><div class="sw-h">#00BFA5</div><div class="sm">Accent. Energy and wayfinding &mdash; arrows, edge-lighting, accent bars.</div></div></div>
+    <div class="sw-c"><div class="sw-chip" style="background:#00E5FF;"></div><div class="sw-b"><div class="sw-n">Electric Cyan</div><div class="sw-h">#00E5FF</div><div class="sm">Highlight. Digital elements and the moments that need to spike.</div></div></div>
+    <div class="sw-c"><div class="sw-chip" style="background:#F5F0E8;border-bottom:1px solid #E5E1D9;"></div><div class="sw-b"><div class="sw-n">Warm White</div><div class="sw-h">#F5F0E8</div><div class="sm">Neutral. Keeps the palette from reading cold or sterile.</div></div></div>
+  </div>
+
+  <div class="g2" style="margin-top:40px;">
+    <div class="card card-teal">
+      <div class="h3">Typography</div>
+      <ul class="li" style="margin-top:10px;">
+        <li><strong>Primary</strong> &mdash; a clean geometric sans-serif (Inter, DM Sans, or Outfit).</li>
+        <li><strong>Display</strong> &mdash; a bolder weight of the same family for stage titles and signage.</li>
+        <li><strong>Avoid</strong> &mdash; overly techy or sci-fi typefaces. The content is futuristic enough.</li>
+      </ul>
+    </div>
+    <div class="card card-teal">
+      <div class="h3">Materials &amp; textures</div>
+      <ul class="li" style="margin-top:10px;">
+        <li>Matte black and brushed metal structures.</li>
+        <li>Translucent acrylic panels with edge-lit LED.</li>
+        <li>Living greenery worked into booth dividers and stage edges.</li>
+        <li>Projected light textures on floors and walls &mdash; data streams, organic patterns.</li>
+        <li>Fabric scrims for soft zoning and ambient light diffusion.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 3 · Layout ═══ -->
+<section class="wrap">
+  <div style="max-width:760px;margin-bottom:40px;">
+    <div class="over">Venue layout</div>
+    <div class="h2">Two stages, one exhibition floor</div>
+    <div class="body">Programming runs concurrently on both stages with separate audio feeds. The booth zone sits between them, so the walk from one talk to the next goes through the exhibition rather than around it.</div>
+  </div>
+
+  <div class="plan" style="margin-bottom:36px;">
+    <svg viewBox="0 0 900 420" role="img" aria-label="Schematic of the venue zones: entry portal and registration lead to the main stage, a booth zone of fifteen to twenty-five booths, the breakout stage, a networking lounge, a food and beverage zone, and backstage greenroom and press areas.">
+      <rect x="0" y="0" width="900" height="420" fill="#F8F7F3"/>
+      <rect x="14" y="14" width="872" height="392" fill="none" stroke="#CECAC1" stroke-width="1.5"/>
+
+      <!-- Entry -->
+      <rect x="30" y="150" width="96" height="120" fill="#0A1628"/>
+      <text x="78" y="200" text-anchor="middle" fill="#00E5FF" font-family="DM Mono, monospace" font-size="10" letter-spacing="1.4">ENTRY</text>
+      <text x="78" y="216" text-anchor="middle" fill="#00E5FF" font-family="DM Mono, monospace" font-size="10" letter-spacing="1.4">PORTAL</text>
+      <text x="78" y="238" text-anchor="middle" fill="rgba(255,255,255,0.5)" font-family="DM Mono, monospace" font-size="9">20FT</text>
+
+      <!-- Registration -->
+      <rect x="140" y="150" width="86" height="120" fill="#fff" stroke="#CECAC1"/>
+      <text x="183" y="205" text-anchor="middle" fill="#0D0D0D" font-family="Barlow, sans-serif" font-size="12" font-weight="700">CHECK-IN</text>
+      <text x="183" y="223" text-anchor="middle" fill="#727272" font-family="DM Mono, monospace" font-size="9">3&#8211;4 STATIONS</text>
+
+      <!-- Main stage -->
+      <rect x="248" y="34" width="300" height="150" fill="#fff" stroke="#CECAC1"/>
+      <rect x="248" y="34" width="300" height="5" fill="#00BFA5"/>
+      <text x="398" y="72" text-anchor="middle" fill="#0D0D0D" font-family="Barlow Condensed, sans-serif" font-size="22" font-weight="800" letter-spacing="1">STAGE 1 &#183; MAIN</text>
+      <text x="398" y="96" text-anchor="middle" fill="#3A3A3A" font-family="DM Sans, sans-serif" font-size="12">Keynotes &amp; featured talks</text>
+      <text x="398" y="126" text-anchor="middle" fill="#727272" font-family="DM Mono, monospace" font-size="10">24 &#215; 16FT &#183; 2FT RISER</text>
+      <text x="398" y="146" text-anchor="middle" fill="#727272" font-family="DM Mono, monospace" font-size="10">200&#8211;300 SEATED &#183; LED WALL</text>
+
+      <!-- Booth zone -->
+      <rect x="248" y="196" width="300" height="188" fill="#fff" stroke="#CECAC1"/>
+      <text x="398" y="222" text-anchor="middle" fill="#0D0D0D" font-family="Barlow Condensed, sans-serif" font-size="20" font-weight="800" letter-spacing="1">BOOTH ZONE</text>
+      <g fill="#F0EDE6" stroke="#CECAC1">
+        <rect x="268" y="238" width="60" height="42"/><rect x="340" y="238" width="60" height="42"/>
+        <rect x="412" y="238" width="60" height="42"/><rect x="484" y="238" width="44" height="42"/>
+        <rect x="268" y="300" width="60" height="42"/><rect x="340" y="300" width="60" height="42"/>
+        <rect x="412" y="300" width="60" height="42"/><rect x="484" y="300" width="44" height="42"/>
+      </g>
+      <line x1="268" y1="291" x2="528" y2="291" stroke="#00BFA5" stroke-width="1" stroke-dasharray="5 5"/>
+      <text x="398" y="366" text-anchor="middle" fill="#727272" font-family="DM Mono, monospace" font-size="10">15&#8211;25 BOOTHS &#183; 8FT MIN AISLES</text>
+
+      <!-- Breakout stage -->
+      <rect x="570" y="34" width="200" height="150" fill="#fff" stroke="#CECAC1"/>
+      <rect x="570" y="34" width="200" height="5" fill="#00BFA5"/>
+      <text x="670" y="72" text-anchor="middle" fill="#0D0D0D" font-family="Barlow Condensed, sans-serif" font-size="20" font-weight="800" letter-spacing="1">STAGE 2</text>
+      <text x="670" y="94" text-anchor="middle" fill="#3A3A3A" font-family="DM Sans, sans-serif" font-size="12">Panels &#183; lightning &#183; demos</text>
+      <text x="670" y="124" text-anchor="middle" fill="#727272" font-family="DM Mono, monospace" font-size="10">16 &#215; 12FT &#183; 1FT RISER</text>
+      <text x="670" y="144" text-anchor="middle" fill="#727272" font-family="DM Mono, monospace" font-size="10">80&#8211;120 SEATED</text>
+
+      <!-- Lounge -->
+      <rect x="570" y="196" width="200" height="86" fill="#fff" stroke="#CECAC1"/>
+      <text x="670" y="230" text-anchor="middle" fill="#0D0D0D" font-family="Barlow, sans-serif" font-size="13" font-weight="700">NETWORKING LOUNGE</text>
+      <text x="670" y="250" text-anchor="middle" fill="#727272" font-family="DM Mono, monospace" font-size="10">60&#8211;80 &#183; CHARGING</text>
+
+      <!-- F&B -->
+      <rect x="570" y="298" width="200" height="86" fill="#fff" stroke="#CECAC1"/>
+      <text x="670" y="332" text-anchor="middle" fill="#0D0D0D" font-family="Barlow, sans-serif" font-size="13" font-weight="700">FOOD &amp; BEVERAGE</text>
+      <text x="670" y="352" text-anchor="middle" fill="#727272" font-family="DM Mono, monospace" font-size="10">80&#8211;100 &#183; COMMUNAL</text>
+
+      <!-- Back of house -->
+      <rect x="792" y="34" width="76" height="150" fill="#F0EDE6" stroke="#CECAC1"/>
+      <text x="830" y="100" text-anchor="middle" fill="#727272" font-family="DM Mono, monospace" font-size="9">GREEN</text>
+      <text x="830" y="114" text-anchor="middle" fill="#727272" font-family="DM Mono, monospace" font-size="9">ROOM</text>
+      <rect x="792" y="196" width="76" height="86" fill="#F0EDE6" stroke="#CECAC1"/>
+      <text x="830" y="244" text-anchor="middle" fill="#727272" font-family="DM Mono, monospace" font-size="9">PRESS</text>
+
+      <!-- Flow arrow -->
+      <path d="M126 210 L142 210" stroke="#00BFA5" stroke-width="2"/>
+      <path d="M226 210 L244 210" stroke="#00BFA5" stroke-width="2"/>
+      <text x="450" y="404" text-anchor="middle" fill="#B0ADA6" font-family="DM Mono, monospace" font-size="9" letter-spacing="1.2">SCHEMATIC &#8212; ZONES AND ADJACENCIES, NOT TO SCALE</text>
+    </svg>
+  </div>
+
+  <div class="g2">
+    <div class="card card-t">
+      <div class="tag tag-f" style="margin-bottom:10px;">Stage 1</div>
+      <div class="h3">Main stage &mdash; keynotes &amp; featured talks</div>
+      <ul class="li" style="margin-top:10px;">
+        <li><strong>Configuration</strong> &mdash; theater-style seating, 200&ndash;300 capacity.</li>
+        <li><strong>Dimensions</strong> &mdash; 24ft wide &times; 16ft deep &times; 2ft elevated.</li>
+        <li><strong>Backdrop</strong> &mdash; full-width LED wall (16:9 or 32:9 ultrawide) on the navy/teal branded template.</li>
+        <li><strong>Podium</strong> &mdash; minimal clear acrylic lectern with embedded confidence monitor.</li>
+        <li><strong>Wings</strong> &mdash; black drape with teal edge-lighting for speaker entry and exit.</li>
+        <li><strong>Audience</strong> &mdash; tiered or raked seating preferred; front rows held for speakers and VIPs.</li>
+      </ul>
+    </div>
+    <div class="card card-t">
+      <div class="tag tag-f" style="margin-bottom:10px;">Stage 2</div>
+      <div class="h3">Breakout stage &mdash; panels, lightning talks, demos</div>
+      <ul class="li" style="margin-top:10px;">
+        <li><strong>Configuration</strong> &mdash; flexible seating, 80&ndash;120 capacity.</li>
+        <li><strong>Dimensions</strong> &mdash; 16ft wide &times; 12ft deep &times; 1ft elevated.</li>
+        <li><strong>Backdrop</strong> &mdash; large-format screen (120&Prime; minimum) with branded lower-third template.</li>
+        <li><strong>Setup</strong> &mdash; modular; shifts from single speaker to panel (four chairs and a moderator) to demo table.</li>
+        <li><strong>Intimacy</strong> &mdash; closer audience proximity, first row within 6ft of the stage.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="h3" style="margin:44px 0 16px;">Supporting zones</div>
+  <div class="tw">
+    <table class="t">
+      <thead><tr><th>Zone</th><th>What it is</th></tr></thead>
+      <tbody>
+        <tr><td>Registration</td><td>Near the main entrance. Three to four stations with digital badge printing.</td></tr>
+        <tr><td>Networking lounge</td><td>Soft seating and charging stations, sited between the two stages.</td></tr>
+        <tr><td>Food &amp; beverage</td><td>Its own zone away from the tech. Communal tables, grab-and-go format.</td></tr>
+        <tr><td>Greenroom</td><td>Backstage for speakers, with monitors carrying the live stage feeds.</td></tr>
+        <tr><td>Press / media</td><td>Designated area near Stage 1 with clear sightlines.</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ═══ 4 · Booths ═══ -->
+<section class="wrap-sm" style="background:#fff;border-top:1px solid #E5E1D9;border-bottom:1px solid #E5E1D9;">
+  <div style="max-width:760px;margin-bottom:32px;">
+    <div class="over">Exhibition</div>
+    <div class="h2">The booth zone is the heart of it</div>
+    <div class="body">Three booth formats, laid out on a grid with wide aisles. Living plant walls and translucent fabric scrims divide the zone; projected floor patterns and a low generative soundscape hold the ambience between talks.</div>
+  </div>
+  <div class="tw" style="margin-bottom:28px;">
+    <table class="t">
+      <thead><tr><th>Booth type</th><th>Dimensions</th><th>Description</th><th>Includes</th></tr></thead>
+      <tbody>
+        <tr><td>Immersive Pod</td><td class="num-cell">10ft &times; 10ft, enclosed</td><td>Fully enclosed experience with controlled lighting and sound.</td><td>Power (20A), ethernet, blackout curtain, 2 spotlights</td></tr>
+        <tr><td>Interactive Station</td><td class="num-cell">8ft &times; 6ft, open</td><td>Open booth with table, screen, and demo space.</td><td>Power (15A), 42&Prime; display, table, 2 chairs</td></tr>
+        <tr><td>Static Display</td><td class="num-cell">6ft &times; 4ft</td><td>Poster board or tabletop exhibit.</td><td>Power (10A), easel or table, lighting</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="g3">
+    <div class="card"><div class="h3">Layout</div><div class="sm" style="margin-top:6px;">Grid pattern with aisles no narrower than 8ft, so flow between stages runs through the exhibition.</div></div>
+    <div class="card"><div class="h3">Dividers</div><div class="sm" style="margin-top:6px;">Living plant walls and translucent fabric scrims &mdash; soft zoning rather than hard walls.</div></div>
+    <div class="card"><div class="h3">Ambient</div><div class="sm" style="margin-top:6px;">Projected floor patterns and a low-volume generative soundscape across the zone.</div></div>
+  </div>
+</section>
+
+<!-- ═══ 5 · The day ═══ -->
+<section class="wrap">
+  <div style="max-width:760px;margin-bottom:36px;">
+    <div class="over">Attendee journey</div>
+    <div class="h2">Twelve hours, one arc</div>
+    <div class="body">Lighting and sound move with the day &mdash; warm in the morning, cool through the afternoon, dynamic in the evening. The venue should feel like it is keeping time with the programme.</div>
+  </div>
+  <div class="jr">
+    <div class="jr-i">
+      <div class="jr-t">10:00 &middot; ARRIVAL</div>
+      <div>
+        <div class="h3">Street to 2050</div>
+        <div class="sm" style="margin-top:6px;">A branded 20ft entry tunnel with projected ambient visuals and spatial audio makes the transition. Check-in prints a digital badge carrying a QR code for the schedule, booth map, and networking. The ambient soundscape shifts as you cross into the main space.</div>
+      </div>
+    </div>
+    <div class="jr-i">
+      <div class="jr-t">10:30&ndash;13:00 &middot; MORNING</div>
+      <div>
+        <div class="h3">Opening keynote and featured talks</div>
+        <div class="sm" style="margin-top:6px;">Stage 1 runs the opening keynote plus three to four featured talks at 20 minutes each. Stage 2 runs lightning talks at 8 minutes on a rolling schedule. Booths are open for exploration between talks.</div>
+      </div>
+    </div>
+    <div class="jr-i">
+      <div class="jr-t">13:00&ndash;14:30 &middot; MIDDAY</div>
+      <div>
+        <div class="h3">Networking lunch</div>
+        <div class="sm" style="margin-top:6px;">Lunch in the F&amp;B zone. Booths stay open for extended demos; the slot is built for informal meetups and 1:1 connections rather than programming.</div>
+      </div>
+    </div>
+    <div class="jr-i">
+      <div class="jr-t">14:30&ndash;17:30 &middot; AFTERNOON</div>
+      <div>
+        <div class="h3">Panels, demos, peak floor traffic</div>
+        <div class="sm" style="margin-top:6px;">Stage 1 turns to panel discussions and featured talks; Stage 2 runs interactive demos and audience Q&amp;A. This is peak booth traffic &mdash; every exhibitor staffed.</div>
+      </div>
+    </div>
+    <div class="jr-i">
+      <div class="jr-t">18:00&ndash;22:00 &middot; EVENING</div>
+      <div>
+        <div class="h3">Closing keynote and reception</div>
+        <div class="sm" style="margin-top:6px;">Lighting shifts to a warmer, more dynamic palette. Stage 1 carries the closing keynote and finale; Stage 2 becomes open mic and community showcase. A networking reception runs with music, food, and continued booth access.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 6 · Production spec ═══ -->
+<section class="wrap dark">
+  <div style="max-width:760px;margin-bottom:40px;">
+    <div class="over over-w">Production spec</div>
+    <div class="h2 h2-w">What has to be in the building</div>
+    <div class="body">Both stages run independent programming, which means independent audio. Everything on Stage 1 is captured at podcast quality; the room is wired for 500 concurrent devices before a single exhibitor plugs in.</div>
+  </div>
+  <div class="g2" style="gap:20px;">
+    <div class="card" style="background:rgba(255,255,255,0.04);border-color:rgba(255,255,255,0.12);">
+      <div class="h3" style="color:#fff;">Audio-visual</div>
+      <ul class="li" style="margin-top:10px;">
+        <li><strong>Stage 1</strong> &mdash; LED wall (12ft &times; 7ft minimum), front-fill plus line array PA, 2 wireless lavs, 2 handhelds, confidence monitor, presentation clicker.</li>
+        <li><strong>Stage 2</strong> &mdash; large-format screen and projector (6,000 lumens minimum), powered speakers, 2 wireless lavs, 1 handheld, stage monitor.</li>
+        <li><strong>Both</strong> &mdash; separate audio feeds for independent programming, house mix position.</li>
+      </ul>
+    </div>
+    <div class="card" style="background:rgba(255,255,255,0.04);border-color:rgba(255,255,255,0.12);">
+      <div class="h3" style="color:#fff;">Lighting</div>
+      <ul class="li" style="margin-top:10px;">
+        <li><strong>Stage 1</strong> &mdash; front wash in warm white, key light with adjustable colour temperature, teal and cyan edge accents, soft audience wash.</li>
+        <li><strong>Stage 2</strong> &mdash; simpler rig: front wash and two moving heads for colour accents.</li>
+        <li><strong>Booth zone</strong> &mdash; warm ambient overhead wash with adjustable individual booth spots.</li>
+        <li><strong>Venue-wide</strong> &mdash; projected patterns synced to the phases of the day: warm morning, cool afternoon, dynamic evening.</li>
+      </ul>
+    </div>
+    <div class="card" style="background:rgba(255,255,255,0.04);border-color:rgba(255,255,255,0.12);">
+      <div class="h3" style="color:#fff;">Connectivity &amp; power</div>
+      <ul class="li" style="margin-top:10px;">
+        <li>Dedicated event Wi-Fi for 500 concurrent devices, with a separate SSID for exhibitors.</li>
+        <li>Hardwired ethernet to every Immersive Pod and each AV position.</li>
+        <li>200A total event load, dedicated circuits per booth row.</li>
+        <li>Four charging stations with USB-A, USB-C, and wireless.</li>
+      </ul>
+    </div>
+    <div class="card" style="background:rgba(255,255,255,0.04);border-color:rgba(255,255,255,0.12);">
+      <div class="h3" style="color:#fff;">Recording &amp; streaming</div>
+      <ul class="li" style="margin-top:10px;">
+        <li>Multi-camera capture on Stage 1 &mdash; two fixed, one roaming.</li>
+        <li>Single fixed camera on Stage 2.</li>
+        <li>Live stream capability over RTMP to YouTube or a custom platform.</li>
+        <li>Audio board feed for podcast-quality recording of every talk.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 7 · Branding ═══ -->
+<section class="wrap-sm" style="background:#fff;border-bottom:1px solid #E5E1D9;">
+  <div style="max-width:760px;margin-bottom:20px;">
+    <div class="over">Branding touchpoints</div>
+    <div class="h2">Where the identity lands</div>
+  </div>
+  <div class="num"><div class="num-n">01</div><div><div class="h3">Entry experience</div><div class="body" style="font-size:16px;">A freestanding 2050 marquee outside with the event date. Inside, the 20ft entry corridor of projected visuals and spatial audio, then a welcome wall carrying the large-format schedule and venue map.</div></div></div>
+  <div class="num"><div class="num-n">02</div><div><div class="h3">Stage branding</div><div class="body" style="font-size:16px;">Stage 1 runs a full LED backdrop with the animated 2050 template, lower-third speaker graphics, and a countdown timer between talks. Stage 2 uses the branded screen template with speaker name, title, and topic, and a persistent event hashtag. Both lecterns carry the event logo.</div></div></div>
+  <div class="num"><div class="num-n">03</div><div><div class="h3">Wayfinding &amp; signage</div><div class="body" style="font-size:16px;">Suspended directional signs in navy with teal arrows, floor decals guiding traffic between zones, and digital schedule boards at each stage entrance updating in real time.</div></div></div>
+  <div class="num"><div class="num-n">04</div><div><div class="h3">Printed collateral</div><div class="body" style="font-size:16px;">Navy attendee badges with name, affiliation, and QR code. A bifold programme carrying the schedule, speaker bios, booth map, and sponsors. Exhibitor nameplates on one template &mdash; navy header, teal accent.</div></div></div>
+  <div class="num"><div class="num-n">05</div><div><div class="h3">Digital presence</div><div class="body" style="font-size:16px;">#2050Showcase on every screen. Two to three branded photo walls or installations. A live social feed running in the networking lounge.</div></div></div>
+</section>
+
+<!-- ═══ 8 · Exhibitor guidelines ═══ -->
+<section class="wrap">
+  <div style="max-width:760px;margin-bottom:36px;">
+    <div class="over">For exhibitors</div>
+    <div class="h2">What every booth is held to</div>
+    <div class="body">The zone only reads as one exhibition if everyone builds to the same rules. These are the non-negotiables.</div>
+  </div>
+  <div class="g2">
+    <div class="card"><div class="h3">Header signage</div><div class="sm" style="margin-top:6px;">Use the provided template &mdash; navy background, white text, teal accent bar. No substitutions.</div></div>
+    <div class="card"><div class="h3">Height limit</div><div class="sm" style="margin-top:6px;">No structures above 8ft. Immersive Pods are exempt.</div></div>
+    <div class="card"><div class="h3">Sound</div><div class="sm" style="margin-top:6px;">Audio must stay inside the booth footprint. Loud demos run on headphones.</div></div>
+    <div class="card"><div class="h3">Lighting</div><div class="sm" style="margin-top:6px;">No strobes, no high-intensity floods. Booth spots are provided.</div></div>
+    <div class="card"><div class="h3">Setup window</div><div class="sm" style="margin-top:6px;">The day before the event, 12:00&ndash;20:00.</div></div>
+    <div class="card"><div class="h3">Teardown</div><div class="sm" style="margin-top:6px;">The same night by 00:00, or the following morning by 10:00.</div></div>
+  </div>
+</section>
+
+<!-- ═══ 9 · Logistics ═══ -->
+<section class="wrap-sm" style="background:#fff;border-top:1px solid #E5E1D9;border-bottom:1px solid #E5E1D9;">
+  <div style="max-width:760px;margin-bottom:32px;">
+    <div class="over">Logistics &amp; operations</div>
+    <div class="h2">Capacity, load-in, and the things that must not fail</div>
+  </div>
+  <div class="tw" style="margin-bottom:36px;">
+    <table class="t">
+      <thead><tr><th>Zone</th><th>Capacity</th><th>Notes</th></tr></thead>
+      <tbody>
+        <tr><td>Stage 1 (seated)</td><td class="num-cell">200&ndash;300</td><td>Theater-style, raked preferred.</td></tr>
+        <tr><td>Stage 2 (seated)</td><td class="num-cell">80&ndash;120</td><td>Flexible; standing can be added.</td></tr>
+        <tr><td>Booth zone</td><td class="num-cell">150&ndash;200</td><td>Browsing. 15&ndash;25 booths depending on the mix.</td></tr>
+        <tr><td>Networking lounge</td><td class="num-cell">60&ndash;80</td><td>Soft seating plus standing.</td></tr>
+        <tr><td>Food &amp; beverage</td><td class="num-cell">80&ndash;100</td><td>Communal tables plus grab-and-go.</td></tr>
+        <tr><td>Total venue</td><td class="num-cell">400&ndash;600</td><td>Concurrent across all zones.</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="g3">
+    <div class="tl-c">
+      <div class="tl-p">Load-in / load-out</div>
+      <ul class="li">
+        <li>Load-in two days out for AV and staging; one day out for booths and decor.</li>
+        <li>Load-out the night of the event for exhibitors, next morning for AV and staging.</li>
+        <li>Loading dock dimensions and weight limits confirmed with the venue in advance.</li>
+      </ul>
+    </div>
+    <div class="tl-c">
+      <div class="tl-p">Safety &amp; accessibility</div>
+      <ul class="li">
+        <li>ADA-compliant pathways throughout, 36&Prime; minimum clear width.</li>
+        <li>Emergency exits marked and unobstructed.</li>
+        <li>Fire marshal walkthrough four hours before doors.</li>
+        <li>First aid station staffed throughout.</li>
+        <li>A quiet room available for sensory breaks.</li>
+      </ul>
+    </div>
+    <div class="tl-c">
+      <div class="tl-p">Staffing</div>
+      <ul class="li">
+        <li>1 event manager, 2 stage managers, 3&ndash;4 AV techs, 3&ndash;4 registration staff.</li>
+        <li>Venue liaison, security, and F&amp;B coordination.</li>
+        <li>A volunteer corps for wayfinding and attendee support.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ CTA ═══ -->
+<section class="wrap cta">
+  <div class="over over-w">2050 Final Showcase &middot; Mabuhay Gardens</div>
+  <div class="cta-h">Bring something<br>from 2050.</div>
+  <div class="body" style="color:rgba(255,255,255,0.7);max-width:600px;margin:0 auto 40px;">Booths, sponsorship, and stage slots are handled directly. Tell us what you would build in a 10ft pod and we will tell you whether it fits the floor.</div>
+  <div class="hero-ctas">
+    <a href="mailto:elliot@haus.fund?subject=2050%20Showcase%20%E2%80%94%20exhibiting" class="btn-f btn-w" style="font-size:16px;padding:16px 36px;">Exhibit at the showcase &#8594;</a>
+    <a href="sponsors.html" class="btn-ol">Sponsorship tiers</a>
+  </div>
+  <div class="mono xs" style="color:rgba(255,255,255,0.45);margin-top:30px;letter-spacing:0.06em;">Direct line: elliot@haus.fund</div>
+</section>
+
+<footer class="site-footer">
+  <div class="footer-inner">
+    <div class="mono xs fcap">HAUS &middot; THE SHOWCASE</div>
+    <div class="flinks">
+      <a href="index.html">HOME</a>
+      <a href="punkhaus.html">PUNKHAUS</a>
+      <a href="femhaus.html">FEMHAUS</a>
+      <a href="safehaus.html">SAFEHAUS</a>
+      <a href="cellhaus.html">CELLHAUS</a>
+      <a href="pharmhaus.html">PHARMHAUS</a>
+      <a href="mentors.html">MENTORS</a>
+      <a href="sponsors.html">SPONSORS</a>
+      <a href="team.html">TEAM</a>
+      <a href="portfolio.html">PORTFOLIO</a>
+      <a href="careers.html">CAREERS</a>
+      <a href="mailto:elliot@haus.fund">CONTACT</a>
+    </div>
+    <div class="mono xs fcap">MUTATE // BUILD // DISRUPT</div>
+  </div>
+</footer>
+
+<script>
+(function(){
+  var nav=document.getElementById('nav'),hero=document.getElementById('top');
+  if(nav&&hero){window.addEventListener('scroll',function(){
+    nav.classList.toggle('scrolled',window.scrollY>(hero.offsetHeight-80));},{passive:true});}
+  var drops=document.querySelectorAll('.nav-drop');
+  function closeDrops(){drops.forEach(function(d){d.classList.remove('open');var b=d.querySelector('.nav-drop-t');if(b)b.setAttribute('aria-expanded','false');});}
+  drops.forEach(function(d){
+    var t=d.querySelector('.nav-drop-t'); if(!t) return;
+    t.addEventListener('click',function(e){e.stopPropagation();
+      var willOpen=!d.classList.contains('open'); closeDrops();
+      if(willOpen){d.classList.add('open');t.setAttribute('aria-expanded','true');}});
+  });
+  document.addEventListener('click',closeDrops);
+  document.addEventListener('keydown',function(e){if(e.key==='Escape')closeDrops();});
+})();
+
+  /* Build the mobile menu from whatever links this page's nav already has. */
+  (function(){
+    var nav=document.getElementById('nav'); if(!nav) return;
+    var links=nav.querySelector('.nav-links'),
+        panel=nav.querySelector('.nav-mobile'),
+        burger=nav.querySelector('.nav-burger');
+    if(!links||!panel||!burger||panel.children.length) return;
+    Array.prototype.forEach.call(links.children,function(el){
+      if(el.classList&&el.classList.contains('nav-drop')){
+        var bt=el.querySelector('.nav-drop-t');
+        var g=document.createElement('div'); g.className='nm-grp';
+        /* Label the group from its own trigger, minus the \u25BE caret. Hard-coding
+           'Houses' mislabelled the About group once a second dropdown existed. */
+        g.textContent=bt?bt.textContent.replace(/[\s\u25BE]+$/,''):'Houses';
+        panel.appendChild(g);
+        Array.prototype.forEach.call(el.querySelectorAll('.nav-drop-menu a'),function(a){
+          var c=a.cloneNode(true); c.removeAttribute('style'); c.className='nm-sub'; panel.appendChild(c);
+        });
+      } else if(el.tagName==='A'){
+        var c=el.cloneNode(true); c.removeAttribute('style'); panel.appendChild(c);
+      }
+    });
+    var ap=nav.querySelector('.nav-apply');
+    if(ap){var c=ap.cloneNode(true); c.removeAttribute('style'); c.className='nm-apply'; panel.appendChild(c);}
+    function set(open){
+      panel.classList.toggle('open',open);
+      burger.setAttribute('aria-expanded',open?'true':'false');
+    }
+    burger.addEventListener('click',function(e){e.stopPropagation();set(!panel.classList.contains('open'));});
+    panel.addEventListener('click',function(e){if(e.target.closest('a'))set(false);});
+    document.addEventListener('click',function(e){if(!nav.contains(e.target))set(false);});
+    document.addEventListener('keydown',function(e){if(e.key==='Escape')set(false);});
+    window.addEventListener('resize',function(){if(window.innerWidth>680)set(false);});
+  })();
+
+(function(){})();
+</script>
+</body>
+</html>

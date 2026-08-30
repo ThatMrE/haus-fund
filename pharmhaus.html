@@ -221,6 +221,7 @@ nav.scrolled .nav-burger span,nav.scrolled .nav-burger span::before,nav.scrolled
           <a href="team.html">Team</a>
           <a href="portfolio.html">Portfolio</a>
           <a href="careers.html">Careers</a>
+          <a href="showcase.html">2050 Showcase</a>
         </div>
       </div>
       <a href="mentors.html">Mentors</a>
@@ -340,7 +341,12 @@ nav.scrolled .nav-burger span,nav.scrolled .nav-burger span::before,nav.scrolled
     if(!links||!panel||!burger||panel.children.length) return;
     Array.prototype.forEach.call(links.children,function(el){
       if(el.classList&&el.classList.contains('nav-drop')){
-        var g=document.createElement('div'); g.className='nm-grp'; g.textContent='Houses'; panel.appendChild(g);
+        var bt=el.querySelector('.nav-drop-t');
+        var g=document.createElement('div'); g.className='nm-grp';
+        /* Label the group from its own trigger, minus the \u25BE caret. Hard-coding
+           'Houses' mislabelled the About group once a second dropdown existed. */
+        g.textContent=bt?bt.textContent.replace(/[\s\u25BE]+$/,''):'Houses';
+        panel.appendChild(g);
         Array.prototype.forEach.call(el.querySelectorAll('.nav-drop-menu a'),function(a){
           var c=a.cloneNode(true); c.removeAttribute('style'); c.className='nm-sub'; panel.appendChild(c);
         });
