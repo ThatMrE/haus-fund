@@ -12,6 +12,7 @@ no build step, no framework.
 | `mentors.html` | Mentor roster and mentor signup |
 | `expansion.html` | Global Nodes — node protocol, active nodes, candidate cities |
 | `design-system.html` | Living style reference — tokens, type, components |
+| `showcase.html` | 2050 Final Showcase — venue design brief for the Mabuhay Gardens event |
 | `cores.html` | Core Facility Finder — served at `cores.haus.fund`, `noindex`, not in the nav |
 | `visa.html` | Visa Desk — immigration support letters, served at `visa.haus.fund`, `noindex`, not in the nav |
 | `fund-portal/` | Separate internal React portal (not linked from the public nav) |
@@ -20,7 +21,7 @@ no build step, no framework.
 
 ```
 website/
-├── index.html · sponsors.html · mentors.html · expansion.html
+├── index.html · sponsors.html · mentors.html · expansion.html · showcase.html
 ├── cores.html · cores.js            # Core Facility Finder
 ├── visa.html · visa.js · visa-data.js  # Visa Desk (visa-data.js is the data layer)
 ├── design-system.html
