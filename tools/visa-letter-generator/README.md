@@ -35,31 +35,37 @@ a plausible guess turns a drafting convenience into a false statement.
 A visitor letter must not offer employment. The `checks` array on each template
 enforces this, and a `stop` finding disables print, copy and download.
 
-## Updating for a new cohort
+## The programme block is white-labelled
 
-Edit `PROGRAM` at the top of `visa-data.js`:
+`PROGRAM` carries the programme name, the home city and a one-line description
+— and deliberately **no cohort number and no cohort dates**:
 
 ```js
 var PROGRAM = {
   name: "Biopunk House Accelerator Program",
-  cohort: "Cohort 3",
-  start: "September 15, 2026",
-  end:   "December 12, 2026",
-  ...
+  city: "San Francisco, California",
+  summary: "a live-in accelerator for early-stage biotechnology founders, ..."
 };
 ```
 
-`PROGRAM.days` is **derived** from those dates a few lines below — do not
-hand-write it. Every day-count ceiling (the 90-day visa-waiver cap, the 90-day
-Schengen cap, the 90-day Japanese Temporary Visitor cap, the 180-day Mexican
-visitor cap) and every piece of guidance prose reads from it, so changing the
-cohort dates updates all of them at once.
+The operator supplies the dates and any cohort identifier for the participant
+in front of them. That is what keeps the generator correct across cohorts
+without an edit, and it is the only reliable way to stop a stale date reaching
+a letter — a hardcoded cohort is wrong the moment the next one starts, and
+wrong silently.
+
+Nothing is weakened by their absence: **every compliance check reads the
+operator's dates, not `PROGRAM`.** The ceilings are enforced against what is
+actually on the letter.
+
+Keep it that way. If you are tempted to put the current cohort's dates back in
+as a convenience default, remember that the failure mode is a letter stating a
+date the participant is not travelling on, submitted to a government.
 
 ### The 89-day cap
 
-`MAX_COHORT_DAYS = 89` is programme policy, and it is enforced: change
-`PROGRAM` so a cohort runs longer and the tool logs an error to the console,
-and any letter whose dates exceed it raises a compliance warning.
+`MAX_COHORT_DAYS = 89` is programme policy, and it is enforced: any letter
+whose dates exceed it raises a compliance warning.
 
 89 is not arbitrary. Three separate regimes cap a stay at 90 days — US Visa
 Waiver Program admission, Schengen short stays, and Japanese Temporary Visitor
@@ -70,13 +76,13 @@ at once, for every participant, silently.
 > The margin is **one day**, and the arrival and departure days both count as
 > days of presence. A flight moved by a day puts a participant over. That is
 > what `ninetyDayMargin` warns about on every route with a 90-day ceiling, and
-> it is why the Schengen check now computes how much prior Schengen time a
-> participant can have before the cohort no longer fits — at 89 days, the
-> answer is one day.
+> it is why the Schengen check computes how much prior Schengen time a
+> participant can have before the cohort no longer fits — at 89 days, one day.
 
-Cohort dates are also published on `index.html`, `sponsors.html` and
-`femhaus.html`. Keep them in step: a letter whose dates contradict the public
-programme page is a discrepancy an adjudicator can find.
+Example dates in field placeholders are a fictional 6 April – 3 July 2027
+window, chosen to be exactly 89 days so the placeholder models a compliant
+cohort. Keep them fictional: a placeholder that matches a real cohort is a
+hardcoded date by another name.
 
 ## Adding a letter type
 
