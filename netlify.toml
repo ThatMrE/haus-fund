@@ -24,6 +24,14 @@
   path = "/"
   function = "cores-host"
 
+# ── News: haus.fund/news ──
+# A server-rendered app, not a static page: the function claims /news and
+# /news/* (declared in its own config block) and news-ingest runs the morning
+# feed sweep. Assets are served from /news-assets by the CDN.
+[functions]
+  directory = "netlify/functions"
+  node_bundler = "esbuild"
+
 # ── Mentors: server-side Airtable proxy ──
 # The token stays server-side; only whitelisted mentor fields are returned.
 [[edge_functions]]
@@ -58,6 +66,12 @@
   for = "/*.html"
   [headers.values]
     Cache-Control = "public, max-age=3600"
+
+# The feed changes as people vote; never serve it from cache.
+[[headers]]
+  for = "/news/*"
+  [headers.values]
+    Cache-Control = "no-store"
 
 # ── Homeroom: members-only, never indexed, never cached ──
 # Access itself is enforced by Supabase row-level security, not by these
