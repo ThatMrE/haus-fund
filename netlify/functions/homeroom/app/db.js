@@ -1,0 +1,95 @@
+import { DatabaseSync } from 'node:sqlite';
+import { mkdirSync } from 'node:fs';
+import { dirname, resolve } from 'node:path';
+import { HOMEROOM_SCHEMA } from './schema.js';
+
+const DEFAULT_PATH = resolve(process.cwd(), 'data/homeroom.db');
+
+let db = null;
+
+/** Open (or reuse) the SQLite handle and make sure the schema is present. */
+export function getDb(path = process.env.HOMEROOM_DB || DEFAULT_PATH) {
+  if (db) return db;
+  if (path !== ':memory:') mkdirSync(dirname(path), { recursive: true });
+  db = new DatabaseSync(path);
+  db.exec('PRAGMA journal_mode = WAL');
+  db.exec('PRAGMA foreign_keys = ON');
+  db.exec('PRAGMA busy_timeout = 5000');
+  migrate(db);
+  return db;
+}
+
+/** Point the process at a different database (used by the tests). */
+export function setDb(instance) {
+  db = instance;
+  if (db) migrate(db);
+  return db;
+}
+
+export function closeDb() {
+  if (db) db.close();
+  db = null;
+}
+
+/**
+ * Accounts and sessions. Homeroom owns its own, rather than borrowing an
+ * identity provider: it is one table, one scrypt hash, and one signed cookie,
+ * and it keeps the whole thing deployable with nothing to sign up for.
+ */
+export const ACCOUNT_SCHEMA = `
+CREATE TABLE IF NOT EXISTS users (
+  id            TEXT PRIMARY KEY,
+  email         TEXT UNIQUE,
+  password_hash TEXT NOT NULL,
+  karma         INTEGER NOT NULL DEFAULT 1,
+  created_at    INTEGER NOT NULL,
+  is_admin      INTEGER NOT NULL DEFAULT 0,
+  banned        INTEGER NOT NULL DEFAULT 0
+);
+
+CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
+
+CREATE TABLE IF NOT EXISTS sessions (
+  token      TEXT PRIMARY KEY,
+  user_id    TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  created_at INTEGER NOT NULL,
+  expires_at INTEGER NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_sessions_user ON sessions(user_id);
+
+/* Password resets. The row stores a hash of the token, never the token, so a
+   copy of the database does not let anyone take over an account. */
+CREATE TABLE IF NOT EXISTS password_resets (
+  token_hash TEXT PRIMARY KEY,
+  user_id    TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  created_at INTEGER NOT NULL,
+  expires_at INTEGER NOT NULL,
+  used_at    INTEGER
+);
+
+CREATE INDEX IF NOT EXISTS idx_resets_user ON password_resets(user_id);
+`;
+
+function migrate(instance) {
+  instance.exec(ACCOUNT_SCHEMA);
+  instance.exec(HOMEROOM_SCHEMA);
+}
+
+/** Run a function inside a transaction, rolling back if it throws. */
+export function transaction(fn) {
+  const instance = getDb();
+  instance.exec('BEGIN');
+  try {
+    const result = fn(instance);
+    instance.exec('COMMIT');
+    return result;
+  } catch (err) {
+    try {
+      instance.exec('ROLLBACK');
+    } catch {
+      /* the outer error is the interesting one */
+    }
+    throw err;
+  }
+}

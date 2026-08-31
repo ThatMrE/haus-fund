@@ -1,0 +1,1564 @@
+/* Every Homeroom page. Server-rendered strings, same as the news side. */
+
+import { html, raw, plural } from '../util.js';
+import {
+  CATEGORIES, POST_KINDS, ORG_KINDS, ORG_STAGES, FUNDER_KINDS, PIPELINE_STATUSES,
+  DEAL_CATEGORIES, JOB_DISCIPLINES, EVENT_KINDS, LIBRARY_KINDS, EXPERTISE_SUGGESTIONS,
+  labelFor, tagList,
+} from '../models.js';
+import {
+  avatar, memberLink, memberCard, postRow, voteButton, stars, pill, body, empty, pager,
+  filterBar, csrfField, select, section, when, stamp, relTime, kindTag, snippet,
+} from './components.js';
+import { HOMEROOM_TAGLINE } from './layout.js';
+
+const PER_PAGE = 20;
+
+/* ------------------------------------------------------------------- gate */
+
+export function gatePage(ctx, { stats }) {
+  return html`<div class="gate">
+    <div class="over">Members only</div>
+    <h1>Homeroom</h1>
+    <p class="lede">The room behind the residency. Everything the public site cannot hold:
+      what a reagent actually costs, which funder returns calls, who has a spare minus-80 in
+      Lisbon, and the questions you would not put your name to in public.</p>
+    <ul class="gatelist">
+      <li><b>Forum</b> ask ${stats.members} members a question and get answers from people who already solved it.</li>
+      <li><b>Directory</b> every member, tagged by what they can actually help with.</li>
+      <li><b>Labs</b> ${stats.orgs} labs, foundries, collectives and startups, with progress updates.</li>
+      <li><b>Deals</b> ${stats.deals} negotiated discounts on reagents, sequencing, synthesis and compute.</li>
+      <li><b>Funders</b> ${stats.funders} funders with ${stats.reviews} member-written reviews. Five stars, no diplomacy.</li>
+      <li><b>Office hours</b> book time with members who have done the thing you are about to do.</li>
+      <li><b>Jobs, events, library</b> the rest of the scaffolding.</li>
+    </ul>
+    <div class="gateactions">
+      <a class="btn solid" href="/homeroom/signup">Create an account</a>
+      <a class="btn ghost" href="/homeroom/login">Sign in</a>
+      <a class="btn ghost" href="/">Back to Haus</a>
+    </div>
+    <p class="fineprint">Homeroom is never indexed, and nothing inside it is visible to a
+      logged-out visitor.</p>
+  </div>`;
+}
+
+/* ------------------------------------------------------------------ auth */
+
+export function loginPage(ctx, { values = {}, error = null, next = '/homeroom' }) {
+  return html`<h1>Sign in</h1>
+  <p class="lede">Homeroom is the members-only side of Haus.</p>
+  ${error ? html`<div class="notice bad">${error}</div>` : ''}
+  <form class="stack" method="post" action="/homeroom/login">
+    <input type="hidden" name="csrf" value="${ctx.csrf}" />
+    <input type="hidden" name="next" value="${next}" />
+    <div class="field"><label for="email">Email</label>
+      <input id="email" name="email" type="email" autocomplete="email" required autofocus
+        value="${values.email || ''}" /></div>
+    <div class="field"><label for="password">Password</label>
+      <input id="password" name="password" type="password" autocomplete="current-password" required /></div>
+    <button class="btn solid wide" type="submit">Sign in</button>
+  </form>
+  <div class="alt">
+    <a href="/homeroom/signup">Create an account</a>
+    <a href="/homeroom/forgot">Forgot your password?</a>
+  </div>`;
+}
+
+export function signupPage(ctx, { values = {}, error = null }) {
+  return html`<h1>Create an account</h1>
+  <p class="lede">Residents, alumni and mentors. One account covers all of Homeroom.</p>
+  ${error ? html`<div class="notice bad">${error}</div>` : ''}
+  <form class="stack" method="post" action="/homeroom/signup">
+    <input type="hidden" name="csrf" value="${ctx.csrf}" />
+    <div class="field"><label for="handle">Handle</label>
+      <input id="handle" name="handle" required autofocus minlength="2" maxlength="20"
+        pattern="[A-Za-z0-9_-]{2,20}" value="${values.handle || ''}" placeholder="ada-fell" />
+      <div class="hint">2 to 20 characters: letters, numbers, dashes and underscores. This is how
+        the rest of Homeroom will see you, and it cannot be changed later.</div></div>
+    <div class="field"><label for="email">Email</label>
+      <input id="email" name="email" type="email" autocomplete="email" required
+        value="${values.email || ''}" />
+      <div class="hint">Used to sign in and to reset your password. Never shown to other members.</div></div>
+    <div class="field"><label for="password">Password</label>
+      <input id="password" name="password" type="password" autocomplete="new-password"
+        required minlength="10" />
+      <div class="hint">At least 10 characters. Longer beats complicated.</div></div>
+    <button class="btn solid wide" type="submit">Create account</button>
+  </form>
+  <div class="alt"><a href="/homeroom/login">I already have an account</a></div>`;
+}
+
+export function forgotPage(ctx, { error = null, values = {} }) {
+  return html`<h1>Reset your password</h1>
+  <p class="lede">We will email you a link that lets you set a new one. It works once and
+    expires in an hour.</p>
+  ${error ? html`<div class="notice bad">${error}</div>` : ''}
+  <form class="stack" method="post" action="/homeroom/forgot">
+    <input type="hidden" name="csrf" value="${ctx.csrf}" />
+    <div class="field"><label for="email">Email</label>
+      <input id="email" name="email" type="email" autocomplete="email" required autofocus
+        value="${values.email || ''}" /></div>
+    <button class="btn solid wide" type="submit">Send the link</button>
+  </form>
+  <div class="alt"><a href="/homeroom/login">Back to sign in</a></div>`;
+}
+
+/**
+ * The same answer whether or not the address has an account. Whether someone is
+ * a member here is not something a stranger gets to find out by guessing.
+ */
+export function forgotSentPage(ctx, { email, link = null }) {
+  return html`<h1>Check your email</h1>
+  <p class="lede">If ${email} has a Homeroom account, a reset link is on its way. It works once
+    and expires in an hour.</p>
+  ${link ? html`<div class="notice">
+    <b>No mail sender is configured</b>, so the link could not be sent. A steward can find it in
+    the function log, or use this one:
+    <div class="code" style="margin-top:10px"><a href="${link}">${link}</a></div>
+  </div>` : ''}
+  <div class="alt">
+    <a href="/homeroom/login">Back to sign in</a>
+    <a href="/homeroom/forgot">Ask again</a>
+  </div>`;
+}
+
+export function resetPage(ctx, { token, error = null }) {
+  return html`<h1>Choose a password</h1>
+  <p class="lede">This replaces the old one, and signs out every other session.</p>
+  ${error ? html`<div class="notice bad">${error}</div>` : ''}
+  <form class="stack" method="post" action="/homeroom/reset">
+    <input type="hidden" name="csrf" value="${ctx.csrf}" />
+    <input type="hidden" name="token" value="${token}" />
+    <div class="field"><label for="password">New password</label>
+      <input id="password" name="password" type="password" autocomplete="new-password"
+        required minlength="10" autofocus />
+      <div class="hint">At least 10 characters.</div></div>
+    <div class="field"><label for="confirm">New password again</label>
+      <input id="confirm" name="confirm" type="password" autocomplete="new-password" required /></div>
+    <button class="btn solid wide" type="submit">Save password</button>
+  </form>`;
+}
+
+export function resetExpiredPage() {
+  return html`<h1>That link has expired</h1>
+  <p class="lede">Reset links work once and last an hour.</p>
+  <a class="btn solid wide" href="/homeroom/forgot">Send a new link</a>
+  <div class="alt"><a href="/homeroom/login">Back to sign in</a></div>`;
+}
+
+export function resetDonePage() {
+  return html`<h1>Password saved</h1>
+  <p class="lede">Every other session has been signed out. Sign in with the new one.</p>
+  <a class="btn solid wide" href="/homeroom/login">Sign in</a>`;
+}
+
+
+/* ------------------------------------------------------------------- home */
+
+export function homePage(ctx, {
+  member, posts, voted, stats, upcomingSlots, upcomingEvents, myOrgs, deals, updates,
+  answerers, intros, unansweredCount, profileComplete,
+}) {
+  return html`<div class="hero">
+    <div>
+      <h1>${member.name || ctx.user.id}, <span class="dim">welcome back.</span></h1>
+      <p class="lede">${HOMEROOM_TAGLINE} ${stats.members} members, ${stats.orgs} labs,
+        ${stats.posts} threads, ${stats.reviews} funder reviews on file.</p>
+    </div>
+    <div class="heroactions">
+      <a class="btn solid" href="/homeroom/ask">Ask the network</a>
+      <a class="btn ghost" href="/homeroom/people">Find an expert</a>
+    </div>
+  </div>
+
+  ${!profileComplete ? html`<div class="notice">
+    Your profile is thin. <a href="/homeroom/settings">Add a headline and a few expertise tags</a> —
+    the directory is the whole point and it only works if people can find you.</div>` : ''}
+
+  ${intros.length ? html`<div class="notice">
+    ${plural(intros.length, 'intro request')} waiting on you.
+    <a href="/homeroom/intros">Answer ${intros.length === 1 ? 'it' : 'them'}</a>.</div>` : ''}
+
+  <div class="cols">
+    <div class="main">
+      ${section(
+        'Live in the forum',
+        posts.length
+          ? html`<ul class="cards">${posts.map((p) => postRow(ctx, p, { voted: voted.has(p.id) }))}</ul>`
+          : empty('Nothing yet. Be the first to ask something.'),
+        { href: '/homeroom/forum' },
+      )}
+      ${updates.length ? section(
+        'Lab updates',
+        html`<ul class="cards">${updates.map((u) => html`<li class="card">
+          <div class="grow">
+            <div class="title-line"><a class="title" href="/homeroom/lab/${u.org_slug}">${u.org_name}</a>
+              ${u.period ? pill(u.period) : ''}</div>
+            <div class="prose small">${snippet(u.body, 320)}</div>
+            <div class="subline mono">${memberLink(u.author_id)} <span class="sep">/</span> ${when(u.created_at)}</div>
+          </div></li>`)}</ul>`,
+      ) : ''}
+    </div>
+
+    <aside class="rail">
+      ${section('Your labs', myOrgs.length
+        ? html`<ul class="rail-list">${myOrgs.map((o) => html`<li>
+            <a href="/homeroom/lab/${o.slug}">${o.name}</a>
+            <span class="mono dim">${labelFor(ORG_STAGES, o.stage, o.stage)}</span></li>`)}</ul>`
+        : html`<p class="mono dim">None yet. <a href="/homeroom/labs/new">Add your lab</a>.</p>`,
+        { href: '/homeroom/labs' })}
+
+      ${section('Next office hours', upcomingSlots.length
+        ? html`<ul class="rail-list">${upcomingSlots.map((s) => html`<li>
+            <a href="/homeroom/hours/${s.id}">${s.title}</a>
+            <span class="mono dim">${relTime(s.starts_at)} <span class="sep">/</span> ${s.booked}/${s.capacity} booked</span></li>`)}</ul>`
+        : html`<p class="mono dim">No slots posted. <a href="/homeroom/hours/new">Offer some</a>.</p>`,
+        { href: '/homeroom/hours' })}
+
+      ${section('Upcoming events', upcomingEvents.length
+        ? html`<ul class="rail-list">${upcomingEvents.map((e) => html`<li>
+            <a href="/homeroom/event/${e.id}">${e.title}</a>
+            <span class="mono dim">${relTime(e.starts_at)} <span class="sep">/</span> ${e.going} going</span></li>`)}</ul>`
+        : html`<p class="mono dim">Nothing scheduled.</p>`, { href: '/homeroom/events' })}
+
+      ${section('Fresh deals', deals.length
+        ? html`<ul class="rail-list">${deals.map((d) => html`<li>
+            <a href="/homeroom/deal/${d.slug}">${d.vendor}</a>
+            <span class="mono dim">${d.worth || d.title}</span></li>`)}</ul>`
+        : html`<p class="mono dim">No deals yet.</p>`, { href: '/homeroom/deals' })}
+
+      ${section('Answering the most', answerers.length
+        ? html`<ul class="rail-list">${answerers.map((a) => html`<li>
+            <a href="/homeroom/p/${encodeURIComponent(a.user_id)}">${a.user_id}</a>
+            <span class="mono dim">${plural(a.answers, 'reply', 'replies')} <span class="sep">/</span> ${a.points} pts</span></li>`)}</ul>`
+        : html`<p class="mono dim">Quiet month.</p>`)}
+
+      ${unansweredCount ? section('Needs an answer',
+        html`<p class="mono dim">${plural(unansweredCount, 'question')} with no replies yet.
+          <a href="/homeroom/forum?unanswered=1">Take one</a>.</p>`) : ''}
+    </aside>
+  </div>`;
+}
+
+/* ------------------------------------------------------------------ forum */
+
+export function forumPage(ctx, {
+  posts, voted, total, page, sort, category, kind, tag, unanswered, counts, tags, basePath,
+}) {
+  const sorts = [
+    ['hot', 'hot'], ['new', 'new'], ['active', 'active'], ['top', 'top'], ['discussed', 'discussed'],
+  ];
+  const keep = (extra) => {
+    const params = new URLSearchParams();
+    if (category) params.set('category', category);
+    if (kind) params.set('kind', kind);
+    if (tag) params.set('tag', tag);
+    if (unanswered) params.set('unanswered', '1');
+    for (const [k, v] of Object.entries(extra)) if (v) params.set(k, v); else params.delete(k);
+    const qs = params.toString();
+    return `/homeroom/forum${qs ? `?${qs}` : ''}`;
+  };
+
+  return html`<div class="pagehead">
+    <div>
+      <h1>Forum</h1>
+      <p class="lede">${plural(total, 'thread')}. High signal because everyone in the room has a bench.</p>
+    </div>
+    <a class="btn solid" href="/homeroom/ask">New post</a>
+  </div>
+
+  <form class="searchbar" method="get" action="/homeroom/search">
+    <input type="search" name="q" placeholder="search the whole network" aria-label="Search" />
+    <button class="btn" type="submit">Search</button>
+  </form>
+
+  ${filterBar(
+    CATEGORIES.map((c) => ({ ...c, count: counts[c.slug] || 0 })),
+    { active: category, basePath: keep({ category: null }), param: 'category', allLabel: 'all channels' },
+  )}
+
+  <div class="toolbar mono">
+    <span class="dim">sort</span>
+    ${sorts.map(([slug, label]) => html`<a class="${sort === slug ? 'on' : ''}" href="${raw(keep({ sort: slug === 'hot' ? '' : slug }))}">${label}</a>`)}
+    <span class="sep">/</span>
+    <span class="dim">type</span>
+    ${POST_KINDS.map((k) => html`<a class="${kind === k.slug ? 'on' : ''}" href="${raw(keep({ kind: kind === k.slug ? null : k.slug }))}">${k.label}</a>`)}
+    <span class="sep">/</span>
+    <a class="${unanswered ? 'on' : ''}" href="${raw(keep({ unanswered: unanswered ? null : '1' }))}">unanswered</a>
+  </div>
+
+  ${tag ? html`<div class="notice">Filtered to <b>#${tag}</b>. <a href="${raw(keep({ tag: null }))}">clear</a></div>` : ''}
+
+  ${posts.length
+    ? html`<ul class="cards">${posts.map((p) => postRow(ctx, p, { voted: voted.has(p.id) }))}</ul>`
+    : empty('Nothing matches that. Loosen a filter, or ask the question yourself.')}
+  ${pager({ page, total, perPage: PER_PAGE, basePath })}
+
+  ${tags.length ? html`<div class="tagcloud">
+    <span class="mono dim">tags</span>
+    ${tags.map((t) => html`<a class="tag ghost" href="${raw(keep({ tag: t.tag }))}">#${t.tag} <span class="n">${t.count}</span></a>`)}
+  </div>` : ''}`;
+}
+
+export function postPage(ctx, {
+  post, comments, voted, commentVoted, options, myOption, following, saved, canEdit, isAuthor,
+}) {
+  const totalPollVotes = options.reduce((sum, option) => sum + option.votes, 0);
+
+  return html`<article class="thread-head">
+    <div class="votecol">${voteButton(ctx, {
+      kind: 'post', id: post.id, points: post.points, authorId: post.author_id, voted,
+    })}</div>
+    <div class="grow">
+      <h1>${post.title}</h1>
+      <div class="subline mono">
+        ${kindTag(post.kind)}
+        <a class="tag" href="/homeroom/forum?category=${post.category}">${labelFor(CATEGORIES, post.category, post.category)}</a>
+        ${(post.tags || []).map((t) => html`<a class="tag ghost" href="/homeroom/forum?tag=${t}">#${t}</a>`)}
+        <span class="sep">/</span>
+        ${post.anonymous ? html`<span class="anon">anonymous member</span>` : memberLink(post.author_id)}
+        ${post.org_slug ? html` <span class="sep">/</span> <a href="/homeroom/lab/${post.org_slug}">${post.org_name}</a>` : ''}
+        <span class="sep">/</span> ${when(post.created_at)}
+        ${post.edited_at ? html` <span class="sep">/</span> edited ${when(post.edited_at)}` : ''}
+        <span class="sep">/</span> ${plural(post.view_count, 'view')}
+      </div>
+      ${post.body ? body(post.body) : ''}
+
+      ${options.length ? html`<div class="poll">
+        ${options.map((option) => {
+          const pct = totalPollVotes ? Math.round((option.votes / totalPollVotes) * 100) : 0;
+          return html`<form class="polloption ${myOption === option.id ? 'mine' : ''}" method="post" action="/homeroom/poll">
+            ${csrfField(ctx)}
+            <input type="hidden" name="post" value="${post.id}" />
+            <input type="hidden" name="option" value="${option.id}" />
+            <button type="submit" ${raw(ctx.user ? '' : 'disabled')}>
+              <span class="bar" style="width:${pct}%"></span>
+              <span class="label">${option.label}</span>
+              <span class="count mono">${option.votes} · ${pct}%</span>
+            </button>
+          </form>`;
+        })}
+        <div class="mono dim">${plural(totalPollVotes, 'vote')}${myOption ? ' · you voted' : ''}</div>
+      </div>` : ''}
+
+      <div class="cfoot mono">
+        ${ctx.user ? html`<form method="post" action="/homeroom/follow">
+          ${csrfField(ctx)}
+          <input type="hidden" name="kind" value="post" />
+          <input type="hidden" name="id" value="${post.id}" />
+          <input type="hidden" name="goto" value="${ctx.fullPath}" />
+          <button class="linkish" type="submit">${following ? 'unfollow' : 'follow'}</button>
+        </form>` : ''}
+        ${ctx.user ? html`<form method="post" action="/homeroom/save">
+          ${csrfField(ctx)}
+          <input type="hidden" name="kind" value="post" />
+          <input type="hidden" name="id" value="${post.id}" />
+          <input type="hidden" name="goto" value="${ctx.fullPath}" />
+          <button class="linkish" type="submit">${saved ? 'unsave' : 'save'}</button>
+        </form>` : ''}
+        ${canEdit ? html`<a href="/homeroom/post/${post.id}/edit">edit</a>` : ''}
+        ${canEdit ? html`<form method="post" action="/homeroom/post/${post.id}/delete"
+            onsubmit="return confirm('Delete this post?')">
+          ${csrfField(ctx)}<button class="linkish" type="submit">delete</button></form>` : ''}
+        ${ctx.user?.is_admin ? html`<form method="post" action="/homeroom/post/${post.id}/pin">
+          ${csrfField(ctx)}<input type="hidden" name="goto" value="${ctx.fullPath}" />
+          <button class="linkish" type="submit">${post.pinned ? 'unpin' : 'pin'}</button></form>` : ''}
+        ${ctx.user?.is_admin ? html`<form method="post" action="/homeroom/post/${post.id}/lock">
+          ${csrfField(ctx)}<input type="hidden" name="goto" value="${ctx.fullPath}" />
+          <button class="linkish" type="submit">${post.locked ? 'unlock' : 'lock'}</button></form>` : ''}
+      </div>
+    </div>
+  </article>
+
+  ${post.locked
+    ? html`<div class="notice">This thread is locked. No new replies.</div>`
+    : ctx.user
+      ? html`<form class="stack replybox" method="post" action="/homeroom/comment">
+          ${csrfField(ctx)}
+          <input type="hidden" name="post" value="${post.id}" />
+          <div class="field">
+            <label for="reply">Reply</label>
+            <textarea id="reply" name="text" rows="5" required
+              placeholder="Answer from experience. Numbers, part codes, the failure mode you hit."></textarea>
+          </div>
+          <label class="check"><input type="checkbox" name="anonymous" value="1" /> post anonymously</label>
+          <button class="btn solid" type="submit">Reply</button>
+        </form>`
+      : html`<div class="notice"><a href="/login?next=${raw(encodeURIComponent(ctx.fullPath))}">Log in</a> to reply.</div>`}
+
+  <div class="thread">
+    <h2 class="mono">${plural(post.comment_count, 'reply', 'replies')}</h2>
+    ${comments.length
+      ? comments.map((c) => commentNode(ctx, c, {
+          post, voted: commentVoted.has(c.id), isAuthor,
+        }))
+      : empty('No replies yet.')}
+  </div>`;
+}
+
+function commentNode(ctx, comment, { post, voted, isAuthor }) {
+  const accepted = post.answer_id === comment.id;
+  const mine = ctx.user?.id === comment.author_id;
+  return html`<div class="comment ${accepted ? 'accepted' : ''}" id="c${comment.id}"
+      data-depth="${comment.depth}" style="margin-left:${Math.min(comment.depth, 8) * 18}px">
+    <div class="chead mono">
+      ${comment.deleted ? '' : voteButton(ctx, {
+        kind: 'comment', id: comment.id, points: comment.points, authorId: comment.author_id, voted,
+      })}
+      ${comment.anonymous ? html`<span class="anon">anonymous</span>` : memberLink(comment.author_id)}
+      <span class="sep">/</span> ${when(comment.created_at)}
+      ${comment.edited_at ? html` <span class="sep">/</span> edited` : ''}
+      ${accepted ? html`<span class="pill answered">accepted answer</span>` : ''}
+      <span class="toggle" data-collapse>[-]</span>
+    </div>
+    <div class="cbody">${comment.deleted ? html`<i>[deleted]</i>` : body(comment.body)}</div>
+    ${comment.deleted ? '' : html`<div class="cfoot mono">
+      <a href="/homeroom/post/${post.id}#c${comment.id}">link</a>
+      ${ctx.user && !post.locked ? html`<a href="/homeroom/reply/${comment.id}">reply</a>` : ''}
+      ${isAuthor && post.kind === 'question' ? html`<form method="post" action="/homeroom/answer">
+        ${csrfField(ctx)}
+        <input type="hidden" name="post" value="${post.id}" />
+        <input type="hidden" name="comment" value="${accepted ? 0 : comment.id}" />
+        <button class="linkish" type="submit">${accepted ? 'unaccept' : 'accept as answer'}</button>
+      </form>` : ''}
+      ${mine ? html`<a href="/homeroom/comment/${comment.id}/edit">edit</a>` : ''}
+      ${mine ? html`<form method="post" action="/homeroom/comment/${comment.id}/delete"
+          onsubmit="return confirm('Delete this reply?')">
+        ${csrfField(ctx)}<button class="linkish" type="submit">delete</button></form>` : ''}
+    </div>`}
+  </div>`;
+}
+
+export function replyPage(ctx, { parent, post }) {
+  return html`<h1>Reply</h1>
+  <div class="quote"><div class="mono dim">${memberLink(parent.author_id, { anonymous: !!parent.anonymous })}
+    on <a href="/homeroom/post/${post.id}">${post.title}</a></div>${body(parent.body)}</div>
+  <form class="stack" method="post" action="/homeroom/comment">
+    ${csrfField(ctx)}
+    <input type="hidden" name="post" value="${post.id}" />
+    <input type="hidden" name="parent" value="${parent.id}" />
+    <div class="field"><label for="text">Your reply</label>
+      <textarea id="text" name="text" rows="8" required autofocus></textarea></div>
+    <label class="check"><input type="checkbox" name="anonymous" value="1" /> post anonymously</label>
+    <button class="btn solid" type="submit">Reply</button>
+  </form>`;
+}
+
+export function composePage(ctx, { values = {}, error = null, orgs = [] }) {
+  return html`<h1>New post</h1>
+  <p class="lede">Ask the thing you actually need answered. Specifics get specifics.</p>
+  ${error ? html`<div class="notice error">${error}</div>` : ''}
+  <form class="stack" method="post" action="/homeroom/ask">
+    ${csrfField(ctx)}
+    <div class="field"><label for="title">Title</label>
+      <input id="title" name="title" value="${values.title || ''}" maxlength="160" required
+        placeholder="e.g. Anyone got a supplier for Taq that ships to Portugal without a customs hold?" /></div>
+    <div class="row">
+      <div class="field"><label for="kind">Type</label>${select('kind', POST_KINDS, values.kind || 'question')}
+        <div class="hint">${POST_KINDS.map((k) => html`${k.label}: ${k.hint} `)}</div></div>
+      <div class="field"><label for="category">Channel</label>${select('category', CATEGORIES, values.category || 'general')}</div>
+    </div>
+    <div class="field"><label for="body">Body</label>
+      <textarea id="body" name="body" rows="10" placeholder="Context, what you already tried, the constraint that matters.">${values.body || ''}</textarea></div>
+    <div class="row">
+      <div class="field"><label for="tags">Tags</label>
+        <input id="tags" name="tags" value="${values.tags || ''}" placeholder="crispr, sourcing, eu" />
+        <div class="hint">Comma separated, up to six.</div></div>
+      <div class="field"><label for="org">Posting on behalf of</label>
+        ${select('org', orgs.map((o) => ({ slug: String(o.id), label: o.name })), values.org || '', { blank: '— just me —' })}</div>
+    </div>
+    <div class="field" id="polloptions" hidden>
+      <label for="options">Poll options</label>
+      <textarea id="options" name="options" rows="4" placeholder="One option per line">${values.options || ''}</textarea>
+      <div class="hint">Only used when the type is Poll. Up to eight.</div>
+    </div>
+    <label class="check"><input type="checkbox" name="anonymous" value="1" ${raw(values.anonymous ? 'checked' : '')} />
+      post anonymously (your handle is hidden from other members)</label>
+    <button class="btn solid" type="submit">Post to the network</button>
+  </form>`;
+}
+
+export function editPostPage(ctx, { post, error = null }) {
+  return html`<h1>Edit post</h1>
+  ${error ? html`<div class="notice error">${error}</div>` : ''}
+  <form class="stack" method="post" action="/homeroom/post/${post.id}/edit">
+    ${csrfField(ctx)}
+    <div class="field"><label for="title">Title</label>
+      <input id="title" name="title" value="${post.title}" maxlength="160" required /></div>
+    <div class="field"><label for="category">Channel</label>${select('category', CATEGORIES, post.category)}</div>
+    <div class="field"><label for="body">Body</label><textarea id="body" name="body" rows="10">${post.body}</textarea></div>
+    <div class="field"><label for="tags">Tags</label>
+      <input id="tags" name="tags" value="${(post.tags || []).join(', ')}" /></div>
+    <button class="btn solid" type="submit">Save</button>
+    <a class="btn ghost" href="/homeroom/post/${post.id}">Cancel</a>
+  </form>`;
+}
+
+export function editCommentPage(ctx, { comment }) {
+  return html`<h1>Edit reply</h1>
+  <form class="stack" method="post" action="/homeroom/comment/${comment.id}/edit">
+    ${csrfField(ctx)}
+    <div class="field"><textarea name="text" rows="8" required>${comment.body}</textarea></div>
+    <button class="btn solid" type="submit">Save</button>
+    <a class="btn ghost" href="/homeroom/post/${comment.post_id}#c${comment.id}">Cancel</a>
+  </form>`;
+}
+
+/* ----------------------------------------------------------------- people */
+
+export function peoplePage(ctx, { members, total, page, filters, tags, cohortList, basePath }) {
+  const openFilters = [
+    ['intros', 'open to intros'], ['hours', 'offers office hours'],
+    ['collab', 'open to collaborate'], ['hiring', 'hiring'],
+  ];
+  return html`<div class="pagehead">
+    <div><h1>People</h1>
+      <p class="lede">${plural(total, 'member')} matching. Everyone here has tagged what they can
+        actually help with — search that, not job titles.</p></div>
+    <a class="btn ghost" href="/homeroom/settings">Edit your profile</a>
+  </div>
+
+  <form class="searchbar" method="get" action="/homeroom/people">
+    <input type="search" name="q" value="${filters.q}" placeholder="name, lab, technique, what they are working on" />
+    <input type="text" name="location" value="${filters.location}" placeholder="location" class="narrow" />
+    ${select('cohort', cohortList.map((c) => ({ slug: c.cohort, label: `${c.cohort} (${c.count})` })), filters.cohort, { blank: 'any cohort' })}
+    <button class="btn" type="submit">Filter</button>
+  </form>
+
+  <div class="toolbar mono">
+    <span class="dim">open to</span>
+    ${openFilters.map(([slug, label]) => html`<a class="${filters.open === slug ? 'on' : ''}"
+      href="/homeroom/people?${raw(queryWith(filters, { open: filters.open === slug ? '' : slug }))}">${label}</a>`)}
+  </div>
+
+  ${tags.length ? html`<div class="tagcloud">
+    <span class="mono dim">expertise</span>
+    ${tags.map((t) => html`<a class="tag ${filters.tag === t.tag ? 'on' : 'ghost'}"
+      href="/homeroom/people?${raw(queryWith(filters, { tag: filters.tag === t.tag ? '' : t.tag }))}">${t.tag} <span class="n">${t.count}</span></a>`)}
+  </div>` : ''}
+
+  ${members.length
+    ? html`<ul class="cards grid">${members.map(memberCard)}</ul>`
+    : empty('Nobody matches that yet.')}
+  ${pager({ page, total, perPage: PER_PAGE, basePath })}`;
+}
+
+function queryWith(filters, extra) {
+  const params = new URLSearchParams();
+  for (const [key, value] of Object.entries({ ...filters, ...extra })) {
+    if (value) params.set(key, value);
+  }
+  return params.toString();
+}
+
+export function memberPage(ctx, {
+  profile, orgs, posts, comments, slots, isSelf, introSent, canRequestIntro, threadId, voted,
+}) {
+  const links = tagList(profile.links);
+  return html`<div class="profilehead">
+    ${avatar(profile.user_id, { size: 76 })}
+    <div class="grow">
+      <h1>${profile.name || profile.user_id}</h1>
+      <div class="handle mono">@${profile.user_id}
+        ${profile.cohort ? pill(profile.cohort, 'cohort') : ''}
+        ${profile.is_admin ? pill('steward', 'admin') : ''}
+        <span class="sep">/</span> ${profile.karma} karma
+        <span class="sep">/</span> joined ${when(profile.joined_at)}</div>
+      ${profile.headline ? html`<p class="headline">${profile.headline}</p>` : ''}
+      <div class="mono dim">
+        ${profile.role ? html`${profile.role} ` : ''}
+        ${profile.org ? html`at ${profile.org} ` : ''}
+        ${profile.location ? html`<span class="sep">/</span> ${profile.location} ` : ''}
+        ${profile.bsl ? html`<span class="sep">/</span> works at ${profile.bsl}` : ''}
+      </div>
+    </div>
+    <div class="profileactions">
+      ${isSelf ? html`<a class="btn ghost" href="/homeroom/settings">Edit profile</a>` : ''}
+      ${!isSelf && ctx.user ? html`<a class="btn ghost" href="/homeroom/messages/new?to=${encodeURIComponent(profile.user_id)}">${threadId ? 'Open thread' : 'Message'}</a>` : ''}
+      ${canRequestIntro ? html`<a class="btn solid" href="/homeroom/intros/new?to=${encodeURIComponent(profile.user_id)}">Request intro</a>` : ''}
+      ${introSent ? html`<span class="pill">intro requested</span>` : ''}
+    </div>
+  </div>
+
+  <div class="openrow mono big">
+    ${profile.open_intros ? html`<span class="open">open to intros</span>` : ''}
+    ${profile.open_hours ? html`<span class="open">offers office hours</span>` : ''}
+    ${profile.open_collab ? html`<span class="open">open to collaborate</span>` : ''}
+    ${profile.open_hiring ? html`<span class="open">hiring</span>` : ''}
+  </div>
+
+  <div class="cols">
+    <div class="main">
+      ${profile.bio ? section('About', body(profile.bio)) : ''}
+      ${profile.working_on ? section('Working on', body(profile.working_on)) : ''}
+      ${profile.ask_me_about ? section('Ask me about', body(profile.ask_me_about)) : ''}
+      ${posts.length ? section('Posts', html`<ul class="cards">${posts.map((p) => postRow(ctx, p, { voted: voted.has(p.id) }))}</ul>`) : ''}
+      ${comments.length ? section('Recent replies', html`<ul class="rail-list wide">${comments.map((c) => html`<li>
+        <a href="/homeroom/post/${c.post_id}#c${c.id}">${c.post_title}</a>
+        <div class="prose small">${snippet(c.body, 260)}</div>
+        <span class="mono dim">${c.points} pts <span class="sep">/</span> ${when(c.created_at)}</span></li>`)}</ul>`) : ''}
+    </div>
+    <aside class="rail">
+      ${section('Expertise', (profile.expertise || []).length
+        ? html`<div class="tagcloud">${profile.expertise.map((t) => html`<a class="tag" href="/homeroom/people?tag=${t}">${t}</a>`)}</div>`
+        : html`<p class="mono dim">No tags yet.</p>`)}
+      ${section('Labs', orgs.length
+        ? html`<ul class="rail-list">${orgs.map((o) => html`<li><a href="/homeroom/lab/${o.slug}">${o.name}</a>
+            <span class="mono dim">${o.role || labelFor(ORG_KINDS, o.kind, o.kind)}</span></li>`)}</ul>`
+        : html`<p class="mono dim">Not listed with a lab.</p>`)}
+      ${slots.length ? section('Office hours on offer', html`<ul class="rail-list">${slots.map((s) => html`<li>
+        <a href="/homeroom/hours/${s.id}">${s.title}</a>
+        <span class="mono dim">${relTime(s.starts_at)}</span></li>`)}</ul>`) : ''}
+      ${links.length ? section('Links', html`<ul class="rail-list">${links.map((l) => html`<li>
+        <a href="${l}" rel="nofollow noopener ugc" target="_blank">${l.replace(/^https?:\/\//, '')}</a></li>`)}</ul>`) : ''}
+    </aside>
+  </div>`;
+}
+
+export function settingsPage(ctx, { member, error = null, saved = false }) {
+  const checked = (flag) => raw(member[flag] ? 'checked' : '');
+  return html`<h1>Your profile</h1>
+  <p class="lede">This is what the directory searches. Vague profiles get no intros.</p>
+  ${saved ? html`<div class="notice">Saved.</div>` : ''}
+  ${error ? html`<div class="notice error">${error}</div>` : ''}
+  <form class="stack wide" method="post" action="/homeroom/settings">
+    ${csrfField(ctx)}
+    <div class="row">
+      <div class="field"><label for="name">Name</label>
+        <input id="name" name="name" value="${member.name}" maxlength="80" /></div>
+      <div class="field"><label for="cohort">Cohort</label>
+        <input id="cohort" name="cohort" value="${member.cohort || ''}" maxlength="12" placeholder="S26" />
+        <div class="hint">However you group yourself: a batch, a year, a lab generation.</div></div>
+    </div>
+    <div class="field"><label for="headline">Headline</label>
+      <input id="headline" name="headline" value="${member.headline}" maxlength="140"
+        placeholder="Directed evolution of thermostable enzymes, in a garage in Porto" /></div>
+    <div class="row">
+      <div class="field"><label for="org">Lab or org</label>
+        <input id="org" name="org" value="${member.org}" maxlength="80" /></div>
+      <div class="field"><label for="role">Role</label>
+        <input id="role" name="role" value="${member.role}" maxlength="80" /></div>
+    </div>
+    <div class="row">
+      <div class="field"><label for="location">Location</label>
+        <input id="location" name="location" value="${member.location}" maxlength="80" /></div>
+      <div class="field"><label for="bsl">Containment you work at</label>
+        <input id="bsl" name="bsl" value="${member.bsl || ''}" maxlength="24" placeholder="BSL-1" /></div>
+    </div>
+    <div class="field"><label for="bio">About</label>
+      <textarea id="bio" name="bio" rows="5" maxlength="4000">${member.bio}</textarea></div>
+    <div class="field"><label for="working_on">Working on</label>
+      <textarea id="working_on" name="working_on" rows="3" maxlength="2000">${member.working_on}</textarea></div>
+    <div class="field"><label for="ask_me_about">Ask me about</label>
+      <textarea id="ask_me_about" name="ask_me_about" rows="3" maxlength="2000"
+        placeholder="Things you have actually done and would answer a 3am message about.">${member.ask_me_about}</textarea></div>
+    <div class="field"><label for="expertise">Expertise tags</label>
+      <input id="expertise" name="expertise" value="${(member.expertise || []).join(', ')}" />
+      <div class="hint">Comma separated, up to twelve. Common ones:
+        ${EXPERTISE_SUGGESTIONS.slice(0, 14).join(', ')}.</div></div>
+    <div class="field"><label for="links">Links</label>
+      <input id="links" name="links" value="${member.links}" placeholder="https://…, https://…" />
+      <div class="hint">Comma separated.</div></div>
+    <fieldset class="checks">
+      <legend class="mono">Open to</legend>
+      <label class="check"><input type="checkbox" name="open_intros" value="1" ${checked('open_intros')} /> intro requests</label>
+      <label class="check"><input type="checkbox" name="open_hours" value="1" ${checked('open_hours')} /> giving office hours</label>
+      <label class="check"><input type="checkbox" name="open_collab" value="1" ${checked('open_collab')} /> collaborations</label>
+      <label class="check"><input type="checkbox" name="open_hiring" value="1" ${checked('open_hiring')} /> being contacted about jobs</label>
+    </fieldset>
+    <button class="btn solid" type="submit">Save profile</button>
+  </form>`;
+}
+
+/* ------------------------------------------------------------------- labs */
+
+export function labsPage(ctx, { orgs, total, page, filters, basePath }) {
+  return html`<div class="pagehead">
+    <div><h1>Labs</h1><p class="lede">${plural(total, 'lab')} in the network — startups, community
+      labs, foundries, collectives and one-person garages.</p></div>
+    <a class="btn solid" href="/homeroom/labs/new">Add a lab</a>
+  </div>
+  <form class="searchbar" method="get" action="/homeroom/labs">
+    <input type="search" name="q" value="${filters.q}" placeholder="name, what they do, where they are" />
+    ${select('kind', ORG_KINDS, filters.kind, { blank: 'any kind' })}
+    ${select('stage', ORG_STAGES, filters.stage, { blank: 'any stage' })}
+    <button class="btn" type="submit">Filter</button>
+  </form>
+  ${orgs.length ? html`<ul class="cards grid">${orgs.map((o) => html`<li class="card lab">
+    <a class="cardlink" href="/homeroom/lab/${o.slug}">
+      <div class="grow">
+        <div class="name">${o.name} ${o.cohort ? pill(o.cohort, 'cohort') : ''}</div>
+        <div class="headline">${o.tagline || 'No tagline yet.'}</div>
+        <div class="meta mono">${labelFor(ORG_KINDS, o.kind, o.kind)}
+          <span class="sep">/</span> ${labelFor(ORG_STAGES, o.stage, o.stage)}
+          <span class="sep">/</span> ${o.location || 'location unlisted'}
+          <span class="sep">/</span> ${plural(o.team_count, 'member')}</div>
+      </div></a>
+    ${tagList(o.tags).length ? html`<div class="tagrow">${tagList(o.tags).map((t) => html`<span class="tag ghost">${t}</span>`)}</div>` : ''}
+  </li>`)}</ul>` : empty('No labs match that.')}
+  ${pager({ page, total, perPage: PER_PAGE, basePath })}`;
+}
+
+export function labPage(ctx, { org, team, updates, jobs, posts, voted, isMember, isAdmin }) {
+  return html`<div class="profilehead">
+    <div class="grow">
+      <h1>${org.name} ${org.cohort ? pill(org.cohort, 'cohort') : ''}</h1>
+      <p class="headline">${org.tagline}</p>
+      <div class="mono dim">${labelFor(ORG_KINDS, org.kind, org.kind)}
+        <span class="sep">/</span> ${labelFor(ORG_STAGES, org.stage, org.stage)}
+        ${org.location ? html` <span class="sep">/</span> ${org.location}` : ''}
+        ${org.founded ? html` <span class="sep">/</span> founded ${org.founded}` : ''}
+        ${org.headcount ? html` <span class="sep">/</span> ${plural(org.headcount, 'person', 'people')}` : ''}
+        ${org.website ? html` <span class="sep">/</span> <a href="${org.website}" rel="nofollow noopener" target="_blank">${org.website.replace(/^https?:\/\//, '')}</a>` : ''}</div>
+    </div>
+    <div class="profileactions">
+      ${isAdmin ? html`<a class="btn ghost" href="/homeroom/lab/${org.slug}/edit">Edit</a>` : ''}
+      ${isMember ? html`<a class="btn solid" href="/homeroom/lab/${org.slug}/update">Post update</a>` : ''}
+      ${ctx.user && !isMember ? html`<form method="post" action="/homeroom/lab/${org.slug}/join">
+        ${csrfField(ctx)}<button class="btn ghost" type="submit">I work here</button></form>` : ''}
+      ${isMember && !isAdmin ? html`<form method="post" action="/homeroom/lab/${org.slug}/leave">
+        ${csrfField(ctx)}<button class="btn ghost" type="submit">Leave</button></form>` : ''}
+    </div>
+  </div>
+
+  <div class="cols">
+    <div class="main">
+      ${org.description ? section('What they do', body(org.description)) : ''}
+      ${section('Updates', updates.length
+        ? html`<ul class="rail-list wide">${updates.map((u) => html`<li>
+            <div class="mono dim">${u.period ? html`${u.period} <span class="sep">/</span> ` : ''}
+              ${memberLink(u.author_id)} <span class="sep">/</span> ${when(u.created_at)}</div>
+            ${body(u.body)}
+            ${u.metrics ? html`<div class="metrics mono">${u.metrics}</div>` : ''}
+            ${u.asks ? html`<div class="asks"><b class="mono">asks</b> ${u.asks}</div>` : ''}
+          </li>`)}</ul>`
+        : html`<p class="mono dim">No updates posted yet.</p>`)}
+      ${posts.length ? section('Threads from this lab',
+        html`<ul class="cards">${posts.map((p) => postRow(ctx, p, { voted: voted.has(p.id) }))}</ul>`) : ''}
+    </div>
+    <aside class="rail">
+      ${section('Team', team.length ? html`<ul class="rail-list">${team.map((t) => html`<li>
+        <a href="/homeroom/p/${encodeURIComponent(t.user_id)}">${t.name || t.user_id}</a>
+        <span class="mono dim">${t.role || 'member'}${t.admin ? ' · admin' : ''}</span></li>`)}</ul>`
+        : html`<p class="mono dim">Nobody listed.</p>`)}
+      ${section('Open roles', jobs.length
+        ? html`<ul class="rail-list">${jobs.map((j) => html`<li><a href="/homeroom/job/${j.id}">${j.title}</a>
+            <span class="mono dim">${j.location || 'location unlisted'}${j.remote ? ' · remote ok' : ''}</span></li>`)}</ul>`
+        : html`<p class="mono dim">None posted.${isMember ? html` <a href="/homeroom/jobs/new?org=${org.id}">Post one</a>.` : ''}</p>`)}
+      ${tagList(org.tags).length ? section('Tags',
+        html`<div class="tagcloud">${tagList(org.tags).map((t) => html`<a class="tag" href="/homeroom/labs?tag=${t}">${t}</a>`)}</div>`) : ''}
+    </aside>
+  </div>`;
+}
+
+export function labFormPage(ctx, { org = null, error = null }) {
+  const value = (field, fallback = '') => (org ? org[field] ?? fallback : fallback);
+  return html`<h1>${org ? `Edit ${org.name}` : 'Add a lab'}</h1>
+  ${error ? html`<div class="notice error">${error}</div>` : ''}
+  <form class="stack wide" method="post" action="${org ? `/homeroom/lab/${org.slug}/edit` : '/homeroom/labs/new'}">
+    ${csrfField(ctx)}
+    <div class="field"><label for="name">Name</label>
+      <input id="name" name="name" value="${value('name')}" maxlength="80" required /></div>
+    <div class="field"><label for="tagline">One line</label>
+      <input id="tagline" name="tagline" value="${value('tagline')}" maxlength="140"
+        placeholder="Cell-free protein synthesis kits for teaching labs" /></div>
+    <div class="row">
+      <div class="field"><label for="kind">Kind</label>${select('kind', ORG_KINDS, value('kind', 'startup'))}</div>
+      <div class="field"><label for="stage">Stage</label>${select('stage', ORG_STAGES, value('stage', 'idea'))}</div>
+    </div>
+    <div class="row">
+      <div class="field"><label for="location">Location</label>
+        <input id="location" name="location" value="${value('location')}" maxlength="80" /></div>
+      <div class="field"><label for="website">Website</label>
+        <input id="website" name="website" value="${value('website')}" maxlength="200" /></div>
+    </div>
+    <div class="row">
+      <div class="field"><label for="cohort">Cohort</label>
+        <input id="cohort" name="cohort" value="${value('cohort')}" maxlength="12" /></div>
+      <div class="field"><label for="founded">Founded</label>
+        <input id="founded" name="founded" type="number" min="1900" max="2100" value="${value('founded')}" /></div>
+      <div class="field"><label for="headcount">Headcount</label>
+        <input id="headcount" name="headcount" type="number" min="1" max="100000" value="${value('headcount')}" /></div>
+    </div>
+    <div class="field"><label for="description">What you do</label>
+      <textarea id="description" name="description" rows="8" maxlength="8000">${value('description')}</textarea></div>
+    <div class="field"><label for="tags">Tags</label>
+      <input id="tags" name="tags" value="${value('tags')}" placeholder="cell-free, education, kits" /></div>
+    <button class="btn solid" type="submit">${org ? 'Save' : 'Add lab'}</button>
+  </form>`;
+}
+
+export function updateFormPage(ctx, { org, error = null }) {
+  return html`<h1>Update from ${org.name}</h1>
+  <p class="lede">What moved, what did not, what you need. Short is fine.</p>
+  ${error ? html`<div class="notice error">${error}</div>` : ''}
+  <form class="stack wide" method="post" action="/homeroom/lab/${org.slug}/update">
+    ${csrfField(ctx)}
+    <div class="field"><label for="period">Period</label>
+      <input id="period" name="period" maxlength="40" placeholder="Week of 10 Aug" /></div>
+    <div class="field"><label for="body">Update</label>
+      <textarea id="body" name="body" rows="8" required></textarea></div>
+    <div class="field"><label for="metrics">Numbers</label>
+      <input id="metrics" name="metrics" maxlength="200" placeholder="12 constructs screened · 3 hits · 9 months runway" /></div>
+    <div class="field"><label for="asks">Asks</label>
+      <input id="asks" name="asks" maxlength="300" placeholder="Intro to anyone running a BSL-2 in Berlin" /></div>
+    <button class="btn solid" type="submit">Post update</button>
+  </form>`;
+}
+
+/* ------------------------------------------------------------------ deals */
+
+export function dealsPage(ctx, { deals, total, category, q, claimed }) {
+  return html`<div class="pagehead">
+    <div><h1>Deals</h1><p class="lede">${plural(total, 'live deal')} negotiated for the community.
+      Claim one to reveal the code.</p></div>
+    <a class="btn ghost" href="/homeroom/deals/new">Add a deal</a>
+  </div>
+  <form class="searchbar" method="get" action="/homeroom/deals">
+    <input type="search" name="q" value="${q}" placeholder="vendor or what it covers" />
+    <button class="btn" type="submit">Search</button>
+  </form>
+  ${filterBar(DEAL_CATEGORIES, { active: category, basePath: '/homeroom/deals', param: 'category', allLabel: 'everything' })}
+  ${deals.length ? html`<ul class="cards grid">${deals.map((d) => html`<li class="card deal">
+    <a class="cardlink" href="/homeroom/deal/${d.slug}">
+      <div class="grow">
+        <div class="name">${d.vendor} ${claimed.has(d.id) ? pill('claimed', 'ok') : ''}</div>
+        <div class="headline">${d.title}</div>
+        <div class="meta mono">${labelFor(DEAL_CATEGORIES, d.category, d.category)}
+          ${d.worth ? html`<span class="sep">/</span> <b class="worth">${d.worth}</b>` : ''}
+          <span class="sep">/</span> ${plural(d.claim_count, 'claim')}</div>
+        <p class="summary">${d.summary}</p>
+      </div></a>
+  </li>`)}</ul>` : empty('No deals in this category yet.')}`;
+}
+
+export function dealPage(ctx, { deal, claimed, claimCount }) {
+  return html`<div class="profilehead">
+    <div class="grow">
+      <h1>${deal.vendor}</h1>
+      <p class="headline">${deal.title}</p>
+      <div class="mono dim">${labelFor(DEAL_CATEGORIES, deal.category, deal.category)}
+        ${deal.worth ? html` <span class="sep">/</span> worth ${deal.worth}` : ''}
+        <span class="sep">/</span> ${plural(claimCount, 'member')} claimed
+        <span class="sep">/</span> posted by ${memberLink(deal.posted_by)} ${when(deal.created_at)}
+        ${deal.expires_at ? html` <span class="sep">/</span> expires ${stamp(deal.expires_at)}` : ''}</div>
+    </div>
+  </div>
+  ${deal.summary ? html`<p class="lede">${deal.summary}</p>` : ''}
+  ${deal.details ? body(deal.details) : ''}
+  ${claimed
+    ? html`<div class="claimbox">
+        <div class="mono dim">your code</div>
+        <div class="code">${deal.code || 'No code needed — use the link.'}</div>
+        ${deal.url ? html`<a class="btn solid" href="${deal.url}" rel="nofollow noopener" target="_blank">Go to ${deal.vendor}</a>` : ''}
+      </div>`
+    : html`<form method="post" action="/homeroom/deal/${deal.slug}/claim">
+        ${csrfField(ctx)}
+        <button class="btn solid" type="submit">Claim this deal</button>
+        <p class="mono dim">Claiming records that you took it, so the community can renegotiate with real numbers.</p>
+      </form>`}`;
+}
+
+export function dealFormPage(ctx, { error = null, values = {} }) {
+  return html`<h1>Add a deal</h1>
+  <p class="lede">Something you negotiated that other members can use too.</p>
+  ${error ? html`<div class="notice error">${error}</div>` : ''}
+  <form class="stack wide" method="post" action="/homeroom/deals/new">
+    ${csrfField(ctx)}
+    <div class="row">
+      <div class="field"><label for="vendor">Vendor</label>
+        <input id="vendor" name="vendor" value="${values.vendor || ''}" maxlength="80" required /></div>
+      <div class="field"><label for="category">Category</label>${select('category', DEAL_CATEGORIES, values.category || 'other')}</div>
+    </div>
+    <div class="field"><label for="title">What you get</label>
+      <input id="title" name="title" value="${values.title || ''}" maxlength="140" required
+        placeholder="30% off oligos, no minimum" /></div>
+    <div class="row">
+      <div class="field"><label for="worth">Worth</label>
+        <input id="worth" name="worth" value="${values.worth || ''}" maxlength="60" placeholder="~€2,000/yr" /></div>
+      <div class="field"><label for="code">Code</label>
+        <input id="code" name="code" value="${values.code || ''}" maxlength="80" />
+        <div class="hint">Only shown to members who claim it.</div></div>
+    </div>
+    <div class="field"><label for="url">Link</label><input id="url" name="url" value="${values.url || ''}" maxlength="300" /></div>
+    <div class="field"><label for="summary">Summary</label>
+      <input id="summary" name="summary" value="${values.summary || ''}" maxlength="200" /></div>
+    <div class="field"><label for="details">Details</label>
+      <textarea id="details" name="details" rows="6">${values.details || ''}</textarea></div>
+    <button class="btn solid" type="submit">Add deal</button>
+  </form>`;
+}
+
+/* ---------------------------------------------------------------- funders */
+
+export function fundersPage(ctx, { funders, total, page, filters, basePath, tracked }) {
+  return html`<div class="pagehead">
+    <div><h1>Funders</h1><p class="lede">${plural(total, 'funder')} on file, rated by members who
+      actually took their money — or did not. Reviews are anonymous by default.</p></div>
+    <div class="heroactions">
+      <a class="btn ghost" href="/homeroom/pipeline">Your pipeline</a>
+      <a class="btn solid" href="/homeroom/funders/new">Add a funder</a>
+    </div>
+  </div>
+  <form class="searchbar" method="get" action="/homeroom/funders">
+    <input type="search" name="q" value="${filters.q}" placeholder="name, thesis, geography" />
+    ${select('kind', FUNDER_KINDS, filters.kind, { blank: 'any kind' })}
+    ${select('sort', [
+      { slug: 'rating', label: 'best rated' }, { slug: 'reviews', label: 'most reviewed' },
+      { slug: 'name', label: 'name' }, { slug: 'new', label: 'newest' },
+    ], filters.sort)}
+    <button class="btn" type="submit">Filter</button>
+  </form>
+  ${funders.length ? html`<ul class="cards">${funders.map((f) => html`<li class="card funder">
+    <div class="grow">
+      <div class="title-line"><a class="title" href="/homeroom/funder/${f.slug}">${f.name}</a>
+        ${pill(labelFor(FUNDER_KINDS, f.kind, f.kind))}
+        ${f.dilutive ? '' : pill('non-dilutive', 'ok')}
+        ${tracked.has(f.id) ? pill('in your pipeline', 'cohort') : ''}</div>
+      <div class="subline mono">${f.focus || 'no stated focus'}
+        ${f.stages ? html`<span class="sep">/</span> ${f.stages}` : ''}
+        ${f.check_size ? html`<span class="sep">/</span> ${f.check_size}` : ''}
+        ${f.location ? html`<span class="sep">/</span> ${f.location}` : ''}</div>
+    </div>
+    <div class="ratingcol">${stars(f.avg_rating, { count: f.review_count })}</div>
+  </li>`)}</ul>` : empty('Nothing matches. Add the funder and be the first to review it.')}
+  ${pager({ page, total, perPage: PER_PAGE, basePath })}`;
+}
+
+export function funderPage(ctx, { funder, reviews, myReview, entry, orgs }) {
+  return html`<div class="profilehead">
+    <div class="grow">
+      <h1>${funder.name}</h1>
+      <div class="mono dim">${labelFor(FUNDER_KINDS, funder.kind, funder.kind)}
+        ${funder.focus ? html` <span class="sep">/</span> ${funder.focus}` : ''}
+        ${funder.stages ? html` <span class="sep">/</span> ${funder.stages}` : ''}
+        ${funder.check_size ? html` <span class="sep">/</span> ${funder.check_size}` : ''}
+        ${funder.location ? html` <span class="sep">/</span> ${funder.location}` : ''}
+        ${funder.website ? html` <span class="sep">/</span> <a href="${funder.website}" rel="nofollow noopener" target="_blank">site</a>` : ''}</div>
+      <div class="bigstars">${stars(funder.avg_rating, { count: funder.review_count })}
+        ${funder.avg_speed ? html`<span class="mono dim">speed ${funder.avg_speed}/5</span>` : ''}
+        ${funder.avg_value ? html`<span class="mono dim">value-add ${funder.avg_value}/5</span>` : ''}</div>
+    </div>
+  </div>
+  ${funder.description ? body(funder.description) : ''}
+
+  <div class="cols">
+    <div class="main">
+      ${section(`Reviews (${reviews.length})`, reviews.length
+        ? html`<ul class="rail-list wide">${reviews.map((r) => html`<li class="review">
+            <div class="mono">${stars(r.rating)}
+              <span class="sep">/</span> ${r.anonymous ? html`<span class="anon">anonymous member</span>` : memberLink(r.user_id)}
+              <span class="sep">/</span> ${when(r.created_at)}
+              ${r.invested ? pill('they invested', 'ok') : pill('did not invest')}
+              ${r.speed ? html`<span class="dim">speed ${r.speed}/5</span>` : ''}
+              ${r.value_add ? html`<span class="dim">value ${r.value_add}/5</span>` : ''}</div>
+            ${r.body ? body(r.body) : ''}
+          </li>`)}</ul>`
+        : html`<p class="mono dim">No reviews yet. Yours would be the first.</p>`)}
+
+      ${section(myReview ? 'Update your review' : 'Write a review', html`
+        <form class="stack" method="post" action="/homeroom/funder/${funder.slug}/review">
+          ${csrfField(ctx)}
+          <div class="row">
+            <div class="field"><label for="rating">Overall</label>
+              ${select('rating', ratingOptions(), String(myReview?.rating || 3))}</div>
+            <div class="field"><label for="speed">Speed to decide</label>
+              ${select('speed', ratingOptions(), String(myReview?.speed || ''), { blank: '—' })}</div>
+            <div class="field"><label for="value_add">Value beyond money</label>
+              ${select('value_add', ratingOptions(), String(myReview?.value_add || ''), { blank: '—' })}</div>
+          </div>
+          <div class="field"><label for="rbody">What happened</label>
+            <textarea id="rbody" name="body" rows="6"
+              placeholder="How they behaved in diligence, how fast, what they did after the wire.">${myReview?.body || ''}</textarea></div>
+          <label class="check"><input type="checkbox" name="invested" value="1" ${raw(myReview?.invested ? 'checked' : '')} /> they ended up investing</label>
+          <label class="check"><input type="checkbox" name="anonymous" value="1" ${raw(myReview && !myReview.anonymous ? '' : 'checked')} /> post anonymously</label>
+          <button class="btn solid" type="submit">${myReview ? 'Update review' : 'Post review'}</button>
+        </form>`)}
+    </div>
+    <aside class="rail">
+      ${section('Your pipeline', html`
+        <form class="stack" method="post" action="/homeroom/funder/${funder.slug}/track">
+          ${csrfField(ctx)}
+          <div class="field"><label for="status">Status</label>
+            ${select('status', PIPELINE_STATUSES, entry?.status || 'researching')}</div>
+          <div class="field"><label for="org">For which lab</label>
+            ${select('org', orgs.map((o) => ({ slug: String(o.id), label: o.name })), String(entry?.org_id || ''), { blank: '— none —' })}</div>
+          <div class="field"><label for="amount">Amount</label>
+            <input id="amount" name="amount" value="${entry?.amount || ''}" maxlength="60" placeholder="€150k SAFE" /></div>
+          <div class="field"><label for="notes">Private notes</label>
+            <textarea id="notes" name="notes" rows="4" maxlength="4000">${entry?.notes || ''}</textarea>
+            <div class="hint">Only you can read these.</div></div>
+          <button class="btn solid" type="submit">${entry ? 'Update' : 'Track this funder'}</button>
+        </form>
+        ${entry ? html`<form method="post" action="/homeroom/funder/${funder.slug}/untrack">
+          ${csrfField(ctx)}<button class="linkish mono" type="submit">remove from pipeline</button></form>` : ''}`)}
+    </aside>
+  </div>`;
+}
+
+function ratingOptions() {
+  return [5, 4, 3, 2, 1].map((n) => ({ slug: String(n), label: `${n} — ${['unusable', 'poor', 'fine', 'good', 'excellent'][n - 1]}` }));
+}
+
+export function funderFormPage(ctx, { error = null, values = {} }) {
+  return html`<h1>Add a funder</h1>
+  <p class="lede">Grants and prizes count. So do the funds nobody warns you about.</p>
+  ${error ? html`<div class="notice error">${error}</div>` : ''}
+  <form class="stack wide" method="post" action="/homeroom/funders/new">
+    ${csrfField(ctx)}
+    <div class="row">
+      <div class="field"><label for="name">Name</label>
+        <input id="name" name="name" value="${values.name || ''}" maxlength="120" required /></div>
+      <div class="field"><label for="kind">Kind</label>${select('kind', FUNDER_KINDS, values.kind || 'vc')}</div>
+    </div>
+    <div class="row">
+      <div class="field"><label for="focus">Focus</label>
+        <input id="focus" name="focus" value="${values.focus || ''}" maxlength="140" placeholder="Synbio tooling, biomanufacturing" /></div>
+      <div class="field"><label for="stages">Stages</label>
+        <input id="stages" name="stages" value="${values.stages || ''}" maxlength="80" placeholder="pre-seed, seed" /></div>
+    </div>
+    <div class="row">
+      <div class="field"><label for="check_size">Cheque size</label>
+        <input id="check_size" name="check_size" value="${values.check_size || ''}" maxlength="60" /></div>
+      <div class="field"><label for="location">Location</label>
+        <input id="location" name="location" value="${values.location || ''}" maxlength="80" /></div>
+      <div class="field"><label for="website">Website</label>
+        <input id="website" name="website" value="${values.website || ''}" maxlength="200" /></div>
+    </div>
+    <div class="field"><label for="description">Notes</label>
+      <textarea id="description" name="description" rows="6">${values.description || ''}</textarea></div>
+    <label class="check"><input type="checkbox" name="nondilutive" value="1" /> non-dilutive (grant, prize, foundation)</label>
+    <button class="btn solid" type="submit">Add funder</button>
+  </form>`;
+}
+
+export function pipelinePage(ctx, { rows }) {
+  const byStatus = new Map(PIPELINE_STATUSES.map((s) => [s.slug, []]));
+  for (const row of rows) (byStatus.get(row.status) || byStatus.get('researching')).push(row);
+  return html`<div class="pagehead">
+    <div><h1>Pipeline</h1><p class="lede">Your fundraise, tracked. Private to you —
+      other members see none of this.</p></div>
+    <a class="btn ghost" href="/homeroom/funders">Browse funders</a>
+  </div>
+  ${rows.length ? html`<div class="board">${PIPELINE_STATUSES.map((status) => html`<div class="column">
+    <h2 class="mono">${status.label} <span class="n">${byStatus.get(status.slug).length}</span></h2>
+    ${byStatus.get(status.slug).map((row) => html`<div class="card mini">
+      <a href="/homeroom/funder/${row.funder_slug}">${row.funder_name}</a>
+      <div class="mono dim">${row.amount || labelFor(FUNDER_KINDS, row.funder_kind, row.funder_kind)}
+        ${row.avg_rating ? html` <span class="sep">/</span> ${row.avg_rating}★` : ''}</div>
+      ${row.notes ? html`<div class="prose small">${snippet(row.notes, 180)}</div>` : ''}
+      <div class="mono dim">updated ${when(row.updated_at)}</div>
+    </div>`)}
+  </div>`)}</div>` : empty('Nothing tracked yet. Open a funder and add it to your pipeline.')}`;
+}
+
+/* ----------------------------------------------------------- office hours */
+
+export function hoursPage(ctx, { slots, mine, hosting }) {
+  return html`<div class="pagehead">
+    <div><h1>Office hours</h1><p class="lede">Book half an hour with someone who has already
+      done the thing you are about to do.</p></div>
+    <a class="btn solid" href="/homeroom/hours/new">Offer office hours</a>
+  </div>
+  ${mine.length ? section('Your bookings', html`<ul class="rail-list wide">${mine.map((s) => html`<li>
+    <a href="/homeroom/hours/${s.id}">${s.title}</a> with ${memberLink(s.host_id)}
+    <span class="mono dim">${stamp(s.starts_at)} <span class="sep">/</span> ${relTime(s.starts_at)}</span>
+  </li>`)}</ul>`) : ''}
+  ${hosting.length ? section('You are hosting', html`<ul class="rail-list wide">${hosting.map((s) => html`<li>
+    <a href="/homeroom/hours/${s.id}">${s.title}</a>
+    <span class="mono dim">${stamp(s.starts_at)} <span class="sep">/</span> ${s.booked}/${s.capacity} booked</span>
+  </li>`)}</ul>`) : ''}
+  ${section('Open slots', slots.length ? html`<ul class="cards">${slots.map((s) => html`<li class="card slot">
+    <div class="grow">
+      <div class="title-line"><a class="title" href="/homeroom/hours/${s.id}">${s.title}</a>
+        ${pill(s.format === 'group' ? 'group' : '1:1')}
+        ${s.booked >= s.capacity ? pill('full', 'warn') : pill(`${s.capacity - s.booked} left`, 'ok')}</div>
+      <div class="subline mono">${memberLink(s.host_id)}
+        <span class="sep">/</span> ${stamp(s.starts_at)}
+        <span class="sep">/</span> ${s.minutes} min
+        <span class="sep">/</span> ${relTime(s.starts_at)}
+        ${s.topics ? html`<span class="sep">/</span> ${s.topics}` : ''}</div>
+    </div>
+  </li>`)}</ul>` : empty('No open slots. Offer some yourself — that is how this fills up.'))}`;
+}
+
+export function slotPage(ctx, { slot, bookings, isHost, booked }) {
+  return html`<h1>${slot.title}</h1>
+  <div class="mono dim">${memberLink(slot.host_id)}
+    <span class="sep">/</span> ${stamp(slot.starts_at)}
+    <span class="sep">/</span> ${slot.minutes} minutes
+    <span class="sep">/</span> ${slot.format === 'group' ? 'group session' : 'one on one'}
+    <span class="sep">/</span> ${bookings.length}/${slot.capacity} booked
+    ${slot.canceled ? html` <span class="sep">/</span> <b class="warn">canceled</b>` : ''}</div>
+  ${slot.topics ? html`<p class="mono">${slot.topics}</p>` : ''}
+  ${slot.description ? body(slot.description) : ''}
+  ${slot.place ? html`<p class="mono dim">Where: ${slot.place}</p>` : ''}
+
+  ${slot.canceled ? html`<div class="notice error">This session was canceled.</div>`
+    : isHost
+      ? html`${section('Who booked', bookings.length
+          ? html`<ul class="rail-list wide">${bookings.map((b) => html`<li>
+              ${memberLink(b.user_id)} <span class="mono dim">${when(b.created_at)}</span>
+              ${b.question ? html`<div class="prose small">${b.question}</div>` : ''}</li>`)}</ul>`
+          : html`<p class="mono dim">Nobody yet.</p>`)}
+        <form method="post" action="/homeroom/hours/${slot.id}/cancel"
+          onsubmit="return confirm('Cancel this session for everyone?')">
+          ${csrfField(ctx)}<button class="btn ghost" type="submit">Cancel session</button></form>`
+      : booked
+        ? html`<div class="notice">You are booked. It is on you to show up.</div>
+          <form method="post" action="/homeroom/hours/${slot.id}/unbook">
+            ${csrfField(ctx)}<button class="btn ghost" type="submit">Give up my slot</button></form>`
+        : bookings.length >= slot.capacity
+          ? html`<div class="notice">Full.</div>`
+          : html`<form class="stack" method="post" action="/homeroom/hours/${slot.id}/book">
+              ${csrfField(ctx)}
+              <div class="field"><label for="question">What do you want out of it?</label>
+                <textarea id="question" name="question" rows="4"
+                  placeholder="One concrete question beats a general chat."></textarea></div>
+              <button class="btn solid" type="submit">Book this slot</button>
+            </form>`}`;
+}
+
+export function slotFormPage(ctx, { error = null, defaultStart }) {
+  return html`<h1>Offer office hours</h1>
+  <p class="lede">Pick a time, say what you can help with, and let people book it. All times UTC.</p>
+  ${error ? html`<div class="notice error">${error}</div>` : ''}
+  <form class="stack wide" method="post" action="/homeroom/hours/new">
+    ${csrfField(ctx)}
+    <div class="field"><label for="title">Title</label>
+      <input id="title" name="title" maxlength="120" required
+        placeholder="Scaling fermentation from 1L to 100L — ask me anything" /></div>
+    <div class="row">
+      <div class="field"><label for="starts_at">Starts (UTC)</label>
+        <input id="starts_at" name="starts_at" type="datetime-local" value="${defaultStart}" required /></div>
+      <div class="field"><label for="minutes">Minutes</label>
+        <input id="minutes" name="minutes" type="number" min="10" max="240" value="30" /></div>
+    </div>
+    <div class="row">
+      <div class="field"><label for="format">Format</label>
+        ${select('format', [{ slug: 'one-on-one', label: 'One on one' }, { slug: 'group', label: 'Group' }], 'one-on-one')}</div>
+      <div class="field"><label for="capacity">Capacity</label>
+        <input id="capacity" name="capacity" type="number" min="1" max="50" value="1" /></div>
+    </div>
+    <div class="field"><label for="place">Where</label>
+      <input id="place" name="place" maxlength="200" placeholder="Video link, or a bench in Lisbon" /></div>
+    <div class="field"><label for="topics">Topics</label>
+      <input id="topics" name="topics" maxlength="140" placeholder="fermentation, scale-up, CMOs" /></div>
+    <div class="field"><label for="description">Details</label>
+      <textarea id="description" name="description" rows="5"></textarea></div>
+    <button class="btn solid" type="submit">Post slot</button>
+  </form>`;
+}
+
+/* ------------------------------------------------------------------- jobs */
+
+export function jobsPage(ctx, { jobs, total, page, filters, basePath, canPost }) {
+  return html`<div class="pagehead">
+    <div><h1>Jobs</h1><p class="lede">${plural(total, 'open role')} across the network.
+      Members only, so you can ask the founder directly.</p></div>
+    ${canPost ? html`<a class="btn solid" href="/homeroom/jobs/new">Post a role</a>`
+      : html`<a class="btn ghost" href="/homeroom/labs/new">Add your lab to post roles</a>`}
+  </div>
+  <form class="searchbar" method="get" action="/homeroom/jobs">
+    <input type="search" name="q" value="${filters.q}" placeholder="title, lab, skill" />
+    ${select('discipline', JOB_DISCIPLINES, filters.discipline, { blank: 'any discipline' })}
+    <label class="check inline"><input type="checkbox" name="remote" value="1" ${raw(filters.remote ? 'checked' : '')} /> remote ok</label>
+    <button class="btn" type="submit">Filter</button>
+  </form>
+  ${jobs.length ? html`<ul class="cards">${jobs.map((j) => html`<li class="card job">
+    <div class="grow">
+      <div class="title-line"><a class="title" href="/homeroom/job/${j.id}">${j.title}</a>
+        <a class="tag" href="/homeroom/lab/${j.org_slug}">${j.org_name}</a></div>
+      <div class="subline mono">${labelFor(JOB_DISCIPLINES, j.discipline, j.discipline)}
+        <span class="sep">/</span> ${j.employment}
+        <span class="sep">/</span> ${j.location || 'location unlisted'}${j.remote ? ' · remote ok' : ''}
+        ${j.comp ? html`<span class="sep">/</span> ${j.comp}` : ''}
+        <span class="sep">/</span> ${when(j.created_at)}</div>
+    </div>
+  </li>`)}</ul>` : empty('No roles match that.')}
+  ${pager({ page, total, perPage: PER_PAGE, basePath })}`;
+}
+
+export function jobPage(ctx, { job, applied, applicants, canManage }) {
+  return html`<h1>${job.title}</h1>
+  <div class="mono dim"><a href="/homeroom/lab/${job.org_slug}">${job.org_name}</a>
+    <span class="sep">/</span> ${labelFor(JOB_DISCIPLINES, job.discipline, job.discipline)}
+    <span class="sep">/</span> ${job.employment}
+    <span class="sep">/</span> ${job.location || 'location unlisted'}${job.remote ? ' · remote ok' : ''}
+    ${job.comp ? html`<span class="sep">/</span> ${job.comp}` : ''}
+    ${job.equity ? html`<span class="sep">/</span> ${job.equity} equity` : ''}
+    <span class="sep">/</span> posted ${when(job.created_at)} by ${memberLink(job.posted_by)}</div>
+  ${job.description ? body(job.description) : ''}
+  ${tagList(job.tags).length ? html`<div class="tagcloud">${tagList(job.tags).map((t) => html`<span class="tag ghost">${t}</span>`)}</div>` : ''}
+
+  ${job.closed ? html`<div class="notice">This role is closed.</div>`
+    : applied ? html`<div class="notice">You applied. ${memberLink(job.posted_by)} can see your profile and note.</div>`
+    : html`<form class="stack" method="post" action="/homeroom/job/${job.id}/apply">
+        ${csrfField(ctx)}
+        <div class="field"><label for="note">Note to the team</label>
+          <textarea id="note" name="note" rows="5"
+            placeholder="What you have built that is closest to this."></textarea></div>
+        <button class="btn solid" type="submit">Apply</button>
+      </form>`}
+
+  ${canManage ? section(`Applicants (${applicants.length})`, applicants.length
+    ? html`<ul class="rail-list wide">${applicants.map((a) => html`<li>
+        ${memberLink(a.user_id, { label: a.name || a.user_id })}
+        <span class="mono dim">${a.headline || ''} <span class="sep">/</span> ${when(a.created_at)}</span>
+        ${a.note ? html`<div class="prose small">${a.note}</div>` : ''}</li>`)}</ul>`
+    : html`<p class="mono dim">Nobody yet.</p>`) : ''}
+  ${canManage ? html`<form method="post" action="/homeroom/job/${job.id}/close">
+    ${csrfField(ctx)}<button class="btn ghost" type="submit">${job.closed ? 'Reopen' : 'Close'} this role</button></form>` : ''}`;
+}
+
+export function jobFormPage(ctx, { orgs, error = null, values = {} }) {
+  return html`<h1>Post a role</h1>
+  ${error ? html`<div class="notice error">${error}</div>` : ''}
+  <form class="stack wide" method="post" action="/homeroom/jobs/new">
+    ${csrfField(ctx)}
+    <div class="row">
+      <div class="field"><label for="org">Lab</label>
+        ${select('org', orgs.map((o) => ({ slug: String(o.id), label: o.name })), values.org || '')}</div>
+      <div class="field"><label for="discipline">Discipline</label>${select('discipline', JOB_DISCIPLINES, values.discipline || 'wetlab')}</div>
+    </div>
+    <div class="field"><label for="title">Title</label>
+      <input id="title" name="title" value="${values.title || ''}" maxlength="120" required /></div>
+    <div class="row">
+      <div class="field"><label for="employment">Employment</label>
+        ${select('employment', [
+          { slug: 'full-time', label: 'Full time' }, { slug: 'part-time', label: 'Part time' },
+          { slug: 'contract', label: 'Contract' }, { slug: 'intern', label: 'Internship' },
+        ], values.employment || 'full-time')}</div>
+      <div class="field"><label for="location">Location</label>
+        <input id="location" name="location" value="${values.location || ''}" maxlength="80" /></div>
+      <div class="field"><label for="comp">Comp</label>
+        <input id="comp" name="comp" value="${values.comp || ''}" maxlength="60" /></div>
+      <div class="field"><label for="equity">Equity</label>
+        <input id="equity" name="equity" value="${values.equity || ''}" maxlength="40" /></div>
+    </div>
+    <label class="check"><input type="checkbox" name="remote" value="1" /> remote is fine</label>
+    <div class="field"><label for="description">The role</label>
+      <textarea id="description" name="description" rows="9">${values.description || ''}</textarea></div>
+    <div class="field"><label for="tags">Tags</label><input id="tags" name="tags" value="${values.tags || ''}" /></div>
+    <button class="btn solid" type="submit">Post role</button>
+  </form>`;
+}
+
+/* ----------------------------------------------------------------- events */
+
+export function eventsPage(ctx, { events, past, kind }) {
+  return html`<div class="pagehead">
+    <div><h1>Events</h1><p class="lede">Meetups, open labs, demo days and talks.</p></div>
+    <a class="btn solid" href="/homeroom/events/new">Add an event</a>
+  </div>
+  ${filterBar(EVENT_KINDS, { active: kind, basePath: '/homeroom/events', param: 'kind', allLabel: 'everything' })}
+  ${events.length ? html`<ul class="cards">${events.map((e) => html`<li class="card event">
+    <div class="datechip mono"><b>${stamp(e.starts_at).slice(0, 10)}</b>
+      <span>${stamp(e.starts_at).slice(-9)}</span></div>
+    <div class="grow">
+      <div class="title-line"><a class="title" href="/homeroom/event/${e.id}">${e.title}</a>
+        ${pill(labelFor(EVENT_KINDS, e.kind, e.kind))}</div>
+      <div class="subline mono">${memberLink(e.host_id)}
+        <span class="sep">/</span> ${e.place || 'location tbc'}
+        <span class="sep">/</span> ${relTime(e.starts_at)}
+        <span class="sep">/</span> ${plural(e.going, 'going', 'going')}</div>
+    </div>
+  </li>`)}</ul>` : empty('Nothing on the calendar.')}
+  ${past.length ? section('Recently', html`<ul class="rail-list wide">${past.map((e) => html`<li>
+    <a href="/homeroom/event/${e.id}">${e.title}</a>
+    <span class="mono dim">${when(e.starts_at)} <span class="sep">/</span> ${e.going} attended</span></li>`)}</ul>`) : ''}`;
+}
+
+export function eventPage(ctx, { event, attendees, myStatus, isHost }) {
+  return html`<h1>${event.title}</h1>
+  <div class="mono dim">${labelFor(EVENT_KINDS, event.kind, event.kind)}
+    <span class="sep">/</span> hosted by ${memberLink(event.host_id)}
+    <span class="sep">/</span> ${stamp(event.starts_at)}
+    <span class="sep">/</span> ${event.minutes} min
+    <span class="sep">/</span> ${relTime(event.starts_at)}
+    ${event.canceled ? html` <span class="sep">/</span> <b class="warn">canceled</b>` : ''}</div>
+  ${event.place ? html`<p class="mono">Where: ${event.place}</p>` : ''}
+  ${event.url ? html`<p class="mono"><a href="${event.url}" rel="nofollow noopener" target="_blank">${event.url}</a></p>` : ''}
+  ${event.description ? body(event.description) : ''}
+
+  ${event.canceled ? html`<div class="notice error">Canceled.</div>` : html`<form class="rsvp" method="post" action="/homeroom/event/${event.id}/rsvp">
+    ${csrfField(ctx)}
+    <button class="btn ${myStatus === 'going' ? 'solid' : 'ghost'}" name="status" value="going" type="submit">Going</button>
+    <button class="btn ${myStatus === 'maybe' ? 'solid' : 'ghost'}" name="status" value="maybe" type="submit">Maybe</button>
+    <button class="btn ghost" name="status" value="none" type="submit">Not going</button>
+    ${event.capacity ? html`<span class="mono dim">${event.going}/${event.capacity} places</span>` : ''}
+  </form>`}
+
+  ${section(`Attending (${attendees.filter((a) => a.status === 'going').length})`, attendees.length
+    ? html`<ul class="rail-list">${attendees.map((a) => html`<li>
+        ${memberLink(a.user_id, { label: a.name || a.user_id })}
+        <span class="mono dim">${a.status}${a.headline ? ` · ${a.headline}` : ''}</span></li>`)}</ul>`
+    : html`<p class="mono dim">Nobody has said yes yet.</p>`)}
+
+  ${isHost && !event.canceled ? html`<form method="post" action="/homeroom/event/${event.id}/cancel"
+      onsubmit="return confirm('Cancel this event?')">
+    ${csrfField(ctx)}<button class="btn ghost" type="submit">Cancel event</button></form>` : ''}`;
+}
+
+export function eventFormPage(ctx, { error = null, defaultStart }) {
+  return html`<h1>Add an event</h1>
+  ${error ? html`<div class="notice error">${error}</div>` : ''}
+  <form class="stack wide" method="post" action="/homeroom/events/new">
+    ${csrfField(ctx)}
+    <div class="field"><label for="title">Title</label>
+      <input id="title" name="title" maxlength="140" required /></div>
+    <div class="row">
+      <div class="field"><label for="kind">Kind</label>${select('kind', EVENT_KINDS, 'meetup')}</div>
+      <div class="field"><label for="starts_at">Starts (UTC)</label>
+        <input id="starts_at" name="starts_at" type="datetime-local" value="${defaultStart}" required /></div>
+      <div class="field"><label for="minutes">Minutes</label>
+        <input id="minutes" name="minutes" type="number" min="15" max="1440" value="120" /></div>
+    </div>
+    <div class="row">
+      <div class="field"><label for="place">Where</label><input id="place" name="place" maxlength="200" /></div>
+      <div class="field"><label for="capacity">Capacity</label>
+        <input id="capacity" name="capacity" type="number" min="0" max="10000" value="0" />
+        <div class="hint">0 for unlimited.</div></div>
+    </div>
+    <div class="field"><label for="url">Link</label><input id="url" name="url" maxlength="300" /></div>
+    <div class="field"><label for="description">Details</label>
+      <textarea id="description" name="description" rows="7"></textarea></div>
+    <button class="btn solid" type="submit">Add event</button>
+  </form>`;
+}
+
+/* ---------------------------------------------------------------- library */
+
+export function libraryPage(ctx, { entries, kind, q }) {
+  return html`<div class="pagehead">
+    <div><h1>Library</h1><p class="lede">The answers worth writing down once. Guides, protocols,
+      templates and arguments the network keeps rehashing.</p></div>
+    <a class="btn solid" href="/homeroom/library/new">Write one</a>
+  </div>
+  <form class="searchbar" method="get" action="/homeroom/library">
+    <input type="search" name="q" value="${q}" placeholder="search the library" />
+    <button class="btn" type="submit">Search</button>
+  </form>
+  ${filterBar(LIBRARY_KINDS, { active: kind, basePath: '/homeroom/library', param: 'kind', allLabel: 'everything' })}
+  ${entries.length ? html`<ul class="cards grid">${entries.map((e) => html`<li class="card">
+    <a class="cardlink" href="/homeroom/library/${e.slug}">
+      <div class="grow">
+        <div class="name">${e.title}</div>
+        <div class="meta mono">${labelFor(LIBRARY_KINDS, e.kind, e.kind)}
+          <span class="sep">/</span> ${plural(e.reads, 'read')}
+          <span class="sep">/</span> ${when(e.updated_at)}</div>
+        <p class="summary">${e.summary}</p>
+      </div></a>
+    ${tagList(e.tags).length ? html`<div class="tagrow">${tagList(e.tags).map((t) => html`<span class="tag ghost">${t}</span>`)}</div>` : ''}
+  </li>`)}</ul>` : empty('Nothing in the library yet.')}`;
+}
+
+export function libraryEntryPage(ctx, { entry }) {
+  return html`<article class="doc">
+    <h1>${entry.title}</h1>
+    <div class="mono dim">${labelFor(LIBRARY_KINDS, entry.kind, entry.kind)}
+      ${entry.author_id ? html` <span class="sep">/</span> ${memberLink(entry.author_id)}` : ''}
+      <span class="sep">/</span> updated ${when(entry.updated_at)}
+      <span class="sep">/</span> ${plural(entry.reads, 'read')}</div>
+    ${entry.summary ? html`<p class="lede">${entry.summary}</p>` : ''}
+    ${body(entry.body)}
+    ${tagList(entry.tags).length ? html`<div class="tagcloud">${tagList(entry.tags).map((t) => html`<span class="tag ghost">${t}</span>`)}</div>` : ''}
+  </article>`;
+}
+
+export function libraryFormPage(ctx, { error = null, values = {} }) {
+  return html`<h1>Write for the library</h1>
+  ${error ? html`<div class="notice error">${error}</div>` : ''}
+  <form class="stack wide" method="post" action="/homeroom/library/new">
+    ${csrfField(ctx)}
+    <div class="row">
+      <div class="field"><label for="title">Title</label>
+        <input id="title" name="title" value="${values.title || ''}" maxlength="140" required /></div>
+      <div class="field"><label for="kind">Kind</label>${select('kind', LIBRARY_KINDS, values.kind || 'guide')}</div>
+    </div>
+    <div class="field"><label for="summary">One line</label>
+      <input id="summary" name="summary" value="${values.summary || ''}" maxlength="200" /></div>
+    <div class="field"><label for="lbody">Body</label>
+      <textarea id="lbody" name="body" rows="16" required>${values.body || ''}</textarea></div>
+    <div class="field"><label for="tags">Tags</label><input id="tags" name="tags" value="${values.tags || ''}" /></div>
+    <button class="btn solid" type="submit">Publish</button>
+  </form>`;
+}
+
+/* ----------------------------------------------------------------- intros */
+
+export function introsPage(ctx, { incoming, outgoing }) {
+  return html`<h1>Intros</h1>
+  <p class="lede">A request is a promise that you have done your homework. Accepting opens a thread
+    with both of you in it.</p>
+  ${section('Asked of you', incoming.length ? html`<ul class="rail-list wide">${incoming.map((i) => html`<li>
+    <div class="mono">${memberLink(i.requester_id)} <span class="sep">/</span> ${when(i.created_at)}
+      ${pill(i.status, i.status === 'accepted' ? 'ok' : i.status === 'declined' ? 'warn' : '')}</div>
+    <div class="prose small">${i.reason}</div>
+    ${i.status === 'pending' ? html`<form class="inline" method="post" action="/homeroom/intros/${i.id}/resolve">
+      ${csrfField(ctx)}
+      <button class="btn small solid" name="decision" value="accepted" type="submit">Accept</button>
+      <button class="btn small ghost" name="decision" value="declined" type="submit">Decline</button>
+    </form>` : ''}
+  </li>`)}</ul>` : html`<p class="mono dim">Nothing waiting.</p>`)}
+  ${section('You asked for', outgoing.length ? html`<ul class="rail-list wide">${outgoing.map((i) => html`<li>
+    <div class="mono">${memberLink(i.target_id)} <span class="sep">/</span> ${when(i.created_at)}
+      ${pill(i.status, i.status === 'accepted' ? 'ok' : i.status === 'declined' ? 'warn' : '')}</div>
+    <div class="prose small">${i.reason}</div>
+  </li>`)}</ul>` : html`<p class="mono dim">You have not asked for any.</p>`)}`;
+}
+
+export function introFormPage(ctx, { target, error = null }) {
+  return html`<h1>Request an intro to ${target.name || target.user_id}</h1>
+  ${error ? html`<div class="notice error">${error}</div>` : ''}
+  <p class="lede">Say what you want and why them. They see this before deciding.</p>
+  <form class="stack" method="post" action="/homeroom/intros/new">
+    ${csrfField(ctx)}
+    <input type="hidden" name="to" value="${target.user_id}" />
+    <div class="field"><label for="reason">Why</label>
+      <textarea id="reason" name="reason" rows="6" required
+        placeholder="I am scaling a 5L fermenter and you did this at Loam. Twenty minutes on contamination control."></textarea></div>
+    <button class="btn solid" type="submit">Send request</button>
+  </form>`;
+}
+
+/* --------------------------------------------------------------- messages */
+
+export function messagesPage(ctx, { threads }) {
+  return html`<div class="pagehead">
+    <div><h1>Messages</h1><p class="lede">Direct and group threads. Nothing here is public.</p></div>
+    <a class="btn solid" href="/homeroom/messages/new">New message</a>
+  </div>
+  ${threads.length ? html`<ul class="cards">${threads.map((t) => {
+    const others = t.members.filter((m) => m !== ctx.user.id);
+    return html`<li class="card convo ${t.unread ? 'unread' : ''}">
+      <a class="cardlink" href="/homeroom/messages/${t.id}">
+        ${avatar(others[0] || ctx.user.id, { size: 34 })}
+        <div class="grow">
+          <div class="name">${t.subject || others.join(', ') || 'you'}
+            ${t.unread ? pill(String(t.unread), 'ok') : ''}</div>
+          <div class="meta mono">${others.length > 1 ? `${others.length} members · ` : ''}${when(t.last_at)}</div>
+          <p class="summary">${t.last_sender ? `${t.last_sender}: ` : ''}${(t.last_body || '').slice(0, 140)}</p>
+        </div></a>
+    </li>`;
+  })}</ul>` : empty('No threads yet.')}`;
+}
+
+export function threadPage(ctx, { thread }) {
+  const others = thread.members.filter((m) => m !== ctx.user.id);
+  return html`<h1>${thread.subject || others.join(', ') || 'Thread'}</h1>
+  <div class="mono dim">${thread.members.map((m) => memberLink(m))} <span class="sep">/</span> started ${when(thread.created_at)}</div>
+  <div class="messages">
+    ${thread.messages.length ? thread.messages.map((m) => html`<div class="msg ${m.sender_id === ctx.user.id ? 'mine' : ''}">
+      <div class="mono dim">${memberLink(m.sender_id)} <span class="sep">/</span> ${when(m.created_at)}</div>
+      ${body(m.body)}
+    </div>`) : empty('No messages yet.')}
+  </div>
+  <form class="stack" method="post" action="/homeroom/messages/${thread.id}">
+    ${csrfField(ctx)}
+    <div class="field"><textarea name="text" rows="4" required placeholder="Write something."></textarea></div>
+    <button class="btn solid" type="submit">Send</button>
+  </form>`;
+}
+
+export function newMessagePage(ctx, { to = '', error = null }) {
+  return html`<h1>New message</h1>
+  ${error ? html`<div class="notice error">${error}</div>` : ''}
+  <form class="stack" method="post" action="/homeroom/messages/new">
+    ${csrfField(ctx)}
+    <div class="field"><label for="to">To</label>
+      <input id="to" name="to" value="${to}" required placeholder="handle, or several separated by commas" />
+      <div class="hint">More than one handle makes it a group thread.</div></div>
+    <div class="field"><label for="subject">Subject</label>
+      <input id="subject" name="subject" maxlength="120" /></div>
+    <div class="field"><label for="text">Message</label>
+      <textarea id="text" name="text" rows="6" required></textarea></div>
+    <button class="btn solid" type="submit">Send</button>
+  </form>`;
+}
+
+/* ---------------------------------------------- notifications, saved, etc */
+
+export function notificationsPage(ctx, { items }) {
+  return html`<h1>Notifications</h1>
+  ${items.length ? html`<ul class="rail-list wide">${items.map((n) => html`<li class="${n.read_at ? '' : 'unread'}">
+    <a href="${raw(n.href)}">${n.text}</a>
+    <span class="mono dim">${n.actor_id ? html`${n.actor_id} <span class="sep">/</span> ` : ''}${when(n.created_at)}</span>
+  </li>`)}</ul>` : empty('Nothing yet.')}`;
+}
+
+export function savedPage(ctx, { posts, voted }) {
+  return html`<h1>Saved</h1>
+  <p class="lede">Threads you kept.</p>
+  ${posts.length ? html`<ul class="cards">${posts.map((p) => postRow(ctx, p, { voted: voted.has(p.id) }))}</ul>`
+    : empty('Nothing saved yet.')}`;
+}
+
+export function searchPage(ctx, { query, results, voted }) {
+  const has = query && Object.values(results).some((list) => list.length);
+  return html`<h1>Search</h1>
+  <form class="searchbar" method="get" action="/homeroom/search">
+    <input type="search" name="q" value="${query}" placeholder="people, labs, threads, funders, deals, library" autofocus />
+    <button class="btn" type="submit">Search</button>
+  </form>
+  ${!query ? empty('Type something. It searches every surface at once.')
+    : !has ? empty(`Nothing found for “${query}”.`)
+    : html`
+      ${results.posts.length ? section('Threads', html`<ul class="cards">${results.posts.map((p) => postRow(ctx, p, { voted: voted.has(p.id) }))}</ul>`) : ''}
+      ${results.members.length ? section('People', html`<ul class="cards grid">${results.members.map(memberCard)}</ul>`) : ''}
+      ${results.orgs.length ? section('Labs', html`<ul class="rail-list wide">${results.orgs.map((o) => html`<li>
+        <a href="/homeroom/lab/${o.slug}">${o.name}</a> <span class="mono dim">${o.tagline}</span></li>`)}</ul>`) : ''}
+      ${results.funders.length ? section('Funders', html`<ul class="rail-list wide">${results.funders.map((f) => html`<li>
+        <a href="/homeroom/funder/${f.slug}">${f.name}</a> ${stars(f.avg_rating, { count: f.review_count })}</li>`)}</ul>`) : ''}
+      ${results.deals.length ? section('Deals', html`<ul class="rail-list wide">${results.deals.map((d) => html`<li>
+        <a href="/homeroom/deal/${d.slug}">${d.vendor}</a> <span class="mono dim">${d.title}</span></li>`)}</ul>`) : ''}
+      ${results.library.length ? section('Library', html`<ul class="rail-list wide">${results.library.map((e) => html`<li>
+        <a href="/homeroom/library/${e.slug}">${e.title}</a> <span class="mono dim">${e.summary}</span></li>`)}</ul>`) : ''}
+    `}`;
+}
+
+export function aboutPage(ctx, { stats }) {
+  return html`<h1>About Homeroom</h1>
+  <p class="lede">Homeroom is the members-only side of Haus. The public site is the front door;
+    this is the back room, where people say what a thing actually cost and which funder wasted
+    three months of their life.</p>
+  <div class="statstrip">
+    <span><b>${stats.members}</b> members</span>
+    <span><b>${stats.orgs}</b> labs</span>
+    <span><b>${stats.posts}</b> threads</span>
+    <span><b>${stats.comments}</b> replies</span>
+    <span><b>${stats.funders}</b> funders</span>
+    <span><b>${stats.reviews}</b> reviews</span>
+    <span><b>${stats.deals}</b> deals</span>
+    <span><b>${stats.jobs}</b> roles</span>
+    <span><b>${stats.library}</b> library entries</span>
+  </div>
+  <h2>The rules</h2>
+  <ol class="rules">
+    <li><b>What is said here stays here.</b> No screenshots, no quoting members outside without asking.
+      The whole value is that people can be specific.</li>
+    <li><b>Answer from experience.</b> If you have not done it, say so. Speculation labelled as
+      speculation is welcome; speculation dressed as fact is not.</li>
+    <li><b>Reviews are about behaviour, not outcomes.</b> A funder who passed politely and fast
+      deserves a better review than one who strung you along and wired.</li>
+    <li><b>Anonymity is for candour, not cover.</b> Use it for the awkward question or the honest
+      review. Stewards can still see who posted.</li>
+    <li><b>Nothing that helps anyone hurt people.</b> No protocols, sequences or acquisition routes
+      for agents that could cause mass harm — same line as the public side, no exceptions here either.</li>
+  </ol>
+  <h2>Where things live</h2>
+  <p>Forum for questions, people for expertise, labs for who is building what, deals for money you
+    do not have to spend, funders for who to talk to and what happened last time, office hours for a
+    real half hour with someone, jobs and events for the rest. Search covers all of it at once.</p>
+  <p class="mono dim">Homeroom pages carry <code>noindex</code> and are invisible to logged-out visitors.
+    Your email is used to sign in and to reset your password, and is never shown to other
+    members.</p>`;
+}
+
+export function notFoundPage() {
+  return html`<div class="empty mono">Nothing here. <a href="/homeroom">Back to the network</a>.</div>`;
+}
+
+export function errorPage(message = 'Something went wrong.') {
+  return html`<div class="empty mono">${message}</div>`;
+}
