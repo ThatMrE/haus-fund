@@ -25,3 +25,10 @@ tools/core-facility-finder/data/contacts.json
 # Python bytecode from running the tools locally
 __pycache__/
 *.pyc
+
+# Local databases from running an app function directly. The deployed ones live
+# in /tmp; these are dev-only and must never be committed.
+netlify/functions/*/data/
+*.db
+*.db-wal
+*.db-shm

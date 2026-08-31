@@ -74,9 +74,9 @@
     Cache-Control = "no-store"
 
 # ── Homeroom: members-only, never indexed, never cached ──
-# Access itself is enforced by Supabase row-level security, not by these
-# headers: a logged-out visitor can fetch the HTML and will get a sign-in
-# page, because the data behind it is never returned to them.
+# A server-rendered app like /news: the function claims /homeroom and
+# /homeroom/* in its own config block. Access is enforced in the app, not by
+# these headers — a logged-out request never gets past the sign-in page.
 [[headers]]
   for = "/homeroom/*"
   [headers.values]

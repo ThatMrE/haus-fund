@@ -16,7 +16,7 @@ no build step, no framework.
 | `cores.html` | Core Facility Finder — served at `cores.haus.fund`, `noindex`, not in the nav |
 | `visa.html` | Visa Desk — immigration support letters, served at `visa.haus.fund`, `noindex`, not in the nav |
 | `fund-portal/` | Separate internal React portal (not linked from the public nav) |
-| `homeroom/` | **Homeroom** — the members-only network, served at `/homeroom`, `noindex`. Forum, member and lab directories, deals, funder reviews, pipeline, office hours, jobs, events, library, intros, messaging. Runs on Supabase; see `homeroom/README.md` |
+| `netlify/functions/homeroom/` | **Homeroom** — the members-only network, served at `/homeroom`, `noindex`. Forum, member and lab directories, deals, funder reviews, pipeline, office hours, jobs, events, library, intros, messaging. A server-rendered app like `/news`, with its own accounts; see its README |
 | `netlify/functions/news/` | **haus.fund/news** — a server-rendered feed of early-stage biotech news, with its own README |
 
 ## Structure
@@ -28,7 +28,6 @@ website/
 ├── visa.html · visa.js · visa-data.js  # Visa Desk (visa-data.js is the data layer)
 ├── design-system.html
 ├── fund-portal/          # internal portal (JSX)
-├── homeroom/             # members-only network (static + Supabase)
 ├── netlify/functions/    # news app (/news) and the edge functions
 ├── news-assets/          # stylesheet and client script for /news
 ├── assets/               # logos, photos (web/ and thumb/ variants)
