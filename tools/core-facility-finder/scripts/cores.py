@@ -117,8 +117,10 @@ def score(fac: dict, terms: list[str], has_email: bool) -> int:
     if not terms:
         return 1
     techs = [t.lower() for t in fac["techniques"]]
+    services = [s.lower() for s in fac.get("services_raw", [])]
     haystack_name = f"{fac['facility']} {fac['institution']}".lower()
-    haystack_all = f"{haystack_name} {fac['notes']} {' '.join(techs)}".lower()
+    haystack_all = (f"{haystack_name} {fac['notes']} {' '.join(techs)} "
+                    f"{' '.join(services)}").lower()
     total = 0
     for term in terms:
         t = term.lower()
@@ -126,6 +128,8 @@ def score(fac: dict, terms: list[str], has_email: bool) -> int:
             total += 10
         elif any(t in tech or tech in t for tech in techs):
             total += 6
+        elif any(t in svc for svc in services):
+            total += 5
         elif t in haystack_name:
             total += 4
         elif t in haystack_all:
@@ -156,6 +160,8 @@ def run_search(args, data, contacts) -> list[tuple[int, dict]]:
             if not any(want in w for w in where):
                 continue
         if args.access and fac["access"] != args.access:
+            continue
+        if getattr(args, "source", None) and fac.get("source") != args.source:
             continue
         mails = emails_of(fac, contacts)
         if args.email_only and not mails:
@@ -232,14 +238,21 @@ def cmd_show(args):
     print(dim(f"{fac['id']}  ·  {fac['institution']}"))
     print()
     where = fac["continent"] + (f" · {fac['group']}" if fac.get("group") else "")
-    print(f"  Location   {fac['city']}, {fac['region'] or '-'} ({fac['region_label']}), "
-          f"{fac['country']} · {where}")
-    print(f"  Access     {fac['access']}")
+    place = ", ".join(x for x in [fac["city"], fac["region"], fac["country"]] if x)
+    print(f"  Location   {place or '(not stated)'} · {where}")
+    print(f"  Access     {fac['access']}"
+          + ("  (not stated by the source)" if fac["access"] == "unknown" else ""))
     print(f"  Page       {fac['url']}")
+    print(f"  Source     {fac.get('source', 'curated')}"
+          + (f"  ·  {fac['rrid']}" if fac.get("rrid") else ""))
     print()
     print("  Techniques")
     for t in fac["techniques"]:
         print(f"    - {t}")
+    if fac.get("services_raw"):
+        print()
+        print("  Services listed by the facility")
+        print(w.fill(", ".join(fac["services_raw"])))
     print()
     print("  Notes")
     print(w.fill(fac["notes"]))
@@ -284,6 +297,8 @@ def build_draft(fac: dict, args) -> tuple[str, str]:
         "academic": "academic users from other institutions",
         "both": "academic and commercial projects",
         "commercial": "new commercial clients",
+        # Imported records carry no access model. Ask rather than assert one.
+        "unknown": "work from outside your institution",
     }[fac["access"]]
     subject = f"{args.query or 'Core facility'} enquiry — external project"
     body = TEMPLATE.format(
@@ -359,7 +374,8 @@ def cmd_export(args):
             "institution": fac["institution"], "city": fac["city"],
             "region": fac["region"], "country": fac["country"],
             "continent": fac["continent"], "group": fac.get("group") or "",
-            "access": fac["access"],
+            "access": fac["access"], "source": fac.get("source", "curated"),
+            "rrid": fac.get("rrid", ""),
             "techniques": "; ".join(fac["techniques"]),
             "email": mails[0] if mails else "",
             "all_emails": "; ".join(mails), "url": fac["url"],
@@ -571,8 +587,12 @@ def add_filters(p):
     p.add_argument("--continent", "--group", dest="continent", metavar="NAME",
                    help="continent, or a grouping such as 'Latin America' "
                         "or 'Middle East'")
-    p.add_argument("--access", choices=["open", "academic", "both", "commercial"],
-                   help="who can buy time: open proposal, academic, both, commercial")
+    p.add_argument("--access", choices=["open", "academic", "both", "commercial",
+                                        "unknown"],
+                   help="who can buy time: open proposal, academic, both, "
+                        "commercial, or unknown (imported records)")
+    p.add_argument("--source", choices=["curated", "core-marketplace"],
+                   help="restrict to hand-curated records or imported ones")
     p.add_argument("--email-only", action="store_true",
                    help="only facilities with a harvested contact address")
 

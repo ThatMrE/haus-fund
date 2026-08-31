@@ -62,7 +62,7 @@ textarea{resize:vertical;min-height:74px;line-height:1.5;}
 .saved.on{opacity:1;}
 
 /* ── controls ── */
-.controls{display:grid;grid-template-columns:2fr repeat(4,1fr);gap:14px;align-items:end;margin-bottom:18px;}
+.controls{display:grid;grid-template-columns:2fr repeat(5,1fr);gap:14px;align-items:end;margin-bottom:18px;}
 .toggles{display:flex;align-items:center;gap:22px;flex-wrap:wrap;margin-bottom:26px;}
 .chk{display:inline-flex;align-items:center;gap:8px;font-size:14px;color:#3A3A3A;cursor:pointer;}
 .chk input{width:16px;height:16px;accent-color:#1C3B2D;cursor:pointer;}
@@ -90,6 +90,8 @@ textarea{resize:vertical;min-height:74px;line-height:1.5;}
 .b-commercial{background:#E5E1D9;color:#3A3A3A;}
 .b-email{background:#D8F0E5;color:#1B7A48;}
 .b-page{background:#F0EDE6;color:#727272;}
+.b-unknown{background:#F0EDE6;color:#727272;}
+.b-rrid{background:#fff;border:1px solid #CECAC1;color:#727272;font-family:'DM Mono',monospace;font-weight:400;letter-spacing:0;text-transform:none;}
 .actions{display:flex;gap:8px;flex-wrap:wrap;}
 .btn{display:inline-flex;align-items:center;gap:6px;border-radius:6px;font-size:13px;font-weight:600;padding:9px 14px;cursor:pointer;border:1.5px solid transparent;transition:background 150ms,border-color 150ms,color 150ms;}
 .btn-p{background:#1C3B2D;color:#fff;}
@@ -198,6 +200,15 @@ footer{background:#0D0D0D;border-top:1px solid rgba(255,255,255,0.06);padding:32
     </div>
   </section>
 
+  <div class="notice" id="sourceNotice">
+    <b>Two sources.</b> 269 records are hand-curated with checked techniques and a
+    stated access model. 830 come from the Core Marketplace export, carry an
+    <b>RRID</b> that resolves at scicrunch.org, and have their techniques mapped
+    from the services each facility lists — so their tagging is broader and
+    coarser, and their access model is unknown rather than assumed. Filter by
+    <b>Source</b> to see one or the other.
+  </div>
+
   <div class="notice" id="verifyNotice">
     <b>About the contact addresses.</b> This directory ships facility metadata only. Email
     addresses are not written by hand — they are harvested from each facility's own public
@@ -232,6 +243,15 @@ footer{background:#0D0D0D;border-top:1px solid rgba(255,255,255,0.06);padding:32
         <option value="academic">Academic users</option>
         <option value="both">Academic and industry</option>
         <option value="commercial">Commercial provider</option>
+        <option value="unknown">Not stated</option>
+      </select>
+    </div>
+    <div class="field">
+      <label for="fSource">Source</label>
+      <select id="fSource">
+        <option value="">Both sources</option>
+        <option value="curated">Hand-curated</option>
+        <option value="core-marketplace">Core Marketplace (RRID)</option>
       </select>
     </div>
   </div>
@@ -243,6 +263,7 @@ footer{background:#0D0D0D;border-top:1px solid rgba(255,255,255,0.06);padding:32
   </div>
 
   <div class="grid" id="grid"></div>
+  <button class="btn btn-s" id="more" style="display:none;margin:28px auto 0;"></button>
   <div class="empty" id="empty" style="display:none">
     Nothing matches that. Try a broader technique — the vocabulary is listed in the search dropdown.
   </div>

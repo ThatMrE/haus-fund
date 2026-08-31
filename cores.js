@@ -87,13 +87,16 @@ function expandQuery(query) {
 function scoreOf(fac, terms, hasEmail) {
   if (!terms.length) return 1;
   const techs = fac.techniques.map((t) => t.toLowerCase());
+  const services = (fac.services_raw || []).map((x) => x.toLowerCase());
   const name = (fac.facility + ' ' + fac.institution).toLowerCase();
-  const all = (name + ' ' + fac.notes + ' ' + techs.join(' ')).toLowerCase();
+  const all = (name + ' ' + fac.notes + ' ' + techs.join(' ') + ' '
+               + services.join(' ')).toLowerCase();
   let total = 0;
   for (const term of terms) {
     const t = term.toLowerCase();
     if (techs.includes(t)) total += 10;
     else if (techs.some((x) => x.includes(t) || t.includes(x))) total += 6;
+    else if (services.some((x) => x.includes(t))) total += 5;
     else if (name.includes(t)) total += 4;
     else if (all.includes(t)) total += 2;
   }
@@ -108,6 +111,7 @@ function currentFilters() {
     country: $('fCountry').value,
     state: $('fState').value.trim().toLowerCase(),
     access: $('fAccess').value,
+    source: $('fSource') ? $('fSource').value : '',
     emailOnly: $('fEmail').checked,
     shortOnly: $('fShort').checked,
   };
@@ -121,6 +125,7 @@ function matches() {
     if (f.continent && fac.continent !== f.continent && fac.group !== f.continent) continue;
     if (f.country && fac.country !== f.country) continue;
     if (f.access && fac.access !== f.access) continue;
+    if (f.source && (fac.source || 'curated') !== f.source) continue;
     if (f.shortOnly && !SHORTLIST.has(fac.id)) continue;
     if (f.state) {
       const r = (fac.region || '').toLowerCase();
@@ -153,6 +158,8 @@ const ACCESS_PHRASE = {
   academic: 'academic users from other institutions',
   both: 'academic and commercial projects',
   commercial: 'new commercial clients',
+  // Imported records carry no access model — ask rather than assert one.
+  unknown: 'work from outside your institution',
 };
 
 function buildDraft(fac) {
@@ -192,7 +199,7 @@ const ACCENT = {
 };
 const ACCESS_LABEL = {
   open: 'Open · by proposal', academic: 'Academic', both: 'Academic + industry',
-  commercial: 'Commercial',
+  commercial: 'Commercial', unknown: 'Access not stated',
 };
 
 function card(hit) {
@@ -224,6 +231,7 @@ function card(hit) {
     <div class="badges">
       <span class="badge b-${fac.access}">${esc(ACCESS_LABEL[fac.access] || fac.access)}</span>
       <span class="badge ${mails.length ? 'b-email' : 'b-page'}">${mails.length ? 'Direct address' : 'Contact page only'}</span>
+      ${fac.rrid ? `<span class="badge b-rrid" title="Research Resource Identifier — resolves at scicrunch.org">${esc(fac.rrid)}</span>` : ''}
     </div>
     <p class="c-notes">${esc(fac.notes)}</p>
     <div class="actions">
@@ -235,15 +243,30 @@ function card(hit) {
   </article>`;
 }
 
-function render() {
+// Rendering all 1,099 cards costs ~200ms and janks every filter change. Cards
+// past the first page are almost never scrolled to, so draw a page at a time.
+const PAGE = 150;
+let shown = PAGE;
+
+function render(resetPage = true) {
+  if (resetPage) shown = PAGE;
   const hits = matches();
   const grid = $('grid');
-  grid.innerHTML = hits.map(card).join('');
+  grid.innerHTML = hits.slice(0, shown).map(card).join('');
   $('empty').style.display = hits.length ? 'none' : 'block';
   const total = DATA.facilities.length;
   $('count').textContent = hits.length === total
     ? `${total} facilities`
     : `${hits.length} of ${total} facilities`;
+
+  const more = $('more');
+  if (hits.length > shown) {
+    more.style.display = 'block';
+    more.textContent = `Show ${Math.min(PAGE, hits.length - shown)} more `
+      + `(${hits.length - shown} not shown)`;
+  } else {
+    more.style.display = 'none';
+  }
   renderShortlist();
 }
 
@@ -272,7 +295,7 @@ document.addEventListener('click', (e) => {
   } else if (btn.dataset.act === 'pick') {
     SHORTLIST.has(fac.id) ? SHORTLIST.delete(fac.id) : SHORTLIST.add(fac.id);
     writeStore(SHORT_KEY, [...SHORTLIST]);
-    render();
+    render(false);
   }
 });
 
@@ -302,11 +325,11 @@ $('slCopyDrafts').onclick = () => {
 
 $('slCsv').onclick = () => {
   const rows = [['id', 'facility', 'institution', 'city', 'region', 'country',
-                 'group', 'access', 'techniques', 'email', 'url']];
+                 'group', 'access', 'source', 'rrid', 'techniques', 'email', 'url']];
   for (const f of shortlisted()) {
     rows.push([f.id, f.facility, f.institution, f.city, f.region, f.country,
-               f.group || '', f.access, f.techniques.join('; '),
-               emailsOf(f).join('; '), f.url]);
+               f.group || '', f.access, f.source || 'curated', f.rrid || '',
+               f.techniques.join('; '), emailsOf(f).join('; '), f.url]);
   }
   const csv = rows.map((r) => r.map((c) =>
     `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\n');
@@ -376,9 +399,10 @@ async function boot() {
   $('fCountry').innerHTML += DATA.countries
     .map((c) => `<option value="${esc(c)}">${esc(c)}</option>`).join('');
 
-  ['q', 'fState'].forEach((id) => $(id).addEventListener('input', render));
-  ['fContinent', 'fCountry', 'fAccess', 'fEmail', 'fShort']
-    .forEach((id) => $(id).addEventListener('change', render));
+  $('more').addEventListener('click', () => { shown += PAGE; render(false); });
+  ['q', 'fState'].forEach((id) => $(id).addEventListener('input', () => render()));
+  ['fContinent', 'fCountry', 'fAccess', 'fEmail', 'fShort', 'fSource']
+    .forEach((id) => $(id).addEventListener('change', () => render()));
 
   wireBrief();
   render();
