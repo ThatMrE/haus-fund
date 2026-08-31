@@ -59,6 +59,16 @@
   [headers.values]
     Cache-Control = "public, max-age=3600"
 
+# ── Homeroom: members-only, never indexed, never cached ──
+# Access itself is enforced by Supabase row-level security, not by these
+# headers: a logged-out visitor can fetch the HTML and will get a sign-in
+# page, because the data behind it is never returned to them.
+[[headers]]
+  for = "/homeroom/*"
+  [headers.values]
+    X-Robots-Tag = "noindex, nofollow, noarchive"
+    Cache-Control = "no-store, private"
+
 [context.production]
   environment = { CONTEXT = "production" }
 

@@ -20,6 +20,11 @@ https://www.haus.fund https://haus.fund 301!
 /tools/core-facility-finder/SKILL.md /404.html 404!
 /tools/core-facility-finder/README.md /404.html 404!
 /tools/visa-letter-generator/README.md /404.html 404!
+/homeroom/README.md /404.html 404!
+/homeroom/supabase/schema.sql /404.html 404!
+/homeroom/supabase/test.sql /404.html 404!
+/homeroom/supabase/local-stub.sql /404.html 404!
+/homeroom/supabase/run-tests.sh /404.html 404!
 
 # Edge-function source lives in the repo and would otherwise be served as a
 # static file, because publish = ".". No secrets are in it (the LP password is
