@@ -21,7 +21,19 @@ import { parseCookies, nowSeconds } from './util.js';
 import { sendResetEmail, showsResetLink } from './mail.js';
 import { homeroomRoute, homeroomNotFound, render } from './routes.js';
 
-const SECURE_COOKIES = process.env.NODE_ENV === 'production' || !!process.env.NETLIFY;
+/**
+ * Whether to mark the session cookie Secure.
+ *
+ * Read off the request rather than an environment variable: a function's
+ * runtime does not reliably carry NODE_ENV or NETLIFY, and getting this wrong
+ * means a members-only session travelling over plain http. The proxy header is
+ * what actually describes the connection the browser made.
+ */
+function secureCookies(req) {
+  const proto = String(req.headers['x-forwarded-proto'] || '');
+  if (proto) return proto.split(',')[0].trim() === 'https';
+  return process.env.NODE_ENV === 'production' || !!process.env.NETLIFY;
+}
 
 const LIMITS = {
   read: { limit: 300, windowMs: 60_000 },
@@ -100,7 +112,7 @@ function finishLogin(ctx, userId, next) {
   hr.ensureMember(userId);
   hr.touchMember(userId);
   seeOther(ctx, safeNext(next), {
-    'set-cookie': sessionCookie(token, { secure: SECURE_COOKIES }),
+    'set-cookie': sessionCookie(token, { secure: secureCookies(ctx.req) }),
   });
 }
 
@@ -239,7 +251,7 @@ const AUTH_ROUTES = {
 };
 
 function origin(ctx) {
-  const proto = ctx.req.headers['x-forwarded-proto'] || (SECURE_COOKIES ? 'https' : 'http');
+  const proto = ctx.req.headers['x-forwarded-proto'] || (secureCookies(ctx.req) ? 'https' : 'http');
   const host = ctx.req.headers['x-forwarded-host'] || ctx.req.headers.host || 'haus.fund';
   return `${proto}://${host}`;
 }

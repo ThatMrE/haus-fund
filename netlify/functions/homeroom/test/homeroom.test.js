@@ -767,3 +767,33 @@ test('password hashes and reset tokens are never stored in the clear', async () 
   assert.ok(stored.length);
   for (const row of stored) assert.notEqual(row.token_hash, token, 'the row holds a hash, not the token');
 });
+
+test('the session cookie is Secure behind https, and not over plain http', async () => {
+  resetRateLimits();
+  const fields = new URLSearchParams({
+    handle: 'securecookie', email: 'securecookie@example.com', password: 'a-good-passphrase',
+  }).toString();
+
+  const overHttps = await fetch(`${base}/homeroom/signup`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/x-www-form-urlencoded', 'x-forwarded-proto': 'https' },
+    body: fields,
+    redirect: 'manual',
+  });
+  const cookie = overHttps.headers.getSetCookie?.()[0] ?? '';
+  assert.match(cookie, /HttpOnly/i);
+  assert.match(cookie, /SameSite=Lax/i);
+  assert.match(cookie, /Secure/, 'a members-only session must not travel over plain http');
+
+  resetRateLimits();
+  const overHttp = await fetch(`${base}/homeroom/signup`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/x-www-form-urlencoded', 'x-forwarded-proto': 'http' },
+    body: new URLSearchParams({
+      handle: 'plaincookie', email: 'plaincookie@example.com', password: 'a-good-passphrase',
+    }).toString(),
+    redirect: 'manual',
+  });
+  const plain = overHttp.headers.getSetCookie?.()[0] ?? '';
+  assert.doesNotMatch(plain, /Secure/, 'but local development over http still works');
+});
