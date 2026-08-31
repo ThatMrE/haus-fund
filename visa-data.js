@@ -29,14 +29,14 @@ var VISA_DATA = (function () {
   "use strict";
 
   /* ── programme facts ──────────────────────────────────────────────────────
-     Update once per cohort. Everything downstream reads from here. */
+     Deliberately white-labelled: no cohort number, no cohort dates. The tool
+     describes the programme, and the operator supplies the dates and any
+     cohort identifier for the participant in front of them. That keeps the
+     generator correct across cohorts without an edit, and keeps a stale date
+     from ever reaching a letter. The compliance checks read the operator's
+     dates, not these facts, so nothing is weakened by their absence. */
   var PROGRAM = {
     name: "Biopunk House Accelerator Program",
-    cohort: "Cohort 3",
-    start: "September 15, 2026",
-    end: "December 12, 2026",
-    days: null,             // derived below from start/end; drives the 90-day ceilings
-    weeks: 12,
     city: "San Francisco, California",
     summary:
       "a live-in accelerator for early-stage biotechnology founders, " +
@@ -122,18 +122,6 @@ var VISA_DATA = (function () {
 
   /* Derived, never hand-written: change the cohort dates above and every
      ceiling check and every piece of guidance prose follows automatically. */
-  PROGRAM.days = spanDays(PROGRAM.start, PROGRAM.end);
-
-  /* Editing PROGRAM is the one change most likely to break this tool, and it
-     would break it quietly: every letter would still generate, and every one
-     would describe a stay the participant's route does not permit. Say so
-     loudly instead. */
-  if (PROGRAM.days !== null && PROGRAM.days > MAX_COHORT_DAYS && typeof console !== "undefined") {
-    console.error("visa-data: " + PROGRAM.cohort + " runs " + PROGRAM.days +
-      " days, over the " + MAX_COHORT_DAYS + "-day cohort maximum. Participants " +
-      "would exceed the 90-day ceilings on the US Visa Waiver Program, Schengen " +
-      "short stays and Japanese Temporary Visitor status. Shorten PROGRAM.end.");
-  }
 
   /* ── field definitions ────────────────────────────────────────────────────
      Grouped so the form can render them in sections. `req: true` means the
@@ -143,14 +131,14 @@ var VISA_DATA = (function () {
     { key: "dob",        label: "Date of birth", ph: "e.g. 14 March 1998", req: true },
     { key: "nationality",label: "Nationality / citizenship", ph: "e.g. India", req: true },
     { key: "passportNo", label: "Passport number", ph: "e.g. Z1234567", req: true },
-    { key: "role",       label: "Role in the programme", ph: "e.g. Founder, Cohort 3", req: true },
-    { key: "startDate",  label: "Start date", ph: PROGRAM.start, req: true },
-    { key: "endDate",    label: "End date", ph: PROGRAM.end, req: true },
+    { key: "role",       label: "Role in the programme", ph: "e.g. Founder in residence", req: true },
+    { key: "startDate",  label: "Start date", ph: "e.g. 6 April 2027", req: true },
+    { key: "endDate",    label: "End date", ph: "e.g. 3 July 2027", req: true },
     { key: "email",      label: "Participant email", ph: "e.g. ria@example.com" }
   ];
 
   var HOST_FIELDS = [
-    { key: "program",    label: "Programme name as it should read on the letter", ph: PROGRAM.name + " — " + PROGRAM.cohort, req: true },
+    { key: "program",    label: "Programme name as it should read on the letter", ph: PROGRAM.name, req: true },
     { key: "orgRegNo",   label: "Entity registration number", ph: "company / entity number on the register", req: true },
     { key: "orgAddress", label: "Registered address of the issuing entity", ph: "street, city, state, postcode, country", req: true },
     { key: "orgPhone",   label: "Entity telephone (with country code)", ph: "e.g. +1 415 555 0134", req: true },
@@ -293,9 +281,9 @@ var VISA_DATA = (function () {
 
   /* ═══════════════════════════════════════════════════════════════════════
      UNITED STATES — San Francisco
-     The programme is deliberately set at 89 days so that it clears the 90-day
-     ceiling of the Visa Waiver Program. That margin is one day wide, and the
-     travel days are what consume it — see ninetyDayMargin above.
+     Cohorts are capped at MAX_COHORT_DAYS so they clear the 90-day ceiling of
+     the Visa Waiver Program. That margin is one day wide, and the travel days
+     are what consume it — see ninetyDayMargin above.
      ═══════════════════════════════════════════════════════════════════════ */
 
   var US = {
@@ -324,7 +312,7 @@ var VISA_DATA = (function () {
         "A direct telephone number and email for the signer, so the post can verify the letter."
       ],
       watchOuts: [
-        "<b>" + PROGRAM.days + " days against a 90-day ceiling.</b> " + PROGRAM.cohort + " runs " + PROGRAM.start + " to " + PROGRAM.end + " — " + PROGRAM.days + " days, set deliberately inside the 90-day limit on Visa Waiver Program admission so a participant can complete a full cohort without needing a visa that permits longer. The margin is " + (90 - PROGRAM.days) + " day" + ((90 - PROGRAM.days) === 1 ? "" : "s") + ", and both the arrival and departure days count against it. Arriving early, leaving late, or adding any side trip puts the participant over, and Visa Waiver admission cannot be extended once granted.",
+        "<b>" + MAX_COHORT_DAYS + " days against a 90-day ceiling.</b> Programme policy caps a cohort at " + MAX_COHORT_DAYS + " days, deliberately inside the 90-day limit on Visa Waiver Program admission, so a participant can complete a full cohort without needing a visa that permits longer. The margin is " + (90 - MAX_COHORT_DAYS) + " day" + ((90 - MAX_COHORT_DAYS) === 1 ? "" : "s") + ", and both the arrival and departure days count against it. Arriving early, leaving late, or adding any side trip puts the participant over, and Visa Waiver admission cannot be extended once granted. Check the dates on the letter in front of you — this tool does not assume a cohort.",
         "<b>Bench work is productive labour.</b> Running experiments in the shared lab is not \"independent research\" in the loose sense a founder might mean it. Where a participant will do hands-on work that produces value for a US entity, the visitor routes are the wrong instrument.",
         "<b>Reimbursement is not salary.</b> A US source may cover or reimburse a B-1 visitor's expenses. It may not pay them for services. Letters that blur the two invite a finding of unauthorised employment.",
         "<b>Unpaid does not mean unregulated.</b> An unpaid internship at a for-profit entity has to satisfy the primary-beneficiary test under the Fair Labor Standards Act, independently of immigration status."
@@ -349,7 +337,7 @@ var VISA_DATA = (function () {
         fields: [
           { key: "post", label: "US embassy or consulate applied to", ph: "e.g. U.S. Consulate General, Mumbai", req: true },
           { key: "company", label: "Participant's company and country", ph: "e.g. Helix Therapeutics GmbH, Berlin, Germany", req: true },
-          { key: "activities", label: "Activities during the visit (one per line)", ph: "Attend cohort programming and mentor sessions\nNegotiate partnership terms with US collaborators\nPresent at Demo Day on December 10, 2026\nUndertake independent research and literature review", multiline: true, req: true },
+          { key: "activities", label: "Activities during the visit (one per line)", ph: "Attend cohort programming and mentor sessions\nNegotiate partnership terms with US collaborators\nPresent at the cohort showcase on 28 June 2027\nUndertake independent research and literature review", multiline: true, req: true },
           { key: "entryRoute", label: "Intended route", type: "select", options: ["B-1 visa", "Visa Waiver Program (ESTA)"], req: true },
           { key: "labWork", label: "Will they do hands-on laboratory work for us?", type: "select", options: ["No — observation and independent research only", "Yes — hands-on bench work"], req: true },
           { key: "ties", label: "Ties to their home country", ph: "e.g. continues to direct Helix Therapeutics GmbH in Berlin, where the company and their family home are based", req: true }
@@ -407,7 +395,7 @@ var VISA_DATA = (function () {
               };
             }
             if (f.entryRoute === "Visa Waiver Program (ESTA)" && n === null) {
-              return { level: "warn", msg: "Dates could not be read, so the 90-day Visa Waiver ceiling could not be checked. Enter dates in a form like \"September 15, 2026\"." };
+              return { level: "warn", msg: "Dates could not be read, so the 90-day Visa Waiver ceiling could not be checked. Enter dates in a form like \"6 April 2027\"." };
             }
             return null;
           },
@@ -671,7 +659,7 @@ var VISA_DATA = (function () {
         tag: "O-1A",
         note: "Evidence for an extraordinary-ability petition filed by the beneficiary's attorney. One exhibit, not the petition.",
         fields: [
-          { key: "relationship", label: "How we know them and how they were selected", ph: "e.g. selected for Cohort 3 from 480 applications by a panel of eight reviewers", req: true },
+          { key: "relationship", label: "How we know them and how they were selected", ph: "e.g. selected for the current cohort from 480 applications by a panel of eight reviewers", req: true },
           { key: "selectivity", label: "Selectivity of the programme", ph: "e.g. 20 places from 480 applications, a 4% admission rate", req: true },
           { key: "achievements", label: "Achievements we can personally attest to (one per line)", ph: "Raised a $4M seed round for engineered probiotics\nFirst-author publication in Nature Biotechnology, 2025", multiline: true, req: true },
           { key: "contribution", label: "Significance of their contribution to the field", ph: "e.g. their cell-free diagnostic platform reduced assay turnaround from days to minutes", req: true },
@@ -732,7 +720,7 @@ var VISA_DATA = (function () {
           { key: "company", label: "Start-up name, jurisdiction and formation date", ph: "e.g. Mycelial Inc., a Delaware corporation formed 4 February 2025", req: true },
           { key: "ownership", label: "Founder's ownership percentage and role", ph: "e.g. 35% of outstanding equity; Chief Executive Officer", req: true },
           { key: "investAmount", label: "Amount we have invested", ph: "e.g. US$250,000", req: true },
-          { key: "investDate", label: "Date of the investment", ph: "e.g. 12 August 2026", req: true },
+          { key: "investDate", label: "Date of the investment", ph: "e.g. 12 February 2027", req: true },
           { key: "support", label: "Other support provided (one per line)", ph: "Residency and cohort programming for twelve weeks\nBench access at the shared wet laboratory\nMentorship from the partner and mentor network", multiline: true, req: true },
           { key: "growth", label: "Growth and public-benefit potential", ph: "e.g. plans to hire five US employees in the first year; platform for rapid biologics manufacturing", req: true },
           { key: "qualified", label: "Are we a qualified investor under the rule?", type: "select", options: ["Yes — we meet the rule's qualified-investor criteria", "No / not established"], req: true }
@@ -800,7 +788,7 @@ var VISA_DATA = (function () {
         tag: "GENERAL",
         note: "All-purpose confirmation of acceptance, for any visa file. Explicitly not an offer of employment.",
         fields: [
-          { key: "selection", label: "Basis of selection", ph: "e.g. selected for Cohort 3 from 480 applications on scientific merit and team strength", req: true },
+          { key: "selection", label: "Basis of selection", ph: "e.g. selected for the current cohort from 480 applications on scientific merit and team strength", req: true },
           { key: "benefits", label: "What the programme provides (one per line)", ph: "Residency in the cohort house for the full twelve weeks\nBench access at the shared wet laboratory\nMentorship, weekly programming and Demo Day", multiline: true, req: true },
           { key: "employment", label: "Does the programme include US employment?", type: "select", options: ["No — no employment relationship", "Yes — documented separately"], req: true }
         ],
@@ -880,7 +868,7 @@ var VISA_DATA = (function () {
         "The inviting organisation's full name, registered address, telephone, representative and the signer's position."
       ],
       watchOuts: [
-        "<b>Ninety days is the ceiling for Temporary Visitor.</b> The cohort is set at " + PROGRAM.days + " days to sit inside it, so a Kobe cohort can run on Temporary Visitor status with " + (90 - PROGRAM.days) + " day" + ((90 - PROGRAM.days) === 1 ? "" : "s") + " to spare. A participant who wants to arrive early, stay on afterwards, or extend for any reason falls outside it and needs a Certificate of Eligibility instead — which is filed in Japan by the host and takes one to three months, so it is not a decision that can be left late.",
+        "<b>Ninety days is the ceiling for Temporary Visitor.</b> Cohorts are capped at " + MAX_COHORT_DAYS + " days to sit inside it, so a Kobe cohort can run on Temporary Visitor status with " + (90 - MAX_COHORT_DAYS) + " day" + ((90 - MAX_COHORT_DAYS) === 1 ? "" : "s") + " to spare. A participant who wants to arrive early, stay on afterwards, or extend for any reason falls outside it and needs a Certificate of Eligibility instead — which is filed in Japan by the host and takes one to three months, so it is not a decision that can be left late.",
         "<b>No paid work on Temporary Visitor status.</b> Remunerated activity requires a work status; there is no equivalent of an incidental-work allowance.",
         "<b>The Certificate of Eligibility is filed in Japan, by the host.</b> Allow one to three months. A letter alone does not start the clock.",
         "<b>The Kobe start-up route wants a Japanese-language business plan</b> assessed by the city, not an English pitch deck. Budget time for translation and for the city's review."
@@ -905,7 +893,7 @@ var VISA_DATA = (function () {
           { key: "sex", label: "Sex as recorded in the passport", ph: "as printed in the passport", req: true },
           { key: "occupation", label: "Occupation", ph: "e.g. Chief Executive Officer, Helix Therapeutics GmbH", req: true },
           { key: "company", label: "Applicant's employer or company", ph: "e.g. Helix Therapeutics GmbH, Berlin, Germany", req: true },
-          { key: "relationship", label: "Background and nature of the relationship", ph: "e.g. selected for Cohort 3 in June 2026 following a competitive review; we have worked together on the cohort curriculum since then", req: true },
+          { key: "relationship", label: "Background and nature of the relationship", ph: "e.g. selected for the current cohort following a competitive review; we have worked together on the cohort curriculum since then", req: true },
           { key: "purpose", label: "Purpose of the invitation", ph: "e.g. to take part in the Kobe residency of the accelerator at the Kobe Biomedical Innovation Cluster", req: true },
           { key: "activities", label: "Activities in Japan (one per line)", ph: "Cohort programming and mentor sessions at KBIC\nMeetings with Kobe City and JETRO Kobe\nObservation visits to partner laboratories on Port Island", multiline: true, req: true },
           { key: "accommodation", label: "Accommodation in Japan", ph: "name and address of the residence or hotel, with telephone", req: true }
@@ -977,9 +965,9 @@ var VISA_DATA = (function () {
         note: "The dated itinerary. Mandatory alongside the invitation letter — vague schedules are the usual reason for refusal.",
         fields: [
           { key: "post", label: "Japanese embassy or consulate applied to", ph: "e.g. Consulate-General of Japan in San Francisco", req: true },
-          { key: "arrival", label: "Arrival details", ph: "e.g. 15 September 2026, flight NH7 arriving Kansai International Airport", req: true },
-          { key: "departure", label: "Departure details", ph: "e.g. 14 December 2026, flight NH8 from Kansai International Airport", req: true },
-          { key: "itinerary", label: "Itinerary — one line per day or block of days", ph: "15 Sep — Arrival, check in at cohort residence, Port Island\n16–20 Sep — Induction week at KBIC; contact: [name], [telephone]\n21 Sep–4 Oct — Cohort programming and mentor sessions at KBIC\n5 Oct — Meeting with Kobe City Enterprise Promotion Bureau", multiline: true, req: true },
+          { key: "arrival", label: "Arrival details", ph: "e.g. 6 April 2027, flight NH7 arriving Kansai International Airport", req: true },
+          { key: "departure", label: "Departure details", ph: "e.g. 3 July 2027, flight NH8 from Kansai International Airport", req: true },
+          { key: "itinerary", label: "Itinerary — one line per day or block of days", ph: "6 Apr — Arrival, check in at cohort residence, Port Island\n7–11 Apr — Induction week at KBIC; contact: [name], [telephone]\n12 Apr–1 May — Cohort programming and mentor sessions at KBIC\n4 May — Meeting with Kobe City Enterprise Promotion Bureau", multiline: true, req: true },
           { key: "contactJp", label: "Contact person in Japan (name, telephone)", ph: "e.g. [name], programme manager, +81 78 555 0134", req: true },
           { key: "accommodation", label: "Accommodation in Japan", ph: "name and address of the residence or hotel, with telephone", req: true }
         ],
@@ -1513,7 +1501,7 @@ var VISA_DATA = (function () {
         "The undertaking on costs, and the host's registration details and contact."
       ],
       watchOuts: [
-        "<b>The 90 days are Schengen-wide.</b> The cohort is set at " + PROGRAM.days + " days, which fits — but only for a participant who has spent no more than " + (90 - PROGRAM.days) + " day" + ((90 - PROGRAM.days) === 1 ? "" : "s") + " anywhere in the Schengen area in the preceding 180 days. Time in any Schengen state counts against the same rolling allowance, so a single prior conference trip can be enough to break it. Ask before you commit to dates.",
+        "<b>The 90 days are Schengen-wide.</b> A cohort is capped at " + MAX_COHORT_DAYS + " days, which fits — but only for a participant who has spent no more than " + (90 - MAX_COHORT_DAYS) + " day" + ((90 - MAX_COHORT_DAYS) === 1 ? "" : "s") + " anywhere in the Schengen area in the preceding 180 days. Time in any Schengen state counts against the same rolling allowance, so a single prior conference trip can be enough to break it. Ask before you commit to dates.",
         "<b>Travel medical insurance of €30,000 is a legal condition</b> under Article 15 of the Visa Code, valid across the Schengen area for the whole stay, covering emergency treatment and repatriation.",
         "<b>An invitation letter is not an attestation d'accueil.</b> If the participant stays in private accommodation, only the mairie-validated document will do.",
         "<b>No remunerated activity on a short-stay visa.</b> Paid work needs a work authorisation and the corresponding long-stay route."
@@ -1529,7 +1517,7 @@ var VISA_DATA = (function () {
         note: "The French correspondent's letter. Must describe the activity, purpose, duration and location precisely.",
         fields: [
           { key: "housing", label: "Accommodation type", type: "select", options: ["Hotel or commercial accommodation", "Private accommodation — attestation d'accueil required"], req: true },
-          { key: "attestation", label: "Attestation d'accueil status (if private accommodation)", ph: "e.g. applied for at the Mairie du 11e arrondissement on 3 July 2026" }
+          { key: "attestation", label: "Attestation d'accueil status (if private accommodation)", ph: "e.g. applied for at the Mairie du 11e arrondissement on 15 January 2027" }
         ],
         subject: function (f) { return "Invitation — " + V(f.fullName, "full name") + " — " + V(f.program, "programme name"); },
         addressee: function (f) { return ["Monsieur, Madame le Consul", V(f.post, "French consulate or visa centre")]; },
@@ -1616,7 +1604,7 @@ var VISA_DATA = (function () {
         note: "Host organisation letter for the Business Visitor stream. Pairs with the applicant's Form 1415.",
         fields: [
           { key: "abn", label: "Australian Business Number of the host entity", ph: "e.g. 12 345 678 901", req: true },
-          { key: "engagements", label: "Specific engagements with dates (one per line)", ph: "22 Sep 2026 — cohort induction, Melbourne node\n14 Oct 2026 — partner meetings, Parkville biomedical precinct\n8 Dec 2026 — cohort showcase", multiline: true, req: true }
+          { key: "engagements", label: "Specific engagements with dates (one per line)", ph: "13 Apr 2027 — cohort induction, Melbourne node\n11 May 2027 — partner meetings, Parkville biomedical precinct\n29 Jun 2027 — cohort showcase", multiline: true, req: true }
         ],
         subject: function (f) { return "Letter of invitation — business visit by " + V(f.fullName, "full name"); },
         addressee: function (f) { return ["The Visa Officer", V(f.post, "Department of Home Affairs")]; },
@@ -1796,7 +1784,7 @@ var VISA_DATA = (function () {
       ],
       watchOuts: [
         "<b>The declaration of sponsorship is not a letter you write.</b> It is a cantonal form, obtained from the migration authority, with a solvency assessment behind it and a liability period attached. The coverage amount and the period are set by the authority — take them from the form, not from a template.",
-        "<b>The 90 days are Schengen-wide.</b> At " + PROGRAM.days + " days the cohort leaves " + (90 - PROGRAM.days) + " day" + ((90 - PROGRAM.days) === 1 ? "" : "s") + " of allowance, and time in any Schengen state in the preceding 180 days counts against it.",
+        "<b>The 90 days are Schengen-wide.</b> At the " + MAX_COHORT_DAYS + "-day cohort cap a full cohort leaves " + (90 - MAX_COHORT_DAYS) + " day" + ((90 - MAX_COHORT_DAYS) === 1 ? "" : "s") + " of allowance, and time in any Schengen state in the preceding 180 days counts against it.",
         "<b>Travel medical insurance of €30,000</b> valid across the Schengen area is a legal condition of the visa.",
         "<b>Work needs cantonal authorisation first.</b> The visa follows the labour-market decision, not the other way round."
       ],
@@ -1813,7 +1801,7 @@ var VISA_DATA = (function () {
           { key: "canton", label: "Canton where the visit takes place", ph: "e.g. Basel-Stadt", req: true },
           { key: "language", label: "Language of the letter as sent", type: "select", options: ["German", "French", "Italian", "English — confirmed acceptable by the post"], req: true },
           { key: "sponsorship", label: "Declaration of sponsorship (Verpflichtungserklärung)", type: "select", options: ["Not required — the participant funds the visit", "Requested from the cantonal migration authority", "Completed and enclosed"], req: true },
-          { key: "relationship", label: "How the relationship arose", ph: "e.g. selected for Cohort 3 in June 2026 following a competitive review", req: true }
+          { key: "relationship", label: "How the relationship arose", ph: "e.g. selected for the current cohort following a competitive review", req: true }
         ],
         subject: function (f) { return "Letter of invitation — " + V(f.fullName, "full name"); },
         addressee: function (f) { return ["The Visa Section", V(f.post, "Swiss embassy or consulate")]; },
@@ -1874,6 +1862,7 @@ var VISA_DATA = (function () {
 
   return {
     PROGRAM: PROGRAM,
+    MAX_COHORT_DAYS: MAX_COHORT_DAYS,
     ORGS: ORGS,
     JURISDICTIONS: JURISDICTIONS,
     APPLICANT_FIELDS: APPLICANT_FIELDS,

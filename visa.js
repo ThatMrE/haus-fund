@@ -77,7 +77,7 @@
     merged.orgEmail = o.email;
     merged.orgWeb = o.web;
     merged.city = jur().city;
-    if (!merged.program) merged.program = D.PROGRAM.name + " — " + D.PROGRAM.cohort;
+    if (!merged.program) merged.program = D.PROGRAM.name;
     if (!merged.costWho) merged.costWho = "visitor";
     if (!merged.letterDate) merged.letterDate = todayLong();
     return merged;
@@ -482,7 +482,6 @@
   loadOrg();
   $("sJur").textContent = D.JURISDICTIONS.length;
   $("sTpl").textContent = D.JURISDICTIONS.reduce(function (n, j) { return n + j.templates.length; }, 0);
-  $("sCohort").textContent = D.PROGRAM.start.replace(/,? \d{4}$/, "") + " – " + D.PROGRAM.end.replace(/,? \d{4}$/, "");
-  $("sDays").textContent = D.PROGRAM.days;
+  $("sDays").textContent = D.MAX_COHORT_DAYS;
   refreshAll();
 })();
