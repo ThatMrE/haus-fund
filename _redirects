@@ -20,6 +20,10 @@ https://www.haus.fund https://haus.fund 301!
 /tools/core-facility-finder/SKILL.md /404.html 404!
 /tools/core-facility-finder/README.md /404.html 404!
 /tools/visa-letter-generator/README.md /404.html 404!
+/netlify/functions/news/README.md /404.html 404!
+
+# The news app's source and tests live under netlify/ and are covered by the
+# rule below. Its stylesheet and client script are served from /news-assets.
 
 # Edge-function source lives in the repo and would otherwise be served as a
 # static file, because publish = ".". No secrets are in it (the LP password is

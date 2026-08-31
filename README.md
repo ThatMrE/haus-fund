@@ -16,6 +16,7 @@ no build step, no framework.
 | `cores.html` | Core Facility Finder — served at `cores.haus.fund`, `noindex`, not in the nav |
 | `visa.html` | Visa Desk — immigration support letters, served at `visa.haus.fund`, `noindex`, not in the nav |
 | `fund-portal/` | Separate internal React portal (not linked from the public nav) |
+| `netlify/functions/news/` | **haus.fund/news** — a server-rendered feed of early-stage biotech news, with its own README |
 
 ## Structure
 
@@ -26,6 +27,8 @@ website/
 ├── visa.html · visa.js · visa-data.js  # Visa Desk (visa-data.js is the data layer)
 ├── design-system.html
 ├── fund-portal/          # internal portal (JSX)
+├── netlify/functions/    # news app (/news) and the edge functions
+├── news-assets/          # stylesheet and client script for /news
 ├── assets/               # logos, photos (web/ and thumb/ variants)
 ├── tokens/               # colors, typography, spacing, effects
 ├── tools/                # tool docs (core-facility-finder/, visa-letter-generator/)
@@ -36,6 +39,18 @@ website/
 
 Each page embeds its own CSS in a `<style>` block. `tokens/` is the canonical
 source for design values — see `design-system.html` for them rendered.
+
+## News
+
+`/news` is the one part of this repo that is not a static page. It is a small
+Node app — feed, accounts, voting, threaded comments — plus a scheduled job that
+sweeps biotech news sources at 7am and posts what reads as early-stage company
+news. Member submissions lead the front page for 24 hours, then rise on votes.
+
+It shares this repo so it shares the domain and the design system: its
+stylesheet imports `tokens/*.css`, so a token change reaches the feed too.
+See `netlify/functions/news/README.md` — including the note on storage, which
+must move off the ephemeral filesystem before the feed is opened to members.
 
 ## Design
 
