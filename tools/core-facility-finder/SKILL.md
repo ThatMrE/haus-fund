@@ -8,8 +8,8 @@ user-invocable: true
 
 Founders and academics burn weeks discovering that the instrument they need is
 already sitting, paid for, twenty minutes away. This skill searches a curated
-directory of 269 core facilities across 56 countries and drafts the enquiry for
-you.
+directory of 1,099 core facilities across 59 countries and drafts the enquiry
+for you.
 
 ## Commands
 
@@ -29,7 +29,8 @@ Standard library only — no install step, no dependencies.
 
 Filters: `--state` (also `--region`; matches state, province, canton or city),
 `--country`, `--continent` (also `--group`), `--access` (`open`, `academic`,
-`both`, `commercial`), `--email-only`, `--limit`, `--json`.
+`both`, `commercial`, `unknown`), `--source`, `--email-only`, `--limit`,
+`--json`.
 
 `--continent` also accepts the cross-cutting groupings **Latin America** and
 **Middle East**, because the geographic answer is the unhelpful one: Mexico is
@@ -73,6 +74,23 @@ Be considerate: it hits live institutional sites. `--limit` defaults to 25.
    external work at all, which is the question that kills most enquiries.
 4. Fill in `--project` properly. A one-line "do you do scRNA-seq?" gets ignored;
    sample type, count and scale gets a quote.
+
+## Two sources
+
+Records carry a `source`, and the difference matters when you read them:
+
+- **`curated`** (269) — hand-written, worldwide, with checked technique tags and
+  a real access model, so `--access open` genuinely finds proposal-based
+  national facilities.
+- **`core-marketplace`** (830) — imported from the Core Marketplace export.
+  Each carries an **RRID** that resolves at scicrunch.org. Their techniques are
+  mapped from the free-text services each facility lists, so the tagging is
+  broader and coarser, and `access` is `unknown` rather than assumed. 68 have no
+  technique tag at all because their listed services are entirely generic; they
+  are still findable by name and by raw service text.
+
+`--source curated` or `--source core-marketplace` restricts to one. The imported
+set is heavily United States: of 1,099 records, 862 are in North America.
 
 ## What this data is and is not
 
