@@ -16,6 +16,7 @@ no build step, no framework.
 | `cores.html` | Core Facility Finder — served at `cores.haus.fund`, `noindex`, not in the nav |
 | `visa.html` | Visa Desk — immigration support letters, served at `visa.haus.fund`, `noindex`, not in the nav |
 | `fund-portal/` | Separate internal React portal (not linked from the public nav) |
+| `homeroom/` | **Homeroom** — the members-only network, served at `/homeroom`, `noindex`. Forum, member and lab directories, deals, funder reviews, pipeline, office hours, jobs, events, library, intros, messaging. Runs on Supabase; see `homeroom/README.md` |
 
 ## Structure
 
@@ -26,6 +27,7 @@ website/
 ├── visa.html · visa.js · visa-data.js  # Visa Desk (visa-data.js is the data layer)
 ├── design-system.html
 ├── fund-portal/          # internal portal (JSX)
+├── homeroom/             # members-only network (static + Supabase)
 ├── assets/               # logos, photos (web/ and thumb/ variants)
 ├── tokens/               # colors, typography, spacing, effects
 ├── tools/                # tool docs (core-facility-finder/, visa-letter-generator/)
