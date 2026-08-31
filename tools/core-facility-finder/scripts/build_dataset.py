@@ -36,6 +36,10 @@ COUNTRIES = {
     "Portugal": ("region", "Europe"),
     "Ireland": ("county", "Europe"),
     "Czechia": ("region", "Europe"),
+    "Luxembourg": ("canton", "Europe"),
+    "Poland": ("voivodeship", "Europe"),
+    "Croatia": ("county", "Europe"),
+    "Greece": ("region", "Europe"),
     "Israel": ("district", "Asia"),
     "Japan": ("prefecture", "Asia"),
     "China": ("province", "Asia"),
@@ -93,7 +97,9 @@ GROUP_OF = {c: g for g, cs in GROUPS.items() for c in cs}
 #   academic    academic users; internal rate + external academic rate
 #   both        academic and commercial/industry rates published
 #   commercial  fee-for-service provider
-ACCESS = {"open", "academic", "both", "commercial"}
+#   unknown     imported records: the source does not say, and guessing would
+#               put a wrong answer in a drafted enquiry
+ACCESS = {"open", "academic", "both", "commercial", "unknown"}
 
 # (facility, institution, city, region, country, access, url, techniques, notes)
 SEED = []
@@ -1341,6 +1347,47 @@ def facility_id(institution: str, facility: str) -> str:
     return hashlib.sha1(key.encode("utf-8")).hexdigest()[:6]
 
 
+def norm(text: str) -> str:
+    return " ".join(str(text or "").lower().split())
+
+
+def load_imported(seen_keys):
+    """Records from scripts/import_marketplace.py, minus anything the curated
+    seed already covers. The curated record wins every collision: it carries
+    hand-checked techniques and a real access model, where an imported one has
+    mapped services and access "unknown"."""
+    path = ROOT / "data" / "imported-facilities.json"
+    if not path.exists():
+        return [], 0
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    out, skipped = [], 0
+    for r in payload["facilities"]:
+        if (norm(r["institution"]), norm(r["facility"])) in seen_keys:
+            skipped += 1
+            continue
+        country = r["country"]
+        region_label, continent = COUNTRIES.get(country, ("region", "Unknown"))
+        out.append({
+            "id": facility_id(r["institution"], r["facility"]),
+            "facility": r["facility"],
+            "institution": r["institution"],
+            "city": r["city"],
+            "region": r["region"],
+            "region_label": region_label,
+            "country": country,
+            "continent": continent,
+            "group": GROUP_OF.get(country),
+            "access": "unknown",
+            "url": r["url"],
+            "rrid": r["rrid"],
+            "techniques": r["techniques"],
+            "services_raw": r["services_raw"],
+            "notes": r["notes"],
+            "source": "core-marketplace",
+        })
+    return out, skipped
+
+
 def build():
     records, seen = [], {}
     for facility, institution, city, region, country, access, url, techs, notes in SEED:
@@ -1354,6 +1401,7 @@ def build():
         seen[fid] = facility
         region_label, continent = COUNTRIES[country]
         records.append({
+            "source": "curated",
             "id": fid,
             "facility": facility,
             "institution": institution,
@@ -1369,6 +1417,16 @@ def build():
             "notes": notes,
         })
 
+    curated_keys = {(norm(r["institution"]), norm(r["facility"])) for r in records}
+    imported, overlapped = load_imported(curated_keys)
+    by_id = {r["id"] for r in records}
+    for r in imported:
+        if r["id"] in by_id:      # different names, same content hash
+            overlapped += 1
+            continue
+        by_id.add(r["id"])
+        records.append(r)
+
     records.sort(key=lambda r: (r["country"], r["institution"], r["facility"]))
     vocab = sorted({t for r in records for t in r["techniques"]}, key=str.lower)
 
@@ -1378,7 +1436,8 @@ def build():
         "count": len(records),
         "techniques": vocab,
         "synonyms": SYNONYMS,
-        "countries": sorted({r["country"] for r in records}),
+        "countries": sorted({r["country"] for r in records if r["country"]}),
+        "sources": sorted({r["source"] for r in records}),
         "groups": sorted({r["group"] for r in records if r["group"]}),
         "note": (
             "Metadata is hand-curated from public institutional pages and is "
@@ -1391,7 +1450,10 @@ def build():
     path = ROOT / "data" / "core-facilities.json"
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(out, indent=1, ensure_ascii=False) + "\n", encoding="utf-8")
-    print(f"wrote {path.relative_to(ROOT)}: {len(records)} facilities, "
+    curated = sum(1 for r in records if r["source"] == "curated")
+    print(f"wrote {path.relative_to(ROOT)}: {len(records)} facilities "
+          f"({curated} curated + {len(records) - curated} imported; "
+          f"{overlapped} imported rows dropped as duplicates of curated ones), "
           f"{len(vocab)} techniques, {len(out['countries'])} countries")
 
 

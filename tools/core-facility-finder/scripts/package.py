@@ -9,8 +9,13 @@ import zipfile
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 OUT = ROOT.parent / "core-facility-finder.skill"
+# The merged core-facilities.json is all the CLI needs at runtime. The
+# marketplace CSV and its intermediate JSON are deliberately left out: together
+# they are ~1 MB and everything they produce is already in the merged file.
+# Refreshing the import needs the repo, not the bundle.
 MEMBERS = ["SKILL.md", "README.md", "scripts/cores.py", "scripts/build_dataset.py",
-           "scripts/package.py", "data/core-facilities.json"]
+           "scripts/import_marketplace.py", "scripts/package.py",
+           "data/core-facilities.json"]
 FIXED_DATE = (2026, 1, 1, 0, 0, 0)
 
 
