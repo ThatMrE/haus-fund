@@ -19,6 +19,7 @@ import * as roster from './roster.js';
 import * as access from './access.js';
 import * as luma from './luma.js';
 import * as sbAuth from './supabase-auth.js';
+import * as invites from './invites.js';
 import { homeroomLayout } from './views/layout.js';
 import * as views from './views/pages.js';
 import { parseWhen, toLocalInput } from './views/components.js';
@@ -111,6 +112,7 @@ const trimmed = (value, max) => String(value || '').trim().slice(0, max);
 function homeHandler(ctx) {
   const member = bf.ensureMember(ctx.user.id);
   bf.touchMember(ctx.user.id);
+  const onboarding = bf.onboardingProgress(ctx.user.id);
   render(
     ctx,
     views.homePage(ctx, {
@@ -125,7 +127,8 @@ function homeHandler(ctx) {
       modules: bf.listModules({ limit: 5 }),
       updates: bf.recentUpdates(4),
       intros: bf.introsFor(ctx.user.id).incoming.filter((i) => i.status === 'pending'),
-      profileComplete: !!(member.headline && (member.expertise || []).length),
+      onboardingComplete: onboarding.complete,
+      onboardingLeft: onboarding.total - onboarding.done,
     }),
     { title: 'Home' },
   );
@@ -1182,6 +1185,113 @@ function stewardsOnly(ctx) {
   return false;
 }
 
+/* ------------------------------------------------------------- onboarding */
+
+function welcomeHandler(ctx) {
+  render(
+    ctx,
+    views.welcomePage(ctx, {
+      member: bf.ensureMember(ctx.user.id),
+      progress: bf.onboardingProgress(ctx.user.id),
+      stats: bf.networkStats(),
+    }),
+    { title: 'Welcome' },
+  );
+}
+
+/* -------------------------------------------------------- steward: invites */
+
+async function invitesHandler(ctx, { minted = null, error = null, flash = null } = {}) {
+  if (!stewardsOnly(ctx)) return;
+  const listed = await invites.list({ limit: 100 });
+  render(
+    ctx,
+    views.invitesPage(ctx, {
+      invites: listed.invites,
+      health: invites.health(),
+      rosterMode: roster.accessMode(),
+      minted,
+      error: error || (listed.ok ? null : listed.error),
+      flash,
+    }),
+    { title: 'Invites' },
+  );
+}
+
+async function inviteCreate(ctx) {
+  const { fields } = await readBody(ctx.req);
+  if (!csrfOk(ctx, fields)) return;
+  if (!stewardsOnly(ctx)) return;
+
+  const email = invites.normalizeEmail(fields.email);
+  if (!email.includes('@')) {
+    return invitesHandler(ctx, { error: 'That does not look like an email address.' });
+  }
+  if (bf.getUserByEmail(email)) {
+    return invitesHandler(ctx, { error: `${email} already has an account.` });
+  }
+
+  /*
+   * Check the roster, but do not obey it. A steward inviting someone by name is
+   * itself an admission decision — often made precisely because the roster is
+   * behind, or the person applied under a different address. So the verdict is
+   * recorded rather than enforced, and a verdict that is not a clean pass needs
+   * the steward to say so on purpose.
+   */
+  const assessment = await access.assess(email);
+
+  // Only a definite negative needs a steward to insist. `closed` means self
+  // signup is off — which is the normal state, and the whole reason an invite
+  // is being sent — and `error` or `open` mean the roster has no usable opinion
+  // either way. Making any of those demand a tick would train stewards to tick
+  // the box every time, which is the same as not having it.
+  const blocking = assessment.verdict === 'deny' || assessment.verdict === 'review';
+  const override = fields.override === '1';
+  if (blocking && !override) {
+    return invitesHandler(ctx, {
+      error: `The roster says "${assessment.verdict}: ${assessment.reason}" for ${email}. `
+        + 'Tick the override box to send it anyway — it will be recorded against the invite.',
+    });
+  }
+
+  const created = await invites.create({
+    email,
+    invitedBy: ctx.user.id,
+    note: trimmed(fields.note, 200),
+    rosterVerdict: blocking ? `override:${assessment.verdict}:${assessment.reason}`
+      : `${assessment.verdict}:${assessment.reason}`,
+    ttlDays: clampInt(fields.days, 14, 1, 90),
+  });
+  if (!created.ok) return invitesHandler(ctx, { error: created.error });
+
+  return invitesHandler(ctx, {
+    minted: {
+      email,
+      url: invites.inviteUrl(origin(ctx), created.token),
+      expiresAt: nowSeconds() + clampInt(fields.days, 14, 1, 90) * 86400,
+    },
+  });
+}
+
+async function inviteRevoke(ctx, { id }) {
+  const { fields } = await readBody(ctx.req);
+  if (!csrfOk(ctx, fields)) return;
+  if (!stewardsOnly(ctx)) return;
+  const result = await invites.revoke(id);
+  if (!result.ok) return invitesHandler(ctx, { error: result.error });
+  return invitesHandler(ctx, {
+    flash: result.revoked ? 'Invite revoked. That link no longer works.'
+      : 'Nothing to revoke — it was already used or revoked.',
+  });
+}
+
+/** Absolute origin, for building an invite link a steward can paste anywhere. */
+function origin(ctx) {
+  const proto = ctx.req.headers['x-forwarded-proto'] || 'https';
+  const host = ctx.req.headers['x-forwarded-host'] || ctx.req.headers.host || 'haus.fund';
+  return `${String(proto).split(',')[0].trim()}://${host}`;
+}
+
 async function accessAdminHandler(ctx, lookup = null) {
   if (!stewardsOnly(ctx)) return;
   render(
@@ -1587,6 +1697,10 @@ const ROUTES = [
     render(ctx, views.searchPage(ctx, { query, results }),
       { title: query ? `Search: ${query}` : 'Search' });
   }],
+  ['GET', '/homeroom/welcome', welcomeHandler],
+  ['GET', '/homeroom/stewards/invites', (ctx) => invitesHandler(ctx)],
+  ['POST', '/homeroom/stewards/invites', inviteCreate],
+  ['POST', '/homeroom/stewards/invites/:id/revoke', inviteRevoke],
   ['GET', '/homeroom/stewards/access', (ctx) => accessAdminHandler(ctx)],
   ['POST', '/homeroom/stewards/access/lookup', accessLookupHandler],
   ['POST', '/homeroom/stewards/access/:hash/decide', action((ctx, fields, p) => {

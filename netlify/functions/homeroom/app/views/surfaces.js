@@ -1075,6 +1075,11 @@ function submissionPill(status) {
  * the one question it asks: this person's dates say they live in the house and
  * their status says the offer was declined or deferred — which is true?
  */
+export const STEWARD_TABS = [
+  { key: 'access', href: '/homeroom/stewards/access', label: 'Front door' },
+  { key: 'invites', href: '/homeroom/stewards/invites', label: 'Invites' },
+];
+
 export function accessAdminPage(ctx, { counts, mode, health, pending, recent, lookup = null }) {
   return html`<div class="pagehead">
     <div>
@@ -1083,6 +1088,8 @@ export function accessAdminPage(ctx, { counts, mode, health, pending, recent, lo
         settle on its own.</p>
     </div>
   </div>
+
+  ${subnav(STEWARD_TABS, 'access')}
 
   <div class="statstrip">
     <span><b>${counts.pending}</b> awaiting a decision</span>
@@ -1169,4 +1176,156 @@ export function accessAdminPage(ctx, { counts, mode, health, pending, recent, lo
 function verdictPill(verdict) {
   const cls = { allow: 'ok', deny: 'bad', review: 'cohort' }[verdict] || '';
   return pill(verdict, cls);
+}
+
+
+/* ============================================================== onboarding */
+
+/**
+ * Where a new member lands, and where anyone can come back to.
+ *
+ * Not a modal, not a wizard, and not skippable-once-and-gone: it is a page with
+ * a URL, so a member who closed it on their first day can find it again in week
+ * three. Every step links straight to the real surface rather than teaching a
+ * tour, because the fastest way to learn what a room holds is to use it.
+ */
+export function welcomePage(ctx, { member, progress, stats, invitedBy = '' }) {
+  const { steps, done, total, complete } = progress;
+  return html`<div class="hero">
+    <div>
+      <h1>Welcome${member.name ? html`, ${member.name}` : ''}.</h1>
+      <p class="lede">${invitedBy
+        ? html`${memberLink(invitedBy)} invited you. `
+        : ''}Homeroom holds ${stats.deals} perks, ${stats.funders} funders with member-written
+        reviews, ${stats.atlas} labs on the atlas, ${stats.mentors} mentors and a
+        ${stats.modules}-module founder manual. Here is the short way in.</p>
+    </div>
+  </div>
+
+  ${complete
+    ? html`<div class="notice">You have done everything on this list. It stays here if you
+        want to come back to it.</div>`
+    : html`<div class="notice">${done} of ${total} done.</div>`}
+
+  <ol class="onboard">
+    ${steps.map((step, index) => html`<li class="step ${step.done ? 'done' : ''}">
+      <div class="stepnum mono">${step.done ? raw('&#10003;') : index + 1}</div>
+      <div class="grow">
+        <div class="title-line"><span class="title">${step.title}</span>
+          ${step.optional ? pill('optional') : ''}</div>
+        <p class="prose small">${step.why}</p>
+        <a class="btn ${step.done ? 'ghost' : 'solid'}" href="${step.href}">
+          ${step.done ? 'Change it' : step.action}</a>
+      </div>
+    </li>`)}
+  </ol>
+
+  <div class="cols">
+    <div class="main">
+      ${section('While you are here', html`<ul class="tight">
+        <li><a href="/homeroom/people">The directory</a> — search by what people actually know.</li>
+        <li><a href="/homeroom/funders">Rate My Funder</a> — read the reviews before the pitch,
+          and write one after.</li>
+        <li><a href="/homeroom/labs/cores">The Core Facility Finder</a> — instrument time you do
+          not have to buy.</li>
+        <li><a href="/homeroom/events">Events</a> — everything on the Biopunk calendar.</li>
+        <li><a href="/homeroom/publish">Publish</a> — send something you have written to
+          haus.fund/news.</li>
+      </ul>`)}
+    </div>
+    <aside class="rail">
+      ${section('House rules', html`<ul class="tight small">
+        <li>Reviews and claims are attributed. Anonymity exists for candour, not for cover.</li>
+        <li>Perk codes are negotiated for residents. Ask before you order at list price.</li>
+        <li>A steward can see who wrote what. Nobody else can see it if you asked for it hidden.</li>
+      </ul>`)}
+      ${section('Stuck', html`<p class="mono dim">Mail
+        <a href="mailto:hello@haus.fund">hello@haus.fund</a> and a steward will pick it up.</p>`)}
+    </aside>
+  </div>`;
+}
+
+/* ------------------------------------------------------- steward: invites */
+
+export function invitesPage(ctx, {
+  invites: rows, health, minted = null, error = null, flash = null, rosterMode,
+}) {
+  return html`<div class="pagehead">
+    <div><h1>Invites</h1>
+      <p class="lede">How a new resident gets an account while signup is closed. You vouch once;
+        they do the rest.</p></div>
+  </div>
+
+  ${subnav(STEWARD_TABS, 'invites')}
+
+  ${!health.durable ? html`<div class="notice bad">
+    <b>Invites are being stored locally.</b> ${health.warning} A link minted now may stop working
+    the moment this container recycles — set it up properly before sending any.</div>` : ''}
+
+  ${rosterMode === 'open' ? html`<div class="notice">
+    <b>Signup is open</b>, so anyone with the URL can already create an account and invites are
+    not what is keeping the room closed.</div>` : ''}
+
+  ${error ? html`<div class="notice bad">${error}</div>` : ''}
+  ${flash ? html`<div class="notice">${flash}</div>` : ''}
+
+  ${minted ? html`<div class="notice good">
+    <b>Invite created for ${minted.email}.</b> Send them this link — it is shown once and is not
+    stored anywhere, so copy it now.
+    <div class="code copyme" style="margin-top:10px">${minted.url}</div>
+    <p class="mono dim" style="margin-top:8px">Expires ${stamp(minted.expiresAt)}. Creating another
+      invite for the same address revokes this one.</p>
+  </div>` : ''}
+
+  <form class="stack wide" method="post" action="/homeroom/stewards/invites">
+    ${csrfField(ctx)}
+    <div class="row">
+      <div class="field"><label for="email">Email address</label>
+        <input id="email" name="email" type="email" required
+          placeholder="the address on their application" />
+        <div class="hint">Use the address they applied with, so the roster check matches.</div></div>
+      <div class="field"><label for="days">Expires in</label>
+        <select id="days" name="days">
+          <option value="7">7 days</option>
+          <option value="14" selected>14 days</option>
+          <option value="30">30 days</option>
+        </select></div>
+    </div>
+    <div class="field"><label for="note">Note</label>
+      <input id="note" name="note" maxlength="200"
+        placeholder="S26 core resident — confirmed with Elliot" />
+      <div class="hint">For the other stewards. The invitee never sees it.</div></div>
+    <label class="check"><input type="checkbox" name="override" value="1" />
+      Send it even if the roster does not confirm them</label>
+    <button class="btn solid" type="submit">Create invite</button>
+  </form>
+
+  ${section(`Sent (${rows.length})`, rows.length
+    ? html`<table class="grid"><thead><tr>
+        <th>Address</th><th>Status</th><th>Roster</th><th>By</th><th>Note</th><th></th>
+      </tr></thead><tbody>
+      ${rows.map((row) => html`<tr class="${row.status}">
+        <td>${row.email}</td>
+        <td>${inviteStatus(row)}</td>
+        <td class="mono dim">${row.rosterVerdict || '—'}</td>
+        <td class="mono dim">${row.invitedBy}</td>
+        <td class="mono dim">${row.note || ''}</td>
+        <td>${row.status === 'pending' && !row.expired
+          ? html`<form method="post" action="/homeroom/stewards/invites/${row.id}/revoke">
+              ${csrfField(ctx)}
+              <button class="btn tiny" type="submit">Revoke</button></form>`
+          : ''}</td>
+      </tr>`)}
+    </tbody></table>`
+    : empty('None yet.'))}`;
+}
+
+function inviteStatus(row) {
+  if (row.status === 'redeemed') {
+    return html`<span class="pill answered">used${row.redeemedBy
+      ? html` by ${memberLink(row.redeemedBy)}` : ''}</span>`;
+  }
+  if (row.status === 'revoked') return pill('revoked', 'locked');
+  if (row.expired) return pill('expired', 'locked');
+  return html`<span class="pill">live until ${stamp(row.expiresAt)}</span>`;
 }

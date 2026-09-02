@@ -101,6 +101,18 @@ async function request(path, { method = 'GET', body = null, prefer = null } = {}
 }
 
 /**
+ * Call a Postgres function.
+ *
+ * PostgREST exposes `security definer` functions at /rest/v1/rpc/<name>, which
+ * is how a table the anon key cannot touch at all can still be operated on
+ * through a handful of narrow, audited entry points. See the invites migration
+ * for the pattern, and why it is worth the indirection.
+ */
+export async function rpc(name, args = {}) {
+  return request(`rpc/${name}`, { method: 'POST', body: args });
+}
+
+/**
  * Send a member's post to the public feed.
  *
  * `status` is fixed at 'pending' here and NOT taken from the caller: the RLS
