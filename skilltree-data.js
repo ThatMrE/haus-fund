@@ -3275,8 +3275,8 @@ var SKILLTREE = {
      "url": "https://igem.org/"
     },
     {
-     "title": "Homeroom forum — where the loop closes",
-     "url": "/homeroom/forum"
+     "title": "Homeroom events — convene the room, then write down what you learned",
+     "url": "/homeroom/events"
     }
    ]
   },

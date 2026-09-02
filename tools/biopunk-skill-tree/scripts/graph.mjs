@@ -847,7 +847,7 @@ export const RESOURCES = {
   'community-building': [
     { title: 'Nucleate — a community built around a problem, not a product', url: 'https://nucleate.org/' },
     { title: 'iGEM — the longest-running example in synthetic biology', url: 'https://igem.org/' },
-    { title: 'Homeroom forum — where the loop closes', url: '/homeroom/forum' },
+    { title: 'Homeroom events — convene the room, then write down what you learned', url: '/homeroom/events' },
   ],
   'immigration-and-o1': [
     { title: 'USCIS — O-1A, extraordinary ability in the sciences and business', url: 'https://www.uscis.gov/working-in-the-united-states/temporary-workers/o-1-visa-individuals-with-extraordinary-ability-or-achievement' },
