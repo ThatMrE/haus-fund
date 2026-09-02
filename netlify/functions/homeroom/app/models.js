@@ -2166,7 +2166,8 @@ export function upsertMentor(mentor) {
  */
 const MENTOR_FIELDS = ['id', 'slug', 'user_id', 'name', 'role', 'org', 'track', 'tags',
   'location', 'bio', 'format', 'vetted', 'active', 'sessions', 'source', 'created_at',
-  'state', 'consent_mode', 'capacity', 'tracks', 'confirmed_at', 'paused_until', 'synced_at'];
+  'state', 'consent_mode', 'capacity', 'tracks', 'confirmed_at', 'paused_until', 'synced_at',
+  'reconfirm_sent_at', 'reconfirm_nudges'];
 
 const MENTOR_COLUMNS = MENTOR_FIELDS.join(', ');
 const MENTOR_COLUMNS_M = MENTOR_FIELDS.map((f) => `m.${f}`).join(', ');

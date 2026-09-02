@@ -112,6 +112,11 @@ const ADDED_COLUMNS = [
   ['hr_mentors', 'confirmed_at', 'INTEGER'],
   ['hr_mentors', 'paused_until', 'INTEGER'],
   ['hr_mentors', 'synced_at', 'INTEGER'],
+  // Phase 3: keeping the roster honest. `confirmed_at` is when they last said
+  // yes to being here at all; the two nudge columns are how a silence becomes
+  // dormancy rather than a listing nobody ever checks again.
+  ['hr_mentors', 'reconfirm_sent_at', 'INTEGER'],
+  ['hr_mentors', 'reconfirm_nudges', 'INTEGER NOT NULL DEFAULT 0'],
 ];
 
 function addColumns(instance) {

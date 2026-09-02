@@ -18,6 +18,7 @@ import * as luma from './luma.js';
 import * as desk from './mentordesk.js';
 import * as mentormail from './mentormail.js';
 import * as mentorsync from './mentorsync.js';
+import * as mentorlife from './mentorlife.js';
 import { homeroomLayout } from './views/layout.js';
 import * as views from './views/pages.js';
 import { parseWhen, toLocalInput } from './views/components.js';
@@ -1745,6 +1746,34 @@ async function mentorTokenAnswer(ctx, { token }, decision) {
   }));
 }
 
+/* ------------------------------- mentor desk: a mentor's own standing consent */
+
+/*
+ * /homeroom/me/:token — no session, ever. Same reasoning as /homeroom/m/:token
+ * and the same POST-only rule for anything that changes state, because these
+ * links live in mail that gateways pre-fetch.
+ */
+
+function mentorStanding(ctx, { token }) {
+  const row = mentorlife.findToken(token);
+  if (!row) return sendHtml(ctx.res, views.mentorTokenGonePage({ reason: 'unknown' }), { status: 404 });
+  const mentor = bf.getMentor(row.mentor_id);
+  if (!mentor) return sendHtml(ctx.res, views.mentorTokenGonePage({ reason: 'unknown' }), { status: 404 });
+  sendHtml(ctx.res, views.mentorStandingPage({ mentor, token, state: mentor.state }));
+}
+
+async function mentorStandingAction(ctx, { token }, action) {
+  await readBody(ctx.req);
+  const result = action === 'confirm' ? mentorlife.confirm(token)
+    : action === 'pause' ? mentorlife.pause(token, { days: 90 })
+    : mentorlife.withdraw(token);
+
+  if (!result.ok) {
+    return sendHtml(ctx.res, views.mentorTokenGonePage({ reason: result.reason }), { status: 404 });
+  }
+  sendHtml(ctx.res, views.mentorStandingDonePage({ action, days: result.days || 0 }));
+}
+
 /* --------------------------------------------------- mentor desk: steward */
 
 function mentorAdminHandler(ctx, { error = null, flash = null } = {}) {
@@ -1755,6 +1784,7 @@ function mentorAdminHandler(ctx, { error = null, flash = null } = {}) {
     status,
     stuck: mentorsync.stuckRequests(),
     roster: status.byState,
+    metrics: mentorlife.metrics(),
     error,
     flash,
   }), { title: 'Mentor desk' });
@@ -2072,6 +2102,10 @@ const ROUTES = [
 
   /* The mentor's own three pages. No session: see homeroomRoute below. */
   ['GET', '/homeroom/m/:token', mentorTokenPage],
+  ['GET', '/homeroom/me/:token', mentorStanding],
+  ['POST', '/homeroom/me/:token/confirm', (ctx, p) => mentorStandingAction(ctx, p, 'confirm')],
+  ['POST', '/homeroom/me/:token/pause', (ctx, p) => mentorStandingAction(ctx, p, 'pause')],
+  ['POST', '/homeroom/me/:token/withdraw', (ctx, p) => mentorStandingAction(ctx, p, 'withdraw')],
   ['POST', '/homeroom/m/:token/accept', (ctx, p) => mentorTokenAnswer(ctx, p, 'accept')],
   ['POST', '/homeroom/m/:token/decline', (ctx, p) => mentorTokenAnswer(ctx, p, 'decline')],
   ['POST', '/homeroom/m/:token/later', (ctx, p) => mentorTokenAnswer(ctx, p, 'later')],
@@ -2314,7 +2348,7 @@ const COMPILED = ROUTES.map(([method, pattern, handler]) => {
     // account — roster.js admits residents and alumni, and a mentor is neither
     // — so these pages cannot be behind the members-only gate. The token in the
     // URL is the credential, and it is stored only as a hash.
-    isPublic: pattern.startsWith('/homeroom/m/'),
+    isPublic: pattern.startsWith('/homeroom/m/') || pattern.startsWith('/homeroom/me/'),
   };
 });
 

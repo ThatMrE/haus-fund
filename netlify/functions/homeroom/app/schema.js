@@ -654,6 +654,30 @@ CREATE TABLE IF NOT EXISTS hr_mentor_events (
 
 CREATE INDEX IF NOT EXISTS idx_hr_mentor_events ON hr_mentor_events(request_id, created_at);
 
+/*
+ * Mentor-scoped links, for the actions that are not about one request.
+ *
+ * Re-confirming, pausing and withdrawing all have to work for someone with no
+ * Homeroom account, from an email, on a phone. hr_mentor_requests already
+ * carries a token for answering one request; this is the same idea for the
+ * standing consent itself.
+ *
+ * Hashed at rest like every other token here. used_at rather than deletion,
+ * so a mentor who clicks twice sees what they already did instead of an error
+ * page telling them their link is broken.
+ */
+CREATE TABLE IF NOT EXISTS hr_mentor_tokens (
+  token_hash TEXT PRIMARY KEY,
+  mentor_id  INTEGER NOT NULL REFERENCES hr_mentors(id) ON DELETE CASCADE,
+  kind       TEXT NOT NULL DEFAULT 'standing'
+             CHECK (kind IN ('standing','reconfirm')),
+  created_at INTEGER NOT NULL,
+  expires_at INTEGER NOT NULL,
+  used_at    INTEGER
+);
+
+CREATE INDEX IF NOT EXISTS idx_hr_mentor_tokens ON hr_mentor_tokens(mentor_id, kind, created_at);
+
 /* ------------------------------------------------------- funder reviews++ */
 
 /* Rate My Funder: a review gets replies, because one bad experience is an

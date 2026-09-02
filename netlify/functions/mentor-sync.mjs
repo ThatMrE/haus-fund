@@ -22,20 +22,31 @@ export default async function mentorSyncHandler() {
   const { getDb } = await import('./homeroom/app/db.js');
   const sync = await import('./homeroom/app/mentorsync.js');
 
-  if (!sync.configured()) {
-    console.log('[mentors] skipped — no Airtable token');
-    return json({ ok: true, ran: false, reason: 'not configured' });
+  getDb();
+
+  // The lifecycle pass runs FIRST and unconditionally. Keeping the roster
+  // honest — auto-pause, re-confirmation, dormancy — does not depend on
+  // Airtable being configured, and a roster nobody prunes is the failure this
+  // whole phase exists to prevent.
+  const life = await sync.lifecycle();
+  if (life.paused || life.reconfirmed || life.dormant || life.nagged) {
+    console.log(`[mentors] lifecycle: ${life.paused} paused, ${life.reconfirmed} asked to reconfirm, `
+      + `${life.dormant} made dormant, ${life.nagged} outcome nags`);
   }
 
-  getDb();
+  if (!sync.configured()) {
+    console.log('[mentors] pull skipped — no Airtable token');
+    return json({ ok: true, ran: false, reason: 'not configured', life });
+  }
+
   const result = await sync.sync();
   if (!result.ok) {
     console.error(`[mentors] ${result.error} Roster unchanged.`);
-    return json({ ok: false, ...result }, 502);
+    return json({ ok: false, ...result, life }, 502);
   }
 
   console.log(`[mentors] ${result.seen} seen, ${result.created} new (pending review), ${result.updated} updated`);
-  return json({ ok: true, ran: true, ...result });
+  return json({ ok: true, ran: true, ...result, life });
 }
 
 function json(payload, status = 200) {

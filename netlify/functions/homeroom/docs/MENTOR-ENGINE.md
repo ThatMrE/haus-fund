@@ -661,12 +661,37 @@ Three things came out differently or newly here:
 **The form is still yours to build**, in Airtable — this is the half that is
 not code. §8.5 below is the field spec it has to produce.
 
-**Phase 3 — keeping it alive.** (~3 days)
+**Phase 3 — keeping it alive. BUILT.**
 Re-confirmation, auto-pause, dormancy, outcomes, the metrics, the steward
 roster-by-state view.
 
 *Done when:* a mentor who ignores everything for six months is dormant rather
-than listed.
+than listed. Asserted in `test/mentorlife.test.js`.
+
+Shipped as `app/mentorlife.js`, the `hr_mentor_tokens` table, `/homeroom/me/:token`,
+and a lifecycle pass that runs from `mentor-sync.mjs` **before** the Airtable
+pull and unconditionally — keeping the roster honest does not depend on a token
+being configured, and a second scheduled function would be a second thing to
+forget.
+
+| Detail | Why |
+| --- | --- |
+| **Auto-pause needs three *consecutive* expiries** | A mentor who answers, misses one, answers again is engaged. Three in a row is a pattern, and it usually means the address on file is not one they read. |
+| **A paused mentor stays on the roster; a dormant one does not** | Paused is "here, not right now", and the profile says so. Dormant is the rot number — off the list entirely, restorable in one click. |
+| **Withdrawing revokes live grants; pausing does not** | Pausing means stop sending me requests. Withdrawing means I am gone, and a booking link for someone who has left is worse than no link. |
+| **Mentor tokens last 90 days** | They are attached to a six-monthly email that people answer late. An expired "still up for this?" link is a mentor who tried to stay and could not. |
+| **The lifecycle runs even for a mentor with no address** | Not being reachable is a reason to prune someone, not a reason to skip them. They go through the same nudge counter and end up dormant, unmailed. |
+| **`mintToken()` takes a `now`** | The rest of the module already did; without it the sweep could not be tested against a moved clock, which is the only way to test a claim about six months. |
+
+Two bugs the tests caught: `MENTOR_FIELDS` did not carry the new lifecycle
+columns, so `getMentor()` silently returned `undefined` for them; and the sweep
+minted tokens at wall-clock time while every other step took an injected `now`.
+
+**Phase 4 — the form, and what is left.** The Airtable form itself is still
+yours to build (§8.4 is its field spec). Beyond that: an Airtable webhook for
+instant submissions; Cal.com or Calendly webhooks to learn a booking actually
+happened rather than asking the member; mentor-facing accounts if M-O-1 is ever
+answered the other way; and M-O-4, whether a mentor should see outcomes at all.
 
 **Phase 4 — optional.** Airtable webhook for instant submissions; Cal.com or
 Calendly webhooks to learn a booking actually happened rather than asking the

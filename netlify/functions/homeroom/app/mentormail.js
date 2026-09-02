@@ -177,6 +177,48 @@ export function reconfirmMessage({ mentor, to, token }) {
   };
 }
 
+/**
+ * 5. You have been paused — after three unanswered requests.
+ *
+ * Deliberately not an accusation and not a sequence. One note, leading with the
+ * button that brings them back. Someone in this state is usually buried or has
+ * changed address, and neither deserves a guilt trip.
+ */
+export function autoPausedMessage({ mentor, to, token }) {
+  return {
+    to,
+    subject: 'Pausing your mentor requests',
+    text: [
+      `${mentor.name} — a few requests went unanswered, so we have stopped sending them.`,
+      '',
+      'That is usually a sign of a busy month, or an address that is not the one',
+      'you read. Either is fine and nothing is wrong.',
+      '',
+      `Start them again whenever you like: ${BASE()}/homeroom/me/${token}`,
+      '',
+      'Nobody is waiting on you, and we will not chase this.',
+    ].join('\n'),
+  };
+}
+
+/** 6. Quietly off the list, and one click back on. */
+export function dormantMessage({ mentor, to, token }) {
+  return {
+    to,
+    subject: 'Taking you off the mentor list for now',
+    text: [
+      `${mentor.name} — we asked twice whether you were still up for mentoring and`,
+      'did not hear back, so we have taken you off the list rather than keep',
+      'sending founders to a name that does not answer.',
+      '',
+      'Nothing is deleted, and coming back is one click:',
+      `  ${BASE()}/homeroom/me/${token}`,
+      '',
+      'Thank you for the time you did give.',
+    ].join('\n'),
+  };
+}
+
 export async function deliver(message) {
   return send(message);
 }

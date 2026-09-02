@@ -46,7 +46,9 @@ import { getDb, transaction } from './db.js';
 import { nowSeconds } from './util.js';
 import { normalize } from './mentorfields.js';
 import * as hr from './models.js';
-import { logEvent } from './mentordesk.js';
+import { logEvent, contactFor } from './mentordesk.js';
+import * as life from './mentorlife.js';
+import * as mentormail from './mentormail.js';
 
 const BASE = () => process.env.HOMEROOM_MENTORS_BASE || 'appisCTsCCcBCMSk0';
 const TABLE = () => process.env.HOMEROOM_MENTORS_TABLE || 'tblwHSlwNLXIfXFX9';
@@ -320,4 +322,69 @@ export function stuckRequests({ days = 5, limit = 30 } = {}) {
      FROM hr_mentor_requests r JOIN hr_mentors m ON m.id = r.mentor_id
      WHERE r.state = 'sent' AND r.created_at < ? ORDER BY r.created_at ASC LIMIT ?`,
   ).all(cutoff, limit);
+}
+
+/* ------------------------------------------------------------- the sweep */
+
+/**
+ * The lifecycle pass: auto-pause, re-confirm, dormancy, outcome nags.
+ *
+ * Runs in the same scheduled function as the Airtable pull, but BEFORE it and
+ * unconditionally — the roster needs keeping honest whether or not an Airtable
+ * token is configured, and a second scheduled function would be a second thing
+ * to forget.
+ *
+ * Every step is idempotent and every send is recorded, so a double fire does
+ * not double-mail anyone. Mail failures are swallowed on purpose: a mentor who
+ * could not be told they were paused is still paused, and throwing here would
+ * abandon the rest of the sweep partway through.
+ */
+export async function lifecycle({ now = undefined } = {}) {
+  const at = now ?? nowSeconds();
+  const result = { paused: 0, reconfirmed: 0, dormant: 0, nagged: 0 };
+
+  for (const mentor of life.autoPauseSilent(at)) {
+    result.paused += 1;
+    const to = contactFor(mentor.id);
+    if (to) {
+      await mentormail.deliver(mentormail.autoPausedMessage({
+        mentor, to, token: life.mintToken(mentor.id, { now: at }),
+      })).catch(() => {});
+    }
+  }
+
+  const { due, dormant } = life.reconfirmDue(at);
+
+  for (const mentor of due) {
+    const to = contactFor(mentor.id);
+    life.markNudged(mentor.id, at);
+    result.reconfirmed += 1;
+    if (!to) continue;
+    await mentormail.deliver(mentormail.reconfirmMessage({
+      mentor, to, token: life.mintToken(mentor.id, { kind: 'reconfirm', now: at }),
+    })).catch(() => {});
+  }
+
+  for (const mentor of dormant) {
+    life.makeDormant(mentor.id, at);
+    result.dormant += 1;
+    const to = contactFor(mentor.id);
+    if (!to) continue;
+    await mentormail.deliver(mentormail.dormantMessage({
+      mentor, to, token: life.mintToken(mentor.id, { now: at }),
+    })).catch(() => {});
+  }
+
+  for (const row of life.outcomeNagsDue(at)) {
+    hr.notify({
+      userId: row.member_id,
+      kind: 'intro',
+      text: `How did it go with ${row.mentor_name}?`,
+      href: '/homeroom/mentors/requests',
+    });
+    logEvent({ requestId: row.id, actorKind: 'system', event: 'outcome-nagged' });
+    result.nagged += 1;
+  }
+
+  return result;
 }

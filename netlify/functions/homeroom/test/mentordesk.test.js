@@ -387,6 +387,38 @@ test('the vetting queue is stewards only', async () => {
   assert.match(await res.text(), /Stewards only/);
 });
 
+/* ================================================ standing consent, no session */
+
+test('a mentor manages their own standing with no account at all', async () => {
+  const m = mentor();
+  const life = await import('../app/mentorlife.js');
+  const token = life.mintToken(m.id);
+
+  const page = await fetch(`${base}/homeroom/me/${token}`);
+  assert.equal(page.status, 200, 'no cookie, no session, no sign-in');
+  const html = await page.text();
+  assert.match(html, /Still up for this/);
+  assert.match(html, /sessions a month/, 'they can see what we think they do');
+  assert.doesNotMatch(html, /cal\.com/, 'their own link is not echoed back at them');
+
+  const paused = await fetch(`${base}/homeroom/me/${token}/pause`, form({}));
+  assert.equal(paused.status, 200);
+  assert.match(await paused.text(), /Paused/);
+  assert.equal(hr.getMentor(m.id).state, 'paused');
+});
+
+test('the standing page is POST-only for anything that changes state', async () => {
+  const m = mentor();
+  const life = await import('../app/mentorlife.js');
+  const token = life.mintToken(m.id);
+
+  // A mail gateway pre-fetching every URL in the message must not withdraw
+  // somebody. GET renders; only a submitted form acts.
+  const res = await fetch(`${base}/homeroom/me/${token}/withdraw`);
+  assert.equal(res.status, 404, 'there is no GET that changes anything');
+  assert.equal(hr.getMentor(m.id).state, 'listed');
+});
+
 /* =================================================================== gate off */
 
 test('HOMEROOM_MENTOR_GATE=0 restores the direct link', async () => {

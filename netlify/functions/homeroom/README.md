@@ -103,6 +103,48 @@ profile says so rather than sending a request nobody will receive.
 `/homeroom/health` reports the gate, the roster by state, submissions awaiting
 review, requests waiting on a mentor, and grants issued this month.
 
+### Keeping the roster honest
+
+A mentor list dies by rotting, not by emptying: someone says yes in March,
+changes jobs in June, and is still listed the following March with a Calendly
+that 404s. Three founders waste a week on them and stop trusting the list. This
+is `atlas.js`'s rule applied to people — status is a first-class column, and a
+directory that renders a live entry and a dead one identically is worse than a
+shorter directory.
+
+Three mechanisms, in the same six-hourly sweep as the sync and running before
+it, whether or not Airtable is configured:
+
+- **Auto-pause** after three *consecutive* unanswered requests. Not three in
+  total — answering, missing one, answering again is a busy month. Three in a
+  row usually means the address on file is not one they read.
+- **Re-confirmation** every 180 days: one question, one click, two nudges 14
+  days apart, then dormant.
+- **Dormancy**, not deletion. Off the list, nothing lost, one click back.
+
+All of it is quiet. A mentor who goes silent gets one note, never a sequence,
+and the note leads with the button that brings them back. Withdrawing is a
+single click with no confirmation step and no win-back flow — a volunteer who
+wants out and meets a retention sequence instead does not come back, and tells
+people.
+
+Mentors still have no accounts, so these live at `/homeroom/me/:token`
+(90-day tokens, hashed at rest). Anything that changes state is POST-only:
+mail gateways pre-fetch every URL in a message, and a GET that withdraws
+somebody would be fired by a scanner rather than by a mentor.
+
+| Variable | Default | Notes |
+| --- | --- | --- |
+| `HOMEROOM_MENTOR_RECONFIRM_DAYS` | `180` | How long a standing yes is trusted. |
+| `HOMEROOM_MENTOR_NUDGE_DAYS` | `14` | Gap between the two nudges, and then to dormancy. |
+| `HOMEROOM_MENTOR_SILENCE_PAUSE` | `3` | Consecutive unanswered requests before auto-pause. |
+| `HOMEROOM_MENTOR_OUTCOME_NAG_DAYS` | `14` | One reminder to log an outcome. Exactly one. |
+
+The steward page carries seven numbers, and **the total number of mentors is
+deliberately not one of them**. A roster of 200 where 60 answer is worse than a
+roster of 60, and counting the first is how you get it. The honest version of
+that question is the dormant share.
+
 It started as a reskin of Bookface, Y Combinator's internal network. The idea it
 copies is that the value comes from the room being closed: people say what a
 thing actually cost, and which funder wasted three months of their life, only

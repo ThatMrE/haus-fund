@@ -242,7 +242,7 @@ export function grantGonePage(ctx, { mentor, reason }) {
  * ones a summary drops — the bio in full, the org, and whether there is a
  * booking link at all.
  */
-export function mentorAdminPage(ctx, { pending, status, stuck, roster, error = null, flash = null }) {
+export function mentorAdminPage(ctx, { pending, status, stuck, roster, metrics, error = null, flash = null }) {
   const last = status.last;
   return html`<div class="pagehead">
     <div>
@@ -268,6 +268,8 @@ export function mentorAdminPage(ctx, { pending, status, stuck, roster, error = n
     ${Object.entries(roster).map(([state, n]) => html`<div class="stat">
       <b>${n}</b><span>${state}</span></div>`)}
   </div>
+
+  ${section('Is the desk working', mentorMetrics(metrics))}
 
   <p class="mono dim">${last
     ? html`Last sync ${relTime(last.at)}: ${last.ok
@@ -302,4 +304,86 @@ export function mentorAdminPage(ctx, { pending, status, stuck, roster, error = n
           <span class="sep">/</span> by ${r.member_id}</div>
       </li>`)}</ul>`
     : empty('No requests have been left sitting.'))}`;
+}
+
+/* ------------------------------------------------- the mentor's own standing */
+
+/**
+ * "Still up for this?" — the six-monthly page, and the way back from a pause
+ * or from dormancy.
+ *
+ * Shows what is on file, because the most common honest answer to "are you
+ * still up for this" is "yes, but not for that any more", and a mentor who
+ * cannot see what we think they do cannot correct it.
+ */
+export function mentorStandingPage({ mentor, token, state }) {
+  const tags = String(mentor.tags || '').split(',').filter(Boolean);
+  const away = ['paused', 'dormant'].includes(state);
+  return mentorShell(away ? 'Come back to the mentor list' : 'Still up for this?', html`
+    <h1>${away ? 'Come back to the list' : 'Still up for this?'}</h1>
+    <p class="lede">${away
+      ? html`You are currently off the list, so nobody is being sent to you. One click puts you back.`
+      : html`A quick check, once every 6 months. Nothing happens if you ignore it twice except that
+        we stop sending founders your way.`}</p>
+
+    ${section('What we have on file', html`<ul class="tight">
+      <li><b>${mentor.name}</b>${mentor.role ? html` — ${mentor.role}` : ''}${mentor.org ? html`, ${mentor.org}` : ''}</li>
+      <li>Topics: ${tags.length ? tags.join(', ') : html`<span class="dim">none listed</span>`}</li>
+      <li>Up to ${mentor.capacity || 2} sessions a month</li>
+      <li>${mentor.consent_mode === 'auto'
+        ? 'Founders can book you without being asked first'
+        : 'We ask you before anyone gets your booking link'}</li>
+    </ul>
+    <p class="mono dim tiny">Anything wrong here is fixed on the onboarding form, or by replying
+      to the email this came from.</p>`)}
+
+    <form method="post" action="/homeroom/me/${token}/confirm" class="stack">
+      <button class="btn solid" type="submit">${away ? 'Put me back on the list' : 'Yes, still up for it'}</button>
+    </form>
+
+    ${away ? '' : html`<form method="post" action="/homeroom/me/${token}/pause" class="stack">
+      <button class="btn ghost" type="submit">Pause me for 90 days</button>
+    </form>`}
+
+    <form method="post" action="/homeroom/me/${token}/withdraw" class="stack">
+      <button class="btn ghost" type="submit">Take me off the list</button>
+      <p class="mono dim tiny">Immediate, and we will not email you to ask why.</p>
+    </form>`);
+}
+
+export function mentorStandingDonePage({ action, days = 0 }) {
+  const copy = {
+    confirm: ['Thank you', 'You are on the list and founders can reach you again.'],
+    pause: ['Paused', `We will not send you anything for the next ${days} days. Anyone already holding a link from you keeps it.`],
+    withdraw: ['Done', 'You are off the list. Thank you for the time you gave.'],
+  }[action] || ['Done', 'Nothing else is needed.'];
+  return mentorShell(copy[0], html`<h1>${copy[0]}</h1><p class="lede">${copy[1]}</p>`);
+}
+
+/* ---------------------------------------------------------- steward metrics */
+
+/**
+ * The seven numbers.
+ *
+ * Total mentors is deliberately absent: a roster of 200 where 60 answer is
+ * worse than a roster of 60, and counting the first is how you get it.
+ */
+export function mentorMetrics(m) {
+  const pct = (n) => (n === null ? html`<span class="dim">—</span>` : html`${n}%`);
+  const cells = [
+    ['accept rate', pct(m.acceptRate), 'requests a mentor said yes to'],
+    ['median answer', m.medianAnswerHours === null ? html`<span class="dim">—</span>` : html`${m.medianAnswerHours}h`, 'how long a mentor takes'],
+    ['no answer', pct(m.unansweredRate), 'the polite version of no'],
+    ['link opened', pct(m.clickRate), 'accepted, then actually booked'],
+    ['met', pct(m.metRate), 'of accepted requests'],
+    ['useful', m.usefulAvg === null ? html`<span class="dim">—</span>` : html`${m.usefulAvg}/5`, 'members rating the session'],
+    ['at capacity', html`${m.atCapacity}`, 'mentors full this month — a recruiting signal'],
+    ['dormant', pct(m.dormantShare), 'the rot number'],
+  ];
+  return html`<div class="statrow">
+    ${cells.map(([label, value, note]) => html`<div class="stat">
+      <b>${value}</b><span>${label}</span><span class="tiny dim">${note}</span></div>`)}
+  </div>
+  <p class="mono dim tiny">From ${m.sample.answered} answered requests, ${m.sample.grants} booking
+    links and ${m.sample.outcomes} logged outcomes. Small denominators are not trends.</p>`;
 }
