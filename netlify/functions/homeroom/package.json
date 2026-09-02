@@ -2,15 +2,18 @@
   "name": "haus-homeroom",
   "version": "1.0.0",
   "private": true,
-  "description": "haus.fund/homeroom — the members-only side of Haus.",
+  "description": "haus.fund/homeroom \u2014 the members-only side of Haus.",
   "type": "module",
-  "engines": { "node": ">=22.5.0" },
+  "engines": {
+    "node": ">=22.5.0"
+  },
   "scripts": {
     "start": "node --disable-warning=ExperimentalWarning server.js",
     "dev": "node --disable-warning=ExperimentalWarning --watch server.js",
     "seed": "node --disable-warning=ExperimentalWarning app/seed.js",
     "reset": "node --disable-warning=ExperimentalWarning app/seed.js --reset",
     "seed:real": "node --disable-warning=ExperimentalWarning app/seed-real.js",
+    "steward": "node --disable-warning=ExperimentalWarning scripts/make-steward.js",
     "mentors:import": "node --disable-warning=ExperimentalWarning scripts/import-mentors.js",
     "roster:check": "node --disable-warning=ExperimentalWarning scripts/check-roster.js",
     "test": "node --disable-warning=ExperimentalWarning --test test/*.test.js"

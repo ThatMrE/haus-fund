@@ -230,6 +230,49 @@ outranks it, so the next weekly re-check does not quietly undo their work.
 | `HOMEROOM_STATIC_BASE` | `/homeroom-assets` | Where the stylesheet and client script are served from. |
 | `HOMEROOM_SEED` | — | What a cold container fills itself with. Unset: the full sample network, including ten invented accounts sharing a documented password — for reviewing the design, never for production. `real`: only the researched reference data (perks, capital map, atlas, manual, channels) and no accounts. `off`: nothing, in which case pair it with `HOMEROOM_ACCESS=closed` or a roster token, because with no accounts the first signup is made a steward. |
 
+### The steward account
+
+Homeroom's database lives on the function container's `/tmp`. Every cold
+container starts empty, seeds itself and is thrown away again — so an admin
+account created by hand through a form or a one-off script exists on exactly one
+container and is gone by the next request. **The only account that survives a
+redeploy is one rebuilt from configuration**, which is what these three do. They
+are read on every boot, whatever `HOMEROOM_SEED` is set to.
+
+| Variable | Notes |
+| --- | --- |
+| `HOMEROOM_STEWARD` | Handle of the admin account. Unset: no account is created, and nobody is an admin. |
+| `HOMEROOM_STEWARD_EMAIL` | The sign-in address. Defaults to `<handle>@haus.fund`. |
+| `HOMEROOM_STEWARD_PASSWORD_HASH` | A scrypt hash from `npm run steward`. Preferred: a hash in the dashboard is useless to anyone who reads it, a plaintext password is a working key. |
+| `HOMEROOM_STEWARD_PASSWORD` | Plaintext fallback, honoured only when no hash is set. Subject to the same 10-character floor as the signup form. |
+
+Generate a set:
+
+```bash
+npm run steward -- --handle <handle> --email you@example.org
+```
+
+It prints the three variables and shows the password once. Paste the variables
+into Netlify and the password into a password manager; nothing else stores it.
+
+If `HOMEROOM_STEWARD` is set but neither secret is, the boot logs an error and
+creates nothing — an admin account nobody holds the key to is worse than none.
+The same is true of a hash in the wrong format, a handle or address the signup
+form would reject, and an address already belonging to a different account. None
+of these are fatal: a misconfigured steward must not take the site down.
+
+Two consequences of the storage worth knowing before you rely on it:
+
+- **Changing the password inside Homeroom does not stick.** That change lives on
+  one container. To rotate for real, re-run `npm run steward` and update
+  `HOMEROOM_STEWARD_PASSWORD_HASH`.
+- **Sessions do not survive a container either**, unless `HOMEROOM_SECRET` is
+  set, and not across containers regardless — expect to sign in again.
+
+An existing ordinary account named by `HOMEROOM_STEWARD` is promoted rather than
+replaced, and its password is left alone. `npm run steward -- --apply --force`
+resets a local account's password and ends its open sessions.
+
 ### Publishing to /news (Supabase)
 
 | Variable | Notes |
