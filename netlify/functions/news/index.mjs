@@ -6,9 +6,10 @@
  * pair the app expects. Plain JS to match the app, which has no build step and
  * no dependencies.
  *
- * Serverless containers have an ephemeral filesystem, so the SQLite file lives
- * in /tmp and is rebuilt when a cold container starts. Durable storage needs
- * the single-process deployment described in the README.
+ * Storage: with TURSO_DATABASE_URL set the app talks to the hosted database over
+ * HTTP and everything survives a cold start. Without it, it falls back to SQLite
+ * in /tmp, which a recycled container wipes — fine for a preview, not for a site
+ * people post to. See the README.
  */
 import { Readable } from 'node:stream';
 
@@ -21,11 +22,15 @@ async function boot() {
     process.env.BIOPUNK_DB ||= '/tmp/haus-news.db';
     process.env.NEWS_BASE_PATH ||= '/news';
     process.env.NEWS_STATIC_BASE ||= '/news-assets';
-    const { getDb } = await import('./app/db.js');
-    const db = getDb();
-    if (db.prepare('SELECT COUNT(*) AS n FROM users').get().n === 0) {
+    const { initDb, describeTarget } = await import('./app/db/index.js');
+    const db = await initDb();
+
+    // Sample content is for a look at the design on an empty preview database.
+    // Against the hosted database the real content is the content.
+    const empty = (await db.get('SELECT COUNT(*) AS n FROM users')).n === 0;
+    if (empty && describeTarget().driver === 'sqlite') {
       const { seed } = await import('./app/seed.js');
-      seed();
+      await seed();
     }
     const { handle } = await import('./app/app.js');
     return handle;

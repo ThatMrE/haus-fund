@@ -43,15 +43,20 @@ source for design values — see `design-system.html` for them rendered.
 
 ## News
 
-`/news` is the one part of this repo that is not a static page. It is a small
-Node app — feed, accounts, voting, threaded comments — plus a scheduled job that
-sweeps biotech news sources at 7am and posts what reads as early-stage company
-news. Member submissions lead the front page for 24 hours, then rise on votes.
+`/news` is the one part of this repo that is not a static page. It is the Haus
+Feed: roughly half the board surfaced by seven agents watching bioRxiv, Form D
+filings, NIH and ARPA-H awards, the wires, city calendars and a list of bio
+accounts, and half by founders, scouts and the Discord — with a review step in
+between, a credit on every row, scout points that convert to patches and
+unconference tickets, and three recurring issues (Bench Notes daily, Field Notes
+and Biopunk Live weekly).
 
 It shares this repo so it shares the domain and the design system: its
 stylesheet imports `tokens/*.css`, so a token change reaches the feed too.
-See `netlify/functions/news/README.md` — including the note on storage, which
-must move off the ephemeral filesystem before the feed is opened to members.
+
+See `netlify/functions/news/README.md` for the agents, the ranking, the points,
+and the storage setup — the feed needs `TURSO_DATABASE_URL` set before anyone is
+asked to post to it, or a cold container takes their accounts and votes with it.
 
 ## Design
 

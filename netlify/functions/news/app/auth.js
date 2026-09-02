@@ -1,5 +1,5 @@
 import { randomBytes, scryptSync, timingSafeEqual, createHmac } from 'node:crypto';
-import { getDb } from './db.js';
+import { getDb } from './db/index.js';
 import { nowSeconds } from './util.js';
 
 const SCRYPT_PARAMS = { N: 16384, r: 8, p: 1, keylen: 64 };
@@ -34,35 +34,40 @@ export function verifyPassword(password, stored) {
   return derived.length === expectedBuf.length && timingSafeEqual(derived, expectedBuf);
 }
 
-export function createSession(userId) {
+export async function createSession(userId) {
   const token = randomBytes(32).toString('hex');
   const now = nowSeconds();
-  getDb()
-    .prepare('INSERT INTO sessions (token, user_id, created_at, expires_at) VALUES (?, ?, ?, ?)')
-    .run(token, userId, now, now + SESSION_TTL);
+  await getDb().run(
+    'INSERT INTO sessions (token, user_id, created_at, expires_at) VALUES (?, ?, ?, ?)',
+    token,
+    userId,
+    now,
+    now + SESSION_TTL,
+  );
   return token;
 }
 
-export function getSessionUser(token) {
+export async function getSessionUser(token) {
   if (!token) return null;
-  const row = getDb()
-    .prepare(
-      `SELECT u.* FROM sessions s
-       JOIN users u ON u.id = s.user_id
-       WHERE s.token = ? AND s.expires_at > ?`,
-    )
-    .get(token, nowSeconds());
+  const row = await getDb().get(
+    `SELECT u.* FROM sessions s
+     JOIN users u ON u.id = s.user_id
+     WHERE s.token = ? AND s.expires_at > ?`,
+    token,
+    nowSeconds(),
+  );
   if (!row || row.banned) return null;
   return row;
 }
 
-export function destroySession(token) {
+export async function destroySession(token) {
   if (!token) return;
-  getDb().prepare('DELETE FROM sessions WHERE token = ?').run(token);
+  await getDb().run('DELETE FROM sessions WHERE token = ?', token);
 }
 
-export function purgeExpiredSessions() {
-  return getDb().prepare('DELETE FROM sessions WHERE expires_at <= ?').run(nowSeconds()).changes;
+export async function purgeExpiredSessions() {
+  const info = await getDb().run('DELETE FROM sessions WHERE expires_at <= ?', nowSeconds());
+  return info.changes;
 }
 
 /** CSRF token bound to the session, so it needs no extra storage. */

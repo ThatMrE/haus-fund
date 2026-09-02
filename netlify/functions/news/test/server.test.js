@@ -4,11 +4,11 @@ process.env.BIOPUNK_SECRET = 'test-secret';
 import test, { before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { createServer } from 'node:http';
-import { getDb } from '../app/db.js';
+import { initDb, getDb } from '../app/db/index.js';
 import { handle } from '../app/app.js';
 import { resetRateLimits } from '../app/http.js';
 
-getDb();
+await initDb();
 
 let server;
 let base;
@@ -52,13 +52,34 @@ async function csrfFor(call) {
   return /name="csrf-token" content="([a-f0-9]*)"/.exec(html)?.[1] ?? '';
 }
 
-async function signUp(handleName) {
+async function signUp(handleName, { trusted = true } = {}) {
   // Signups are IP rate limited and every test shares 127.0.0.1.
   resetRateLimits();
   const call = agent();
   const res = await call('/login', form({ mode: 'signup', id: handleName, password: 'a-good-passphrase', next: '/' }));
   assert.equal(res.status, 303);
+  // Most tests are about submitting, voting and commenting, not about the
+  // review gate; trusting the account keeps the gate out of their way. The
+  // gate has its own tests below.
+  if (trusted) await getDb().run('UPDATE users SET trusted = 1 WHERE id = ?', handleName);
   return { call, csrf: await csrfFor(call) };
+}
+
+/**
+ * The id of a specific queued item. Taking the first id on the page would make
+ * a test depend on what earlier tests left in the queue.
+ */
+function queuedId(queueHtml, titleFragment) {
+  const blocks = queueHtml.split('<li class="queue-item">').slice(1);
+  const block = blocks.find((b) => b.includes(titleFragment));
+  assert.ok(block, `expected ${titleFragment} in the queue`);
+  return Number(/name="id" value="(\d+)"/.exec(block)[1]);
+}
+
+async function makeReviewer(handleName) {
+  const session = await signUp(handleName);
+  await getDb().run('UPDATE users SET is_admin = 1 WHERE id = ?', handleName);
+  return session;
 }
 
 test('public pages render', async () => {
@@ -260,4 +281,134 @@ test('write endpoints are rate limited', async () => {
   }
   assert.ok(limited, 'the write rate limit should trip');
   resetRateLimits();
+});
+
+/* ------------------------------------------------------------ the review gate */
+
+test('a new account’s submission waits for review instead of hitting the board', async () => {
+  const newcomer = await signUp('fresh_scout', { trusted: false });
+
+  const submit = await newcomer.call(
+    '/submit',
+    form({ csrf: newcomer.csrf, title: 'Peptide foundry spins out of Utrecht', url: 'https://example.org/utrecht' }),
+  );
+  assert.equal(submit.status, 303);
+  assert.match(submit.headers.get('location'), /\/queue/, 'sent to their queue, not to the item');
+
+  const front = await (await fetch(`${base}/newest`)).text();
+  assert.doesNotMatch(front, /Utrecht/, 'a pending submission is not on the board');
+
+  const queue = await (await newcomer.call('/queue')).text();
+  assert.match(queue, /Utrecht/, 'but they can see it waiting');
+});
+
+test('a reviewer clears the queue and the item joins the board', async () => {
+  const newcomer = await signUp('waiting_scout', { trusted: false });
+  await newcomer.call(
+    '/submit',
+    form({ csrf: newcomer.csrf, title: 'Cell-free manufacturing seed round closes', url: 'https://example.org/cellfree' }),
+  );
+
+  const reviewer = await makeReviewer('editor_test');
+  const queuePage = await (await reviewer.call('/review')).text();
+  assert.match(queuePage, /Cell-free manufacturing/);
+
+  const id = queuedId(queuePage, 'Cell-free manufacturing');
+  const verdict = await reviewer.call('/review', form({ csrf: reviewer.csrf, id, verdict: 'approve' }));
+  assert.equal(verdict.status, 303);
+
+  const front = await (await fetch(`${base}/newest`)).text();
+  assert.match(front, /Cell-free manufacturing/, 'approved items are on the board');
+});
+
+test('the queue is closed to members who are not reviewers', async () => {
+  const member = await signUp('nosy_member');
+  assert.equal((await member.call('/review')).status, 403);
+});
+
+test('clearing review pays the scout who surfaced it', async () => {
+  const scout = await signUp('paid_scout', { trusted: false });
+  await scout.call(
+    '/submit',
+    form({ csrf: scout.csrf, title: 'Enzymatic DNA synthesis startup emerges', url: 'https://example.org/enzymatic' }),
+  );
+
+  const reviewer = await makeReviewer('editor_two');
+  const queuePage = await (await reviewer.call('/review')).text();
+  const id = queuedId(queuePage, 'Enzymatic DNA synthesis');
+  await reviewer.call('/review', form({ csrf: reviewer.csrf, id, verdict: 'approve' }));
+
+  const ledger = await (await scout.call('/points')).text();
+  assert.match(ledger, /cleared review/i);
+  assert.match(ledger, /\+5/);
+});
+
+test('scouts and agents pages render', async () => {
+  for (const path of ['/scouts', '/agents', '/bench-notes', '/field-notes', '/live']) {
+    const res = await fetch(base + path);
+    assert.equal(res.status, 200, `${path} should render`);
+  }
+});
+
+/* ------------------------------------------------------------ channel intake */
+
+test('channel intake refuses a wrong or missing token', async () => {
+  process.env.NEWS_INTAKE_TOKEN = 'intake-secret';
+  const body = JSON.stringify({ url: 'https://example.org/discord-1', title: 'A link from the Discord' });
+
+  const anon = await fetch(`${base}/api/surface`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body,
+  });
+  assert.equal(anon.status, 401);
+
+  const wrong = await fetch(`${base}/api/surface`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json', authorization: 'Bearer nope' },
+    body,
+  });
+  assert.equal(wrong.status, 401);
+});
+
+test('a link from a channel enters the review queue with its credit intact', async () => {
+  process.env.NEWS_INTAKE_TOKEN = 'intake-secret';
+  await signUp('discord_scout');
+
+  const res = await fetch(`${base}/api/surface`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json', authorization: 'Bearer intake-secret' },
+    body: JSON.stringify({
+      url: 'https://example.org/from-discord',
+      title: 'Bioreactor teardown posted in the Discord',
+      handle: 'discord_scout',
+      channel: 'Discord',
+    }),
+  });
+  const payload = await res.json();
+  assert.equal(payload.ok, true);
+  assert.equal(payload.state, 'pending', 'a channel is a shortcut for people, not around review');
+
+  const item = await getDb().get('SELECT * FROM items WHERE id = ?', payload.id);
+  assert.equal(item.surfaced_by, 'discord_scout');
+  assert.equal(item.channel, 'Discord');
+  assert.equal(item.source, 'human', 'a person found it, a bot only carried it');
+
+  const front = await (await fetch(`${base}/newest`)).text();
+  assert.doesNotMatch(front, /Bioreactor teardown/);
+});
+
+test('the same link twice from a channel is not two stories', async () => {
+  process.env.NEWS_INTAKE_TOKEN = 'intake-secret';
+  const send = () =>
+    fetch(`${base}/api/surface`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', authorization: 'Bearer intake-secret' },
+      body: JSON.stringify({ url: 'https://example.org/dupe-link', title: 'Posted twice in the channel' }),
+    }).then((r) => r.json());
+
+  const first = await send();
+  const second = await send();
+  assert.equal(second.id, first.id);
+  assert.equal(second.state, 'duplicate');
 });
