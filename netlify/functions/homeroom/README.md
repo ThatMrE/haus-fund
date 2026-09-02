@@ -18,10 +18,15 @@ shares the domain, the design system and the sign-in.
 
 Plus jobs, a fundraising pipeline, intro requests and messaging.
 
-Intro requests today are member-to-member, inside the house. Reaching *outside*
-it — partners and mentors in the broader Biopunk network, sourced through
-Happenstance, under a double opt-in rule — is specified but not built:
-[`docs/INTRO-ENGINE.md`](docs/INTRO-ENGINE.md).
+Two designs are specified but not built, both about reaching *outside* the
+house under a double opt-in rule:
+
+- [`docs/INTRO-ENGINE.md`](docs/INTRO-ENGINE.md) — partners and contacts in the
+  broader Biopunk network, sourced through Happenstance. People who never
+  agreed to anything.
+- [`docs/MENTOR-ENGINE.md`](docs/MENTOR-ENGINE.md) — mentors onboarded through
+  an Airtable form, with the booking link gated behind a per-request accept.
+  People who did agree, which makes it a different problem.
 
 It started as a reskin of Bookface, Y Combinator's internal network. The idea it
 copies is that the value comes from the room being closed: people say what a

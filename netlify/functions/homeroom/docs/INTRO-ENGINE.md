@@ -1189,11 +1189,15 @@ Phase 0.
   waiting" means one target or three, and "still open" is what a member sees
   when everyone said no. Revisit only with evidence that members find it
   dishonest rather than merely opaque.
-- **O-4. Mentors already in Homeroom.** A `vetted` mentor with a scheduler has
-  already opted in and does not need gate 3 at all; the engine should route
-  those straight to the existing booking link. Where exactly is the line — does
-  a `network.js` row with `source = 'calendar'` count? (Current answer: no. It
-  goes through the full flow, per that file's own rules.)
+- **O-4. Mentors already in Homeroom.** ~~Where does the line sit?~~ **Answered
+  by [`MENTOR-ENGINE.md`](MENTOR-ENGINE.md), §18.** A listed mentor has standing
+  consent from an onboarding form, a stated capacity and a booking link, and
+  never goes through this engine; a `network.js` row with `source = 'calendar'`
+  still goes through the full flow, per that file's own rules. The bridge is
+  one-directional and manual — a steward sends someone the onboarding form, and
+  they become a mentor by filling it in. Left listed here because M-O-5 in that
+  document (double-booking a person who is reachable through both lanes) is the
+  loose end it leaves.
 - **O-6. Retention on contacted candidates.** Two years is proposed in §9. It is
   the accountability record and also the largest store of other people's data
   this repository would hold. Shorter is defensible.
