@@ -53,6 +53,7 @@ netlify/functions/homeroom/
 │   ├── supabase.js       durable storage for publishing to /news (no SDK)
 │   ├── supabase-auth.js  Supabase Auth as the credential store (no SDK)
 │   ├── steward.js        the admin account, rebuilt from the environment
+│   ├── invites.js        onboarding invites, stored in Supabase
 │   ├── luma.js           the luma.com/biopunk calendar sync
 │   ├── seed.js           the sample network, for reviewing the design
 │   ├── seed-real.js      the researched data only — no accounts, no invented content
@@ -101,8 +102,111 @@ Set a mail sender or resets cannot be delivered:
 | Variable | Notes |
 | --- | --- |
 | `HOMEROOM_RESEND_KEY` | Resend API key. Without it the link is written to the function log and nothing is sent. |
-| `HOMEROOM_MAIL_FROM` | The From address, e.g. `Homeroom <homeroom@haus.fund>`. |
+| `HOMEROOM_MAIL_FROM` | The From address, e.g. `Homeroom <hello@haus.fund>`. |
 | `HOMEROOM_SHOW_RESET_LINK` | `1` puts the link on screen instead of mailing it. Local development only — never set this in production. |
+
+## Onboarding: how a new resident gets in
+
+`HOMEROOM_ACCESS=closed` is the right production setting — without a roster
+token, open signup admits anyone who finds the URL. But closed on its own leaves
+no route in at all, so the only way to make an account was a steward running a
+script per person. Invites are the missing piece: **a steward vouches once, and
+the invitee does the rest.**
+
+```
+steward                              invitee
+───────                              ───────
+/homeroom/stewards/invites
+  enter an address
+  roster is checked and recorded
+  (not obeyed — see below)
+  link shown ONCE, never stored
+        │
+        └── send it ──────────────►  /homeroom/join/<token>
+                                       pick a handle + password
+                                       (the address is fixed by the invite)
+                                          │
+                                          ▼
+                                     /homeroom/welcome
+                                       a six-step checklist,
+                                       derived from what they have done
+```
+
+### What the roster does and does not decide here
+
+At invite time the Airtable verdict is **recorded, not enforced**. A steward
+inviting someone by name is itself an admission decision, often made precisely
+because the roster is behind or the person applied under a different address.
+Only a definite `deny` or `review` makes the steward tick an override box, and
+the override is written onto the invite so the trail survives. `closed` — the
+normal state — and an unreachable roster are treated as "no opinion", because
+making those demand a tick would train stewards to tick it every time.
+
+At redemption the roster gets one narrow power: a fresh, definite `deny` stops
+someone whose place was rescinded between the invite and the click. Anything
+else — unreachable, unconfigured, silent about this address — lets them through,
+because the steward already made the call.
+
+### Where invites live, and why it matters
+
+In Supabase, when `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY` and
+`HOMEROOM_INVITE_SECRET` are all set. Homeroom's SQLite file is on the
+container's `/tmp`, so an invite minted on one container is invisible to the
+next — the link would work only if the person happened to click it while that
+same container was still warm. An invite that works by luck is not an invite.
+
+Without those, it falls back to a local `hr_invites` table, and the steward page
+says so in a banner rather than pretending the links will last.
+
+### What reaches Supabase
+
+The token never does — only its SHA-256. A full dump of `homeroom_invites`
+yields no working link, which is what makes it safe to keep the invited address
+beside it.
+
+The table has RLS on and **no policies at all**: the publishable key cannot
+select, insert, update or delete a single row directly. Every operation goes
+through a `security definer` function, each deliberately narrow:
+
+| Function | Needs the secret | What it can do |
+| --- | --- | --- |
+| `homeroom_invite_peek` | no | one row, and only if you already know its token hash |
+| `homeroom_invite_redeem` | no | the same, plus one atomic state change |
+| `homeroom_invite_create` | **yes** | mint one |
+| `homeroom_invite_list` | **yes** | read the list (which is a list of resident addresses) |
+| `homeroom_invite_revoke` | **yes** | kill a pending one |
+
+Possession of the token *is* the credential for the first two, so they need no
+secret but cannot enumerate. The last three are admission and disclosure, so
+holding the publishable key alone is not enough.
+
+Set the secret in both places, and make it long and random:
+
+```sql
+alter database postgres set app.homeroom_invite_secret = '<a long random string>';
+```
+
+```
+HOMEROOM_INVITE_SECRET   the same value, in Netlify
+HOMEROOM_INVITE_DAYS     default link lifetime in days (default 14)
+```
+
+Redemption is atomic on both backends: two people opening one link get exactly
+one account between them, and the loser is told the invite is spent rather than
+handed a second one. The invite is claimed *before* the account is created, so a
+failure part-way leaves a spent link and a page that says so — a stray Supabase
+user is harder to clean up than a re-sent invite.
+
+### The first run
+
+`/homeroom/welcome` is a page with a URL, not a modal and not a skippable
+wizard: someone who closed it on their first day can find it again in week
+three, and the home page links back to it until the required steps are done.
+
+Every step is **derived, never stored** — a headline on the profile, a row in
+`hr_deal_claims`, a booking, a progress row. Storing a second copy would only
+create a way for the two to disagree, and deriving means a member who did a step
+before ever seeing the page gets credit for it.
 
 ## The front door: who gets in
 

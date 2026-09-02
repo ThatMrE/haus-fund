@@ -1266,6 +1266,91 @@ export function networkStats() {
 }
 
 /* ==========================================================================
+ * ONBOARDING
+ *
+ * The first-run checklist is DERIVED, never stored. Every step is already
+ * recorded somewhere as a side effect of doing the thing — a headline on the
+ * profile, a row in hr_deal_claims, a booking, a progress row — so storing a
+ * second copy would only create a way for the two to disagree. It also means a
+ * member who did a step before ever seeing this page gets credit for it.
+ * ======================================================================== */
+
+export function onboardingSteps(userId) {
+  const db = getDb();
+  const member = getMember(userId) || {};
+  const one = (sql, ...params) => db.prepare(sql).get(...params)?.n || 0;
+
+  return [
+    {
+      key: 'profile',
+      title: 'Fill in your profile',
+      why: 'The directory is the whole point, and it only works if people can find you. '
+        + 'A headline and a few expertise tags is enough to start.',
+      href: '/homeroom/settings',
+      action: 'Edit your profile',
+      done: !!(member.headline && (member.expertise || []).length),
+    },
+    {
+      key: 'yearbook',
+      title: 'Add yourself to the yearbook',
+      why: 'The founder wall is how a cohort remembers itself. What you are building, '
+        + 'and what you were before.',
+      href: '/homeroom/yearbook/edit',
+      action: 'Write your entry',
+      done: one('SELECT COUNT(*) AS n FROM hr_yearbook WHERE user_id = ?', userId) > 0,
+    },
+    {
+      key: 'perk',
+      title: 'Claim a perk',
+      why: 'Cloud credits, gene synthesis, legal, accounting — most of it is free or nearly '
+        + 'free to a resident who asks.',
+      href: '/homeroom/perks',
+      action: 'Browse the perks',
+      done: one('SELECT COUNT(*) AS n FROM hr_deal_claims WHERE user_id = ?', userId) > 0,
+    },
+    {
+      key: 'manual',
+      title: 'Start a track in the manual',
+      why: 'Six tracks, each module ending in something you actually produced rather than '
+        + 'something you read.',
+      href: '/homeroom/library',
+      action: 'Open the manual',
+      done: one('SELECT COUNT(*) AS n FROM hr_progress WHERE user_id = ?', userId) > 0,
+    },
+    {
+      key: 'hours',
+      title: 'Book office hours or find a mentor',
+      why: 'The fastest way through a problem someone here has already solved.',
+      href: '/homeroom/mentors',
+      action: 'Find a mentor',
+      done: one('SELECT COUNT(*) AS n FROM hr_bookings WHERE user_id = ?', userId) > 0,
+    },
+    {
+      key: 'lab',
+      title: 'Add your lab',
+      why: 'So collaborators, hires and the rest of the network can find what you are '
+        + 'building. Skip it if you are not building under a name yet.',
+      href: '/homeroom/labs/new',
+      action: 'Add a lab',
+      optional: true,
+      done: one('SELECT COUNT(*) AS n FROM hr_org_members WHERE user_id = ?', userId) > 0,
+    },
+  ];
+}
+
+/** Where a member is up to. Optional steps do not count against them. */
+export function onboardingProgress(userId) {
+  const steps = onboardingSteps(userId);
+  const required = steps.filter((s) => !s.optional);
+  return {
+    steps,
+    done: required.filter((s) => s.done).length,
+    total: required.length,
+    complete: required.every((s) => s.done),
+  };
+}
+
+/* ==========================================================================
  * YEARBOOK
  * ======================================================================== */
 

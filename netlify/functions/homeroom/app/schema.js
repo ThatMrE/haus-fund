@@ -546,4 +546,32 @@ CREATE TABLE IF NOT EXISTS hr_roster (
 );
 
 CREATE INDEX IF NOT EXISTS idx_hr_roster_verdict ON hr_roster(verdict, checked_at DESC);
+
+/* ---------------------------------------------------------------- invites */
+
+/* The local fallback for onboarding invites. The real store is Supabase, because
+   this file lives on the container's /tmp and an invite minted on one container
+   is invisible to the next — see app/invites.js. This table is what development
+   uses, and what production degrades to if Supabase is not configured, with the
+   steward page saying so rather than pretending the links will last.
+
+   The token is never stored, only its SHA-256, so the rows here are as useless
+   to a reader as the ones in Supabase. */
+CREATE TABLE IF NOT EXISTS hr_invites (
+  id             INTEGER PRIMARY KEY AUTOINCREMENT,
+  token_hash     TEXT NOT NULL UNIQUE,
+  email          TEXT NOT NULL,
+  invited_by     TEXT NOT NULL,
+  note           TEXT NOT NULL DEFAULT '',
+  roster_verdict TEXT NOT NULL DEFAULT '',
+  status         TEXT NOT NULL DEFAULT 'pending'
+                 CHECK (status IN ('pending','redeemed','revoked')),
+  redeemed_by    TEXT,
+  redeemed_at    INTEGER,
+  expires_at     INTEGER NOT NULL,
+  created_at     INTEGER NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_hr_invites_status ON hr_invites(status, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_hr_invites_email  ON hr_invites(email);
 `;

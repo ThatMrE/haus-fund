@@ -118,7 +118,7 @@ export function notOnRosterPage(ctx, { email }) {
     <li><b>The timing.</b> Records are updated by hand. If you were accepted in the last day or two
       it may not have reached the roster yet.</li>
   </ul>
-  <p>If both look right, mail <a href="mailto:homeroom@haus.fund">homeroom@haus.fund</a> and a
+  <p>If both look right, mail <a href="mailto:hello@haus.fund">hello@haus.fund</a> and a
     steward will check it against the programme records. Say which address you applied with.</p>
   <div class="alt"><a href="/homeroom/login">I already have an account</a></div>`;
 }
@@ -129,7 +129,7 @@ export function rosterUnavailablePage(ctx, { values = {} }) {
   <p class="lede">We could not reach the programme roster just now, so we cannot confirm your
     place — and we would rather make you wait than guess.</p>
   <p>Nothing you typed was saved. Try again in a few minutes; if it keeps happening, mail
-    <a href="mailto:homeroom@haus.fund">homeroom@haus.fund</a>.</p>
+    <a href="mailto:hello@haus.fund">hello@haus.fund</a>.</p>
   <form class="stack" method="get" action="/homeroom/signup">
     <button class="btn solid wide" type="submit">Back to signup</button>
   </form>
@@ -142,7 +142,7 @@ export function signupClosedPage() {
   <p class="lede">Homeroom is not taking new accounts at the moment. A steward creates them
     directly during onboarding.</p>
   <p>If you are a resident and do not have one, mail
-    <a href="mailto:homeroom@haus.fund">homeroom@haus.fund</a>.</p>
+    <a href="mailto:hello@haus.fund">hello@haus.fund</a>.</p>
   <div class="alt"><a href="/homeroom/login">I already have an account</a></div>`;
 }
 
@@ -150,10 +150,88 @@ export function signupClosedPage() {
 export function accessRevokedPage() {
   return html`<h1>Access ended</h1>
   <p class="lede">This account is no longer on the programme roster, so it cannot open Homeroom.
-    Your posts stay where they are.</p>
+    Everything you wrote stays where it is.</p>
   <p>If that is wrong — and it can be, the roster is maintained by hand — mail
-    <a href="mailto:homeroom@haus.fund">homeroom@haus.fund</a> and a steward will look at it.</p>
+    <a href="mailto:hello@haus.fund">hello@haus.fund</a> and a steward will look at it.</p>
   <div class="alt"><a href="/">Back to Haus</a></div>`;
+}
+
+/* --------------------------------------------------------------- joining */
+
+export function joinPage(ctx, { token, invite, values = {}, error = null }) {
+  return html`<h1>Join Homeroom</h1>
+  <p class="lede">${invite.invitedBy
+    ? html`<b>${invite.invitedBy}</b> invited you.`
+    : 'You have been invited.'} Pick a handle and a password and you are in.</p>
+  ${error ? html`<div class="notice bad">${error}</div>` : ''}
+  <form class="stack" method="post" action="/homeroom/join/${token}">
+    <input type="hidden" name="csrf" value="${ctx.csrf}" />
+    <div class="field"><label>Email</label>
+      <input value="${invite.email}" disabled />
+      <div class="hint">Fixed by the invite. Sign in with this address afterwards.</div></div>
+    <div class="field"><label for="handle">Handle</label>
+      <input id="handle" name="handle" value="${values.handle || ''}" required
+        minlength="2" maxlength="20" autofocus autocomplete="username" />
+      <div class="hint">2–20 characters: letters, numbers, dashes and underscores. This is how
+        you appear everywhere, and it cannot be changed later.</div></div>
+    <div class="field"><label for="password">Password</label>
+      <input id="password" name="password" type="password" required minlength="10"
+        autocomplete="new-password" />
+      <div class="hint">At least 10 characters. Longer beats complicated.</div></div>
+    <div class="field"><label for="confirm">Password again</label>
+      <input id="confirm" name="confirm" type="password" required autocomplete="new-password" /></div>
+    <button class="btn solid wide" type="submit">Create my account</button>
+  </form>
+  <div class="alt"><a href="/homeroom/login">I already have an account</a></div>`;
+}
+
+/** Expired, revoked, already used, or never existed — all one page, on purpose. */
+export function inviteDeadPage(invite = null) {
+  const spent = invite && invite.status === 'redeemed';
+  return html`<h1>${spent ? 'That invite has been used' : 'This invite is not usable'}</h1>
+  <p class="lede">${spent
+    ? 'An account was already created with this link. If that was you, sign in.'
+    : 'Invite links expire, and a steward can revoke one. This one is no longer live.'}</p>
+  <p>Mail <a href="mailto:hello@haus.fund">hello@haus.fund</a> and a steward will send a new one.
+    Say which address the invite went to.</p>
+  <div class="alt"><a href="/homeroom/login">Sign in</a></div>`;
+}
+
+/** The roster says this person's place ended between the invite and the click. */
+export function inviteRevokedPage() {
+  return html`<h1>This invite is no longer valid</h1>
+  <p class="lede">The programme roster no longer lists this address as holding a place, so the
+    invite cannot be used.</p>
+  <p>If that is wrong — and it can be, the roster is maintained by hand — mail
+    <a href="mailto:hello@haus.fund">hello@haus.fund</a> and a steward will look at it.</p>
+  <div class="alt"><a href="/">Back to Haus</a></div>`;
+}
+
+/** Our problem, and it should read like our problem. */
+export function inviteUnavailablePage(detail = '') {
+  return html`<h1>Try again shortly</h1>
+  <p class="lede">We could not check your invite just now. Nothing you typed was saved, and the
+    invite has not been used up.</p>
+  ${detail ? html`<p class="mono dim">${detail}</p>` : ''}
+  <p>Try again in a few minutes. If it keeps happening, mail
+    <a href="mailto:hello@haus.fund">hello@haus.fund</a>.</p>`;
+}
+
+/**
+ * The invite was spent but the account could not be made.
+ *
+ * The worst state in this flow, so it gets its own page rather than a generic
+ * error: the person cannot retry with the same link, and only a steward can fix
+ * it. Saying that plainly beats a 500.
+ */
+export function joinFailedPage(detail, invite) {
+  return html`<h1>Could not finish creating your account</h1>
+  <p class="lede">Your invite has been used up, but the account was not created. This is our
+    fault, not yours.</p>
+  ${detail ? html`<p class="mono dim">${detail}</p>` : ''}
+  <p>Mail <a href="mailto:hello@haus.fund">hello@haus.fund</a>${invite?.invitedBy
+    ? html` — or tell <b>${invite.invitedBy}</b>, who invited you` : ''} and ask for a new link.
+    Quote this address: <b>${invite?.email || 'the one the invite went to'}</b>.</p>`;
 }
 
 export function forgotPage(ctx, { error = null, values = {} }) {
@@ -271,7 +349,7 @@ export function resetDonePage() {
 
 export function homePage(ctx, {
   member, stats, upcomingSlots, upcomingEvents, myOrgs, deals, funders, mentors, modules,
-  updates, intros, profileComplete,
+  updates, intros, onboardingComplete, onboardingLeft,
 }) {
   return html`<div class="hero">
     <div>
@@ -285,9 +363,9 @@ export function homePage(ctx, {
     </div>
   </div>
 
-  ${!profileComplete ? html`<div class="notice">
-    Your profile is thin. <a href="/homeroom/settings">Add a headline and a few expertise tags</a> —
-    the directory is the whole point and it only works if people can find you.</div>` : ''}
+  ${!onboardingComplete ? html`<div class="notice">
+    You are ${onboardingLeft === 1 ? 'one step' : `${onboardingLeft} steps`} into settling in.
+    <a href="/homeroom/welcome">Pick up where you left off</a>.</div>` : ''}
 
   ${intros.length ? html`<div class="notice">
     ${plural(intros.length, 'intro request')} waiting on you.
