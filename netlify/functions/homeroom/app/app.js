@@ -25,6 +25,7 @@ import { homeroomRoute, homeroomNotFound, render } from './routes.js';
 import * as access from './access.js';
 import * as roster from './roster.js';
 import * as sbAuth from './supabase-auth.js';
+import * as invites from './invites.js';
 
 /**
  * Whether to mark the session cookie Secure.
@@ -75,6 +76,12 @@ export async function handle(req, res) {
     const authHandler = AUTH_ROUTES[`${req.method} ${pathname}`];
     if (authHandler) return await authHandler(ctx);
 
+    if (pathname.startsWith('/homeroom/join/')) {
+      const token = decodeURIComponent(pathname.slice('/homeroom/join/'.length));
+      if (req.method === 'GET') return await joinPage(ctx, token);
+      if (req.method === 'POST') return await joinSubmit(ctx, token);
+    }
+
     if (pathname === '/homeroom/health') {
       // Reports the integrations too, so "is publishing wired up" is one curl
       // rather than a deploy and a guess.
@@ -88,6 +95,7 @@ export async function handle(req, res) {
         auth: await sbAuth.health(),
         luma: { configured: lumaConfigured(), calendar: calendarUrl() },
         mentors: (await import('./mentordesk.js')).deskStats(),
+        invites: invites.health(),
         now: nowSeconds(),
       });
     }
@@ -194,6 +202,122 @@ function availableHandle(preferred) {
     if (!hr.getUser(candidate)) return candidate;
   }
   return `member-${randomBytes(4).toString('hex')}`;
+}
+
+/* ==========================================================================
+ * JOINING BY INVITE
+ *
+ * The way a new resident actually gets an account. `HOMEROOM_ACCESS=closed` is
+ * right for production — without a roster token, open signup admits anyone who
+ * finds the URL — but closed on its own leaves no route in at all. An invite is
+ * the missing authorisation: a steward vouches once, and the invitee does the
+ * rest themselves.
+ * ======================================================================== */
+
+async function joinPage(ctx, token) {
+  if (ctx.user) return seeOther(ctx, '/homeroom');
+
+  const looked = await invites.peek(token);
+  if (!looked.ok) {
+    return auth(ctx, views.inviteUnavailablePage(looked.error), { title: 'Try again shortly', status: 503 });
+  }
+  if (!looked.invite || !looked.invite.live) {
+    return auth(ctx, views.inviteDeadPage(looked.invite), { title: 'This invite is not usable', status: 410 });
+  }
+  auth(ctx, views.joinPage(ctx, { token, invite: looked.invite }), { title: 'Join Homeroom' });
+}
+
+async function joinSubmit(ctx, token) {
+  if (ctx.user) return seeOther(ctx, '/homeroom');
+  const { fields } = await readBody(ctx.req);
+  const values = { handle: String(fields.handle || '').trim() };
+
+  if (!rateLimit(`join:${ctx.ip}`, LIMITS.signup)) {
+    return auth(ctx, views.joinPage(ctx, {
+      token, invite: { email: '' }, values, error: 'Too many attempts from this address. Wait an hour.',
+    }), { title: 'Join Homeroom', status: 429 });
+  }
+
+  const looked = await invites.peek(token);
+  if (!looked.ok) {
+    return auth(ctx, views.inviteUnavailablePage(looked.error), { title: 'Try again shortly', status: 503 });
+  }
+  if (!looked.invite || !looked.invite.live) {
+    return auth(ctx, views.inviteDeadPage(looked.invite), { title: 'This invite is not usable', status: 410 });
+  }
+
+  const invite = looked.invite;
+  const fail = (message, status = 400) => auth(ctx, views.joinPage(ctx, {
+    token, invite, values, error: message,
+  }), { title: 'Join Homeroom', status });
+
+  if (!checkCsrf(ctx.token, fields.csrf) && ctx.token) return fail('That form expired. Try again.', 403);
+
+  const handleError = validateUsername(values.handle);
+  if (handleError) return fail(handleError);
+  const passwordError = validatePassword(fields.password || '');
+  if (passwordError) return fail(passwordError);
+  if (fields.password !== fields.confirm) return fail('Those two passwords do not match.');
+  if (hr.getUser(values.handle)) return fail('That handle is taken. Pick another.');
+
+  /*
+   * The roster still gets a say, but only a narrow one. The steward who sent
+   * this invite already made the admission decision, so a roster that is
+   * unreachable, silent about this address, or merely unconfigured must not
+   * block a person who was invited by name — that would make invites useless in
+   * exactly the situation they exist for. What it can still do is stop someone
+   * whose place was rescinded between the invite and the click.
+   */
+  const assessment = await access.assess(invite.email);
+  if (assessment.verdict === 'deny' && !assessment.stale && !invite.rosterVerdict.startsWith('override')) {
+    return auth(ctx, views.inviteRevokedPage(), { title: 'This invite is no longer valid', status: 403 });
+  }
+
+  /*
+   * Claim it BEFORE creating anything. Redemption is atomic on both backends,
+   * so two people opening one link get exactly one account between them. Doing
+   * it the other way round — create, then claim — would let both create a
+   * credential and only then discover one of them cannot have it, and a stray
+   * Supabase user is harder to clean up than a re-sent invite.
+   */
+  const claimed = await invites.redeem(token, values.handle);
+  if (!claimed.ok) {
+    return auth(ctx, views.inviteUnavailablePage(claimed.error), { title: 'Try again shortly', status: 503 });
+  }
+  if (!claimed.invite) return auth(ctx, views.inviteDeadPage({ status: 'redeemed' }),
+    { title: 'This invite is not usable', status: 410 });
+
+  /* ---- the credential ---- */
+  if (sbAuth.configured()) {
+    const created = await sbAuth.signUp({
+      email: invite.email, password: fields.password, handle: values.handle,
+    });
+    if (!created.ok) {
+      // The invite is spent and the account did not happen. Say so plainly and
+      // name the steward, because the fix is a new link and only they can send one.
+      return auth(ctx, views.joinFailedPage(created.error, invite), { title: 'Could not finish', status: 502 });
+    }
+    const { account: linked, error } = localAccountFor(created.user, { handleHint: values.handle });
+    if (error) return auth(ctx, views.joinFailedPage(error, invite), { title: 'Could not finish', status: 409 });
+
+    access.bindAccount({ email: invite.email, userId: linked.id, assessment });
+    access.seedProfile(linked.id, assessment.person);
+    if (created.needsConfirmation) {
+      return auth(ctx, views.confirmEmailPage(ctx, { email: invite.email }), { title: 'Confirm your email' });
+    }
+    if (created.session) await sbAuth.signOut(created.session.accessToken);
+    return finishLogin(ctx, linked.id, '/homeroom/welcome');
+  }
+
+  hr.createUser({
+    id: values.handle,
+    email: invite.email,
+    passwordHash: hashPassword(fields.password),
+    isAdmin: false,
+  });
+  access.bindAccount({ email: invite.email, userId: values.handle, assessment });
+  access.seedProfile(values.handle, assessment.person);
+  finishLogin(ctx, values.handle, '/homeroom/welcome');
 }
 
 const AUTH_ROUTES = {
