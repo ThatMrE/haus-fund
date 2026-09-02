@@ -71,8 +71,9 @@ nav.tabs a { font-family: var(--font-heading); font-size: 12.5px; font-weight: v
   color: rgba(255, 255, 255, 0.72); padding: 4px 0; border-bottom: 2px solid transparent; }
 nav.tabs a:hover { color: #fff; }
 nav.tabs a.on { color: #fff; border-bottom-color: var(--bronze-3); }
-.me { display: flex; align-items: center; gap: 17px; margin-left: auto; }
-.me .who { max-width: 15ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.btn[disabled] { opacity: 0.5; cursor: not-allowed; }
+.me { display: flex; align-items: center; gap: 23px; margin-left: auto; }
+.me .who { max-width: 18ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .me a { color: rgba(255, 255, 255, 0.72); font-family: var(--font-mono); font-size: 11px;
   letter-spacing: 0.1em; text-transform: uppercase; }
 .me a:hover { color: #fff; }
