@@ -37,114 +37,9 @@ export function subnav(items, active) {
  * CHAT
  * ======================================================================== */
 
-export function chatPage(ctx, { channels, channel, messages, reactions, atTop }) {
-  const list = html`<aside class="chanlist">
-    <div class="chanhead mono">Channels</div>
-    <ul>${channels.map((c) => html`<li>
-      <a class="chan ${c.id === channel?.id ? 'on' : ''} ${c.muted ? 'muted' : ''}"
-         href="/homeroom/chat/${c.slug}">
-        <span class="hash">#</span><span class="grow">${c.name}</span>
-        ${c.unread && !c.muted ? html`<b class="pip">${c.unread > 99 ? '99+' : c.unread}</b>` : ''}
-      </a></li>`)}</ul>
-    <a class="btn ghost small" href="/homeroom/chat/new">New channel</a>
-  </aside>`;
-
-  if (!channel) {
-    return html`<div class="chatlayout">${list}
-      <div class="chatmain">${empty('Pick a channel.')}</div></div>`;
-  }
-
-  const lastId = messages.length ? messages[messages.length - 1].id : 0;
-  return html`<div class="chatlayout">
-    ${list}
-    <div class="chatmain" data-channel="${channel.slug}" data-last="${lastId}">
-      <div class="chattop">
-        <div>
-          <h1 class="chantitle"># ${channel.name}</h1>
-          ${channel.topic ? html`<p class="mono dim">${channel.topic}</p>` : ''}
-        </div>
-        <form method="post" action="/homeroom/chat/${channel.slug}/mute" class="inline">
-          ${csrfField(ctx)}
-          <button class="linkish mono" type="submit">${channel.muted ? 'unmute' : 'mute'}</button>
-        </form>
-      </div>
-
-      ${atTop ? '' : html`<div class="more mono">
-        <a href="/homeroom/chat/${channel.slug}?before=${messages[0]?.id || 0}">&uarr; earlier messages</a>
-      </div>`}
-
-      <ol class="chatlog" id="chatlog">
-        ${messages.map((m) => chatMessage(ctx, m, reactions[m.id] || []))}
-      </ol>
-
-      <form class="chatform" method="post" action="/homeroom/chat/${channel.slug}" id="chatform">
-        ${csrfField(ctx)}
-        <input type="hidden" name="last" value="${lastId}" />
-        <textarea name="body" rows="2" maxlength="4000" required
-          placeholder="Say something in #${channel.name}"></textarea>
-        <button class="btn solid" type="submit">Send</button>
-      </form>
-      <p class="mono dim tiny">Chat is not archived or ranked. If it is worth finding again in a
-        year, <a href="/homeroom/ask">put it in the forum</a>.</p>
-    </div>
-  </div>`;
-}
 
 /** One message. Also rendered on its own by the poll endpoint, hence exported. */
-export function chatMessage(ctx, message, reactions = []) {
-  const mine = ctx.user?.id === message.author_id;
-  return html`<li class="msg ${mine ? 'mine' : ''}" id="m${message.id}" data-id="${message.id}">
-    ${avatar(message.author_id, { size: 30 })}
-    <div class="grow">
-      <div class="msghead mono">${memberLink(message.author_id)}
-        <span class="sep">/</span> ${when(message.created_at)}
-        ${message.edited_at ? html`<span class="dim">edited</span>` : ''}</div>
-      <div class="msgbody">${body(message.body)}</div>
-      <div class="msgfoot mono">
-        ${reactions.map((r) => html`<form method="post" action="/homeroom/chat/react" class="inline">
-          ${csrfField(ctx)}
-          <input type="hidden" name="id" value="${message.id}" />
-          <input type="hidden" name="emoji" value="${r.emoji}" />
-          <input type="hidden" name="goto" value="${ctx.fullPath || '/homeroom/chat'}" />
-          <button class="react ${r.who.includes(ctx.user?.id) ? 'on' : ''}" type="submit">${r.emoji} ${r.n}</button>
-        </form>`)}
-        ${['👍', '🧪', '🔥'].map((emoji) => html`<form method="post" action="/homeroom/chat/react" class="inline">
-          ${csrfField(ctx)}
-          <input type="hidden" name="id" value="${message.id}" />
-          <input type="hidden" name="emoji" value="${emoji}" />
-          <input type="hidden" name="goto" value="${ctx.fullPath || '/homeroom/chat'}" />
-          <button class="react add" type="submit" title="react">${emoji}</button>
-        </form>`)}
-        ${mine || ctx.user?.is_admin ? html`<form method="post" action="/homeroom/chat/${message.id}/delete" class="inline">
-          ${csrfField(ctx)}
-          <input type="hidden" name="goto" value="${ctx.fullPath || '/homeroom/chat'}" />
-          <button class="linkish" type="submit">delete</button></form>` : ''}
-      </div>
-    </div>
-  </li>`;
-}
 
-export function channelFormPage(ctx, { error = null, values = {} }) {
-  return html`<h1>New channel</h1>
-  ${error ? html`<div class="notice bad">${error}</div>` : ''}
-  <form class="stack" method="post" action="/homeroom/chat/new">
-    ${csrfField(ctx)}
-    <div class="field"><label for="name">Name</label>
-      <input id="name" name="name" required maxlength="60" value="${values.name || ''}"
-        placeholder="freezer-failures" /></div>
-    <div class="field"><label for="topic">Topic</label>
-      <input id="topic" name="topic" maxlength="200" value="${values.topic || ''}"
-        placeholder="What belongs in here, in one line." /></div>
-    <div class="field"><label for="kind">Kind</label>
-      ${select('kind', [
-        { slug: 'open', label: 'Open — anyone in Homeroom' },
-        { slug: 'cohort', label: 'Cohort' },
-        { slug: 'house', label: 'House' },
-        { slug: 'project', label: 'Project' },
-      ], values.kind || 'open')}</div>
-    <button class="btn solid" type="submit">Create channel</button>
-  </form>`;
-}
 
 /* ==========================================================================
  * YEARBOOK
@@ -522,8 +417,8 @@ export function perkPage(ctx, { perk, claimed, claimCount }) {
           rel="${raw(perk.url.startsWith('/') ? '' : 'nofollow noopener')}"
           target="${raw(perk.url.startsWith('/') ? '_self' : '_blank')}">Go to ${perk.vendor}</a>` : ''}
         ${!perk.code && perk.access === 'code'
-          ? html`<p class="mono dim">No code on file yet. Ask a steward in
-            <a href="/homeroom/chat/perks">#perks</a> — they can add the real one.</p>` : ''}
+          ? html`<p class="mono dim">No code on file yet. Ask a steward — they can add the
+            real one.</p>` : ''}
       </div>`
     : html`<form method="post" action="/homeroom/perk/${perk.slug}/claim">
         ${csrfField(ctx)}
@@ -839,7 +734,7 @@ export function mentorPage(ctx, { mentor, slots, member }) {
 
         ${member
           ? html`<a class="btn ghost" href="/homeroom/messages/new?to=${encodeURIComponent(member.user_id)}">Message them here</a>`
-          : html`<a class="btn ghost" href="/homeroom/chat/mentors">Ask a steward for an intro</a>`}`)}
+          : html`<a class="btn ghost" href="/homeroom/intros/new">Ask a steward for an intro</a>`}`)}
     </div>
     <aside class="rail">
       ${section('Before you book', html`<ul class="tight">
@@ -1127,7 +1022,7 @@ export function modulePage(ctx, { module, track, progress, neighbours }) {
       ${section('Get unstuck', html`<ul class="tight">
         <li><a href="/homeroom/mentors?track=${track.slug}">Mentors on this track</a></li>
         <li><a href="/homeroom/hours">Book office hours</a></li>
-        <li><a href="/homeroom/ask">Ask the forum</a></li>
+        <li><a href="/homeroom/people?tag=${track.slug}">Members who know this</a></li>
       </ul>`)}
     </aside>
   </div>`;

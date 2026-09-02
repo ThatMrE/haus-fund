@@ -33,14 +33,13 @@ test('it loads every researched data set', () => {
   assert.equal(count('hr_atlas'), ATLAS_LABS.length);
   assert.equal(count('hr_mentors'), NETWORK_MENTORS.length);
   assert.equal(count('hr_modules'), LIBRARY_MODULES.length);
-  assert.ok(count('hr_channels') >= 6);
 });
 
 test('and creates nothing invented', () => {
   // The whole point. Each of these would be fabricated content next to real
   // content, which is the one thing this seeder exists to avoid.
-  for (const table of ['hr_posts', 'hr_comments', 'hr_orgs', 'hr_jobs', 'hr_events',
-    'hr_slots', 'hr_library', 'hr_yearbook', 'hr_signatures', 'hr_chat',
+  for (const table of ['hr_orgs', 'hr_jobs', 'hr_events',
+    'hr_slots', 'hr_library', 'hr_yearbook', 'hr_signatures',
     'hr_funder_reviews', 'hr_pipeline', 'hr_intros', 'hr_messages']) {
     assert.equal(count(table), 0, `${table} should be empty`);
   }
