@@ -52,3 +52,48 @@ export function shouldRunNow({
   }
   return { run: true, reason: 'scheduled hour' };
 }
+
+/** The local calendar date at `date`, as { year, month, day, weekday }. */
+export function localDateParts(date, timeZone = DEFAULT_TIMEZONE) {
+  try {
+    const parts = new Intl.DateTimeFormat('en-CA', {
+      timeZone,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      weekday: 'short',
+    }).formatToParts(date);
+    const get = (type) => parts.find((p) => p.type === type)?.value;
+    return {
+      year: Number(get('year')),
+      month: Number(get('month')),
+      day: Number(get('day')),
+      weekday: get('weekday'),
+      iso: `${get('year')}-${get('month')}-${get('day')}`,
+    };
+  } catch {
+    const iso = date.toISOString().slice(0, 10);
+    const [year, month, day] = iso.split('-').map(Number);
+    return { year, month, day, weekday: null, iso };
+  }
+}
+
+/** ISO week number and year — how the weekly issues are numbered. */
+export function isoWeek(date) {
+  const d = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
+  // Thursday decides the year an ISO week belongs to.
+  const day = d.getUTCDay() || 7;
+  d.setUTCDate(d.getUTCDate() + 4 - day);
+  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+  const week = Math.ceil(((d - yearStart) / 86400000 + 1) / 7);
+  return { year: d.getUTCFullYear(), week };
+}
+
+/** Weekly issues go out on this weekday (1 = Monday ... 7 = Sunday). */
+export const FIELD_NOTES_WEEKDAY = 5;
+/** Biopunk Live opens on this weekday. */
+export const LIVE_WEEKDAY = 3;
+
+export function isoWeekday(date) {
+  return date.getUTCDay() || 7;
+}

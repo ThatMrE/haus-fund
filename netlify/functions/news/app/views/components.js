@@ -33,7 +33,38 @@ function kindTag(item) {
 /** Machine-posted stories say so, on the row itself. */
 function sourceTag(item) {
   if (item.source !== 'agent') return '';
-  return html`<span class="tag agent" title="Filed by the morning ingest, not a member">Auto</span>`;
+  const label = item.agent ? `Auto · ${item.agent}` : 'Auto';
+  return html`<a class="tag agent" href="${u('/agent')}?key=${item.agent ?? ''}"
+     title="Filed by an agent, not a member">${label}</a>`;
+}
+
+/**
+ * Who put this on the board. Agents credit the agent; people credit the person,
+ * and the credit follows whoever surfaced it rather than whoever posted it.
+ */
+export function surfacedCredit(item) {
+  if (item.source === 'agent') return '';
+  // When the byline already is the credit, saying it twice adds nothing. The
+  // credit earns its place when they differ: posted on someone's behalf, or
+  // pulled in from a channel.
+  const parts = [];
+  if (item.surfaced_by && item.surfaced_by !== item.by) {
+    parts.push(html`surfaced by <a href="${u('/user')}?id=${item.surfaced_by}">${item.surfaced_by}</a>`);
+  }
+  if (item.channel) parts.push(html`via ${item.channel}`);
+  if (parts.length === 0) return '';
+  return html`<span class="sep">|</span><span class="credit">${raw(parts.join(', '))}</span>`;
+}
+
+/** A submission still waiting on a reviewer says so to the person who sent it. */
+function reviewTag(item) {
+  if (item.review_state === 'pending') {
+    return html`<span class="tag pending" title="Waiting on a reviewer">In review</span>`;
+  }
+  if (item.review_state === 'rejected') {
+    return html`<span class="tag dead" title="Not accepted">Not accepted</span>`;
+  }
+  return '';
 }
 
 function topicTag(item) {
@@ -57,14 +88,14 @@ export function storyRow(ctx, item, { rank = null, voted = false, showText = fal
     <span class="title-line">
       <a class="title" href="${href}" ${external ? raw('rel="nofollow noopener ugc" target="_blank"') : ''}>${item.title}</a>
       ${domain ? html` <span class="sitebit">(<a href="${u('/from')}?site=${domain}">${domain}</a>)</span>` : ''}
-      ${kindTag(item)}${topicTag(item)}${sourceTag(item)}${item.dead ? html`<span class="tag dead">flagged</span>` : ''}
+      ${kindTag(item)}${topicTag(item)}${sourceTag(item)}${reviewTag(item)}${item.dead ? html`<span class="tag dead">flagged</span>` : ''}
     </span>
     <span class="subline">
       <span class="pts" data-points="${item.id}">${plural(item.points, 'point')}</span>
       <span class="sep">|</span>
       <a href="${u('/user')}?id=${item.by}">${item.by}</a>
       <span class="sep">|</span>
-      ${relTime(item.created_at)}
+      ${relTime(item.created_at)}${surfacedCredit(item)}
       <span class="sep">|</span>
       <a href="${u('/item')}?id=${item.id}">${item.comment_count > 0 ? plural(item.comment_count, 'comment') : 'discuss'}</a>
       ${ctx.user ? html`<span class="sep">|</span>${actionForm(ctx, '/flag', item.id, item.flagged ? 'unflag' : 'flag')}` : ''}

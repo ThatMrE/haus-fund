@@ -11,6 +11,8 @@ const TABS = [
   { href: '/show', label: 'Show', match: (p) => p === '/show' },
   { href: '/comments', label: 'Threads', match: (p) => p === '/comments' },
   { href: '/topics', label: 'Channels', match: (p) => p === '/topics' || p === '/topic' },
+  { href: '/field-notes', label: 'Field Notes', match: (p) => p.startsWith('/field-notes') },
+  { href: '/scouts', label: 'Scouts', match: (p) => p === '/scouts' || p === '/points' },
   { href: '/submit', label: 'Submit', match: (p) => p === '/submit' },
 ];
 
@@ -69,7 +71,8 @@ function masthead(ctx) {
 
   const me = ctx.user
     ? `<a href="${u('/user')}?id=${encodeURIComponent(ctx.user.id)}">${esc(ctx.user.id)}</a>
-       <span class="karma">(${ctx.user.karma})</span>
+       <span class="karma" title="karma / scout points">(${ctx.user.karma}${ctx.user.points ? ` &middot; ${ctx.user.points}p` : ''})</span>
+       ${ctx.queueCount ? `<a class="btn-nav" href="${u('/review')}">Queue ${ctx.queueCount}</a>` : ''}
        <form method="post" action="${u('/logout')}" style="display:inline">
          <input type="hidden" name="csrf" value="${esc(ctx.csrf)}" />
          <button class="btn-nav" type="submit">Log out</button>
@@ -100,6 +103,9 @@ function footer() {
   <div class="wrap">
     <a href="${u('/guidelines')}">Guidelines</a>
     <a href="${u('/about')}">About</a>
+    <a href="${u('/bench-notes')}">Bench Notes</a>
+    <a href="${u('/live')}">Biopunk Live</a>
+    <a href="${u('/agents')}">Agents</a>
     <a href="${u('/rss')}">RSS</a>
     <a href="${u('/api')}">API</a>
     <a href="${u('/search')}">Search</a>

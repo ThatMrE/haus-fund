@@ -8,7 +8,7 @@
  * deployment the morning ingest fills this role instead — see ingest.js.
  * Run `npm run reset` to wipe and re-seed.
  */
-import { getDb, closeDb } from './db.js';
+import { getDb, closeDb, initDb } from './db/index.js';
 import { hashPassword } from './auth.js';
 import * as db from './models.js';
 import { nowSeconds } from './util.js';
@@ -112,15 +112,18 @@ const COMMENTS = [
   'The teardown is good. Note the flow cell is still proprietary, so "open" has a ceiling here.',
 ];
 
-function seed({ reset = false } = {}) {
+async function seed({ reset = false } = {}) {
   const instance = getDb();
 
   if (reset) {
-    instance.exec('DELETE FROM votes; DELETE FROM flags; DELETE FROM favorites; DELETE FROM sessions; DELETE FROM items; DELETE FROM users;');
-    instance.exec("DELETE FROM sqlite_sequence WHERE name = 'items'");
+    for (const table of ['votes', 'flags', 'favorites', 'sessions', 'points_ledger',
+                         'redemptions', 'digests', 'agent_runs', 'items', 'users']) {
+      await instance.exec(`DELETE FROM ${table}`);
+    }
+    await instance.exec("DELETE FROM sqlite_sequence WHERE name = 'items'");
   }
 
-  if (instance.prepare('SELECT COUNT(*) AS n FROM users').get().n > 0 && !reset) {
+  if ((await instance.get('SELECT COUNT(*) AS n FROM users')).n > 0 && !reset) {
     console.log('Database already has content — nothing to seed. Use `npm run reset` to start over.');
     return;
   }
@@ -129,18 +132,18 @@ function seed({ reset = false } = {}) {
   const now = nowSeconds();
 
   for (const [id, about] of USERS) {
-    db.createUser({ id, passwordHash: hashPassword(`${id}-demo-pass`) });
-    db.updateUser(id, { about });
+    await db.createUser({ id, passwordHash: hashPassword(`${id}-demo-pass`) });
+    await db.updateUser(id, { about });
   }
   // A moderator handle, so admin paths are exercised too.
-  db.createUser({ id: 'curator', passwordHash: hashPassword('curator-demo-pass'), isAdmin: true });
-  db.updateUser('curator', { about: 'Moderation and cleanup. Flag things; I read the queue.' });
+  await db.createUser({ id: 'curator', passwordHash: hashPassword('curator-demo-pass'), isAdmin: true });
+  await db.updateUser('curator', { about: 'Moderation and cleanup. Flag things; I read the queue.' });
 
   const storyIds = [];
-  STORIES.forEach(([title, url, topic, author, targetPoints, commentCount], index) => {
+  for (const [index, [title, url, topic, author, targetPoints, commentCount]] of STORIES.entries()) {
     // Spread submissions over the last five days, newest first in the list.
     const age = Math.floor((index * 3.4 + random() * 5) * HOUR);
-    const id = db.createStory({
+    const id = await db.createStory({
       by: author,
       title,
       url,
@@ -148,9 +151,9 @@ function seed({ reset = false } = {}) {
       topic,
       kind: url ? (title.startsWith('Show:') ? 'show' : 'link') : 'ask',
     });
-    getDb().prepare('UPDATE items SET created_at = ? WHERE id = ?').run(now - age, id);
+    await getDb().run('UPDATE items SET created_at = ? WHERE id = ?', now - age, id);
     storyIds.push({ id, author, targetPoints, commentCount, createdAt: now - age });
-  });
+  }
 
   // A wider pool of quiet accounts so vote counts can actually differentiate
   // stories — every point on the site is a real row in the votes table.
@@ -160,14 +163,14 @@ function seed({ reset = false } = {}) {
   // One shared hash for the quiet accounts: scrypt is deliberately slow, and
   // hashing 72 throwaway logins individually makes seeding take seconds.
   const lurkerHash = hashPassword('lurker-demo-pass');
-  for (const id of lurkers) db.createUser({ id, passwordHash: lurkerHash });
+  for (const id of lurkers) await db.createUser({ id, passwordHash: lurkerHash });
 
   const handles = [...USERS.map(([id]) => id), 'curator', ...lurkers];
 
   // Votes: real rows in the votes table, so unvoting and karma both behave.
   for (const story of storyIds) {
     const voters = pickVoters(handles, story.author, story.targetPoints, random);
-    for (const voter of voters) db.vote(voter, story.id);
+    for (const voter of voters) await db.vote(voter, story.id);
   }
 
   // Comments, threaded: some replies attach to earlier comments on the same story.
@@ -180,21 +183,25 @@ function seed({ reset = false } = {}) {
       const author = handles[Math.floor(random() * handles.length)];
       if (author === story.author && i === 0) continue;
       const parent = posted.length && random() < 0.45 ? posted[Math.floor(random() * posted.length)] : story.id;
-      const id = db.createComment({ by: author, parentId: parent, text });
+      const id = await db.createComment({ by: author, parentId: parent, text });
       const age = Math.max(60, Math.floor((now - story.createdAt) * (0.15 + random() * 0.7)));
-      getDb().prepare('UPDATE items SET created_at = ? WHERE id = ?').run(now - age, id);
+      await getDb().run('UPDATE items SET created_at = ? WHERE id = ?', now - age, id);
       posted.push(id);
       for (const voter of pickVoters(handles, author, Math.floor(random() * 14) + 1, random)) {
-        db.vote(voter, id);
+        await db.vote(voter, id);
       }
     }
     // Keep the story's cached comment count honest after the loop's skips.
-    getDb()
-      .prepare("UPDATE items SET comment_count = (SELECT COUNT(*) FROM items c WHERE c.story_id = ? AND c.type = 'comment' AND c.deleted = 0) WHERE id = ?")
-      .run(story.id, story.id);
+    await getDb().run(
+      `UPDATE items SET comment_count =
+         (SELECT COUNT(*) FROM items c WHERE c.story_id = ? AND c.type = 'comment' AND c.deleted = 0)
+       WHERE id = ?`,
+      story.id,
+      story.id,
+    );
   }
 
-  const stats = db.siteStats();
+  const stats = await db.siteStats();
   console.log(`Seeded ${stats.stories} submissions, ${stats.comments} comments, ${stats.votes} votes, ${stats.users} handles.`);
   console.log('Demo logins: any named handle with password "<handle>-demo-pass" (e.g. nora_bench / nora_bench-demo-pass).');
   console.log('The quiet vote-only accounts all share the passphrase "lurker-demo-pass".');
@@ -215,8 +222,9 @@ function askText(title) {
 
 const isMain = process.argv[1] && import.meta.url === `file://${process.argv[1]}`;
 if (isMain) {
-  seed({ reset: process.argv.includes('--reset') });
-  closeDb();
+  await initDb();
+  await seed({ reset: process.argv.includes('--reset') });
+  await closeDb();
 }
 
 export { seed };

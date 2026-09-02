@@ -4,9 +4,9 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { parseFeed, stripTags, decode } from '../app/feed-parser.js';
 import { scoreEntry, guessTopic, MIN_SCORE } from '../app/relevance.js';
-import { selectCandidates, MAX_PER_SOURCE, MAX_PER_RUN } from '../app/ingest.js';
+import { selectCandidates, MAX_PER_AGENT, MAX_PER_RUN, MAX_PER_DOMAIN } from '../app/ingest.js';
 
-const SOURCE = { slug: 'test-feed', name: 'Test Feed', site: 'test.example', weight: 1 };
+const AGENT = { key: 'test-feed', label: 'Test Feed', selfEvident: false, weight: 1 };
 
 const RSS = `<?xml version="1.0"?>
 <rss version="2.0"><channel>
@@ -130,7 +130,7 @@ function feedEntry(title, link, hours = 2, summary = 'biotech startup seed round
 
 test('selects the qualifying entries and drops the rest', () => {
   const chosen = selectCandidates(
-    [{ source: SOURCE, entries: parseFeed(RSS) }],
+    [{ agent: AGENT, entries: parseFeed(RSS) }],
     { now },
   );
   assert.equal(chosen.length, 1);
@@ -140,18 +140,18 @@ test('selects the qualifying entries and drops the rest', () => {
 
 test('drops stale entries', () => {
   const chosen = selectCandidates(
-    [{ source: SOURCE, entries: [feedEntry('Biotech startup raises seed round', 'https://a.example/1', 200)] }],
+    [{ agent: AGENT, entries: [feedEntry('Biotech startup raises seed round', 'https://a.example/1', 200)] }],
     { now },
   );
   assert.equal(chosen.length, 0);
 });
 
 test('de-duplicates the same link across sources, ignoring tracking params', () => {
-  const other = { ...SOURCE, slug: 'other' };
+  const other = { ...AGENT, key: 'other' };
   const chosen = selectCandidates(
     [
-      { source: SOURCE, entries: [feedEntry('Biotech startup raises seed round', 'https://a.example/story')] },
-      { source: other, entries: [feedEntry('A different headline entirely', 'https://a.example/story?utm_source=x')] },
+      { agent: AGENT, entries: [feedEntry('Biotech startup raises seed round', 'https://a.example/story')] },
+      { agent: other, entries: [feedEntry('A different headline entirely', 'https://a.example/story?utm_source=x')] },
     ],
     { now },
   );
@@ -159,11 +159,11 @@ test('de-duplicates the same link across sources, ignoring tracking params', () 
 });
 
 test('de-duplicates repeated headlines', () => {
-  const other = { ...SOURCE, slug: 'other' };
+  const other = { ...AGENT, key: 'other' };
   const chosen = selectCandidates(
     [
-      { source: SOURCE, entries: [feedEntry('Biotech startup raises seed round', 'https://a.example/1')] },
-      { source: other, entries: [feedEntry('Biotech Startup Raises Seed Round', 'https://b.example/2')] },
+      { agent: AGENT, entries: [feedEntry('Biotech startup raises seed round', 'https://a.example/1')] },
+      { agent: other, entries: [feedEntry('Biotech Startup Raises Seed Round', 'https://b.example/2')] },
     ],
     { now },
   );
@@ -172,23 +172,24 @@ test('de-duplicates repeated headlines', () => {
 
 test('respects an existing story in the database', () => {
   const chosen = selectCandidates(
-    [{ source: SOURCE, entries: [feedEntry('Biotech startup raises seed round', 'https://a.example/1')] }],
+    [{ agent: AGENT, entries: [feedEntry('Biotech startup raises seed round', 'https://a.example/1')] }],
     { now, isDuplicate: () => true },
   );
   assert.equal(chosen.length, 0);
 });
 
-test('caps how much one source can take', () => {
+test('caps how much one agent can take', () => {
+  // Spread across domains so the per-domain cap is not what is being measured.
   const entries = Array.from({ length: 8 }, (_, i) =>
-    feedEntry(`Biotech startup ${i} raises a seed round for gene therapy`, `https://a.example/${i}`),
+    feedEntry(`Biotech startup ${i} raises a seed round for gene therapy`, `https://d${i}.example/${i}`),
   );
-  const chosen = selectCandidates([{ source: SOURCE, entries }], { now });
-  assert.equal(chosen.length, MAX_PER_SOURCE);
+  const chosen = selectCandidates([{ agent: AGENT, entries }], { now });
+  assert.equal(chosen.length, MAX_PER_AGENT);
 });
 
 test('caps the whole run', () => {
   const results = Array.from({ length: 10 }, (_, s) => ({
-    source: { ...SOURCE, slug: `s${s}` },
+    agent: { ...AGENT, key: `s${s}` },
     entries: Array.from({ length: 3 }, (_, i) =>
       feedEntry(`Biotech startup s${s}n${i} raises a seed round`, `https://s${s}.example/${i}`),
     ),
@@ -199,7 +200,7 @@ test('caps the whole run', () => {
 test('ranks the strongest candidate first', () => {
   const chosen = selectCandidates(
     [{
-      source: SOURCE,
+      agent: AGENT,
       entries: [
         feedEntry('Biotech company unveils a partnership', 'https://a.example/weak', 2, 'therapeutics startup'),
         feedEntry('Gene therapy startup raises $8M seed round, emerges from stealth', 'https://a.example/strong', 2,

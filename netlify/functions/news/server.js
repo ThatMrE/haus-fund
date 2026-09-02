@@ -3,13 +3,15 @@ import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { extname, join, normalize } from 'node:path';
 import { handle } from './app/app.js';
-import { getDb, closeDb } from './app/db.js';
+import { initDb, closeDb, describeTarget } from './app/db/index.js';
 import { purgeExpiredSessions } from './app/auth.js';
 
 const PORT = Number(process.env.PORT || 8787);
 const HOST = process.env.HOST || '0.0.0.0';
 
-getDb(); // open the database (and run migrations) before accepting traffic
+// Open the database (and run migrations) before accepting traffic.
+const target = describeTarget();
+await initDb();
 
 /* In production the site root and this app sit on one domain, so the
    stylesheet can import /tokens/*.css directly. Locally there is no CDN in
@@ -54,17 +56,21 @@ const server = createServer((req, res) => {
 });
 
 server.listen(PORT, HOST, () => {
-  console.log(`\n  haus.fund/news listening on http://${HOST === '0.0.0.0' ? 'localhost' : HOST}:${PORT}\n`);
+  const where = target.driver === 'turso' ? `hosted database at ${new URL(target.url.replace(/^libsql:/, 'https:')).hostname}` : target.path;
+  console.log(`\n  haus.fund/news listening on http://${HOST === '0.0.0.0' ? 'localhost' : HOST}:${PORT}`);
+  console.log(`  storage: ${target.driver} — ${where}\n`);
 });
 
-const sessionSweep = setInterval(purgeExpiredSessions, 60 * 60 * 1000);
+const sessionSweep = setInterval(() => {
+  purgeExpiredSessions().catch((err) => console.error('[sessions] sweep failed', err));
+}, 60 * 60 * 1000);
 sessionSweep.unref();
 
 for (const signal of ['SIGINT', 'SIGTERM']) {
   process.on(signal, () => {
     console.log(`\n${signal} — closing down.`);
-    server.close(() => {
-      closeDb();
+    server.close(async () => {
+      await closeDb();
       process.exit(0);
     });
     setTimeout(() => process.exit(0), 3000).unref();

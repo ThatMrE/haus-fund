@@ -1,6 +1,8 @@
-import { html, raw, esc, formatText, timeAgo, plural, u } from '../util.js';
+import { html, raw, esc, formatText, timeAgo, plural, u, displayDomain } from '../util.js';
 import { TOPICS, topicLabel, PAGE_SIZE } from '../models.js';
 import { feed, pager, commentNode, commentForm, storyRow, topicNav, relTime } from './components.js';
+import { AWARDS } from '../points.js';
+import { TRUST_THRESHOLD } from '../review.js';
 
 /* ------------------------------------------------------------- listings */
 
@@ -419,3 +421,251 @@ export function errorPage(message) {
 }
 
 export { esc };
+
+/* ------------------------------------------------------ review and scouts */
+
+/** The reviewer's queue: everything waiting, oldest first. */
+export function reviewPage(ctx, { items }) {
+  if (items.length === 0) {
+    return html`<section class="panel">
+      <h1 class="page-title">Review queue</h1>
+      <p class="blurb">Nothing waiting. Submissions from untrusted accounts land here first.</p>
+    </section>`;
+  }
+
+  return html`<section class="panel">
+    <h1 class="page-title">Review queue</h1>
+    <p class="blurb">
+      ${plural(items.length, 'submission')} waiting. Approving puts an item on the board dated from
+      now, so its first day at the top is a day of actually being seen.
+    </p>
+    <ul class="queue">
+      ${raw(items.map((item) => reviewRow(ctx, item)).join(''))}
+    </ul>
+  </section>`;
+}
+
+function reviewRow(ctx, item) {
+  const domain = item.domain || displayDomain(item.url);
+  return html`<li class="queue-item">
+    <div class="queue-head">
+      <a class="title" href="${item.url || `${u('/item')}?id=${item.id}`}"
+         rel="nofollow noopener ugc" target="_blank">${item.title}</a>
+      ${domain ? html` <span class="sitebit">(${domain})</span>` : ''}
+    </div>
+    <div class="subline">
+      <a href="${u('/user')}?id=${item.by}">${item.by}</a>
+      <span class="sep">|</span>${relTime(item.created_at)}
+      ${item.topic ? html`<span class="sep">|</span>${item.topic}` : ''}
+    </div>
+    ${item.text ? html`<div class="text-body">${formatText(item.text.slice(0, 600))}</div>` : ''}
+    <form class="queue-actions" method="post" action="${u('/review')}">
+      <input type="hidden" name="csrf" value="${ctx.csrf}" />
+      <input type="hidden" name="id" value="${item.id}" />
+      <input class="note" type="text" name="note" placeholder="Note (optional)" maxlength="200" />
+      <button class="btn" type="submit" name="verdict" value="approve">Approve</button>
+      <button class="btn ghost" type="submit" name="verdict" value="reject">Reject</button>
+    </form>
+  </li>`;
+}
+
+/** What a member sees while their own submissions wait. */
+export function queuePage(ctx, { items }) {
+  return html`<section class="panel">
+    <h1 class="page-title">Your queue</h1>
+    <p class="blurb">
+      New accounts have their first few submissions read before they go up. After
+      ${raw(String(TRUST_THRESHOLD))} cleared submissions yours post straight to the board.
+    </p>
+    ${items.length === 0
+      ? html`<p class="blurb">Nothing waiting.</p>`
+      : html`<ul class="itemlist">${raw(items.map((item) => storyRow(ctx, item)).join(''))}</ul>`}
+  </section>`;
+}
+
+/** The standings, and what points are for. */
+export function scoutsPage(ctx, { leaders, rewards }) {
+  return html`<section class="panel">
+    <h1 class="page-title">Scouts</h1>
+    <p class="blurb">
+      Points are earned by putting things on the board that turn out to matter, and they convert
+      into things that exist in the world.
+    </p>
+
+    <h2 class="section-title">Standing</h2>
+    ${leaders.length === 0
+      ? html`<p class="blurb">No points awarded yet.</p>`
+      : html`<ol class="standings">
+          ${raw(
+            leaders
+              .map(
+                (leader) => html`<li>
+                  <a href="${u('/user')}?id=${leader.id}">${leader.id}</a>
+                  <span class="pts">${plural(leader.points, 'point')}</span>
+                </li>`,
+              )
+              .join(''),
+          )}
+        </ol>`}
+
+    <h2 class="section-title">What points are worth</h2>
+    <table class="grid">
+      <tbody>
+        ${raw(
+          Object.entries(AWARDS)
+            .filter(([, award]) => award.points > 0)
+            .map(([, award]) => html`<tr><td>${award.label}</td><td class="num">+${award.points}</td></tr>`)
+            .join(''),
+        )}
+      </tbody>
+    </table>
+
+    <h2 class="section-title">What they convert into</h2>
+    <table class="grid">
+      <tbody>
+        ${raw(
+          rewards
+            .map(
+              (reward) => html`<tr>
+                <td><strong>${reward.label}</strong><br /><span class="blurb">${reward.blurb}</span></td>
+                <td class="num">${reward.cost}</td>
+              </tr>`,
+            )
+            .join(''),
+        )}
+      </tbody>
+    </table>
+    ${ctx.user ? html`<p><a class="btn" href="${u('/points')}">Your points</a></p>` : ''}
+  </section>`;
+}
+
+/** One scout's ledger and the redemption form. */
+export function pointsPage(ctx, { balance, ledger, rewards, redemptions, error = null }) {
+  return html`<section class="panel">
+    <h1 class="page-title">Your points</h1>
+    <p class="blurb">Balance: <strong>${plural(balance, 'point')}</strong></p>
+    ${error ? html`<div class="notice error">${error}</div>` : ''}
+
+    <h2 class="section-title">Redeem</h2>
+    <form class="redeem" method="post" action="${u('/redeem')}">
+      <input type="hidden" name="csrf" value="${ctx.csrf}" />
+      <select name="reward" aria-label="Reward">
+        ${raw(
+          rewards
+            .map((r) => html`<option value="${r.key}" ${balance < r.cost ? raw('disabled') : ''}>
+              ${r.label} — ${raw(String(r.cost))} points
+            </option>`)
+            .join(''),
+        )}
+      </select>
+      <input type="text" name="note" maxlength="200" placeholder="Shipping note, size, anything we need" />
+      <button class="btn" type="submit">Redeem</button>
+    </form>
+
+    ${redemptions.length
+      ? html`<h2 class="section-title">Requested</h2>
+          <table class="grid">
+            <tbody>
+              ${raw(
+                redemptions
+                  .map(
+                    (r) => html`<tr>
+                      <td>${r.reward}</td>
+                      <td>${r.state}</td>
+                      <td class="num">${relTime(r.created_at)}</td>
+                    </tr>`,
+                  )
+                  .join(''),
+              )}
+            </tbody>
+          </table>`
+      : ''}
+
+    <h2 class="section-title">Ledger</h2>
+    ${ledger.length === 0
+      ? html`<p class="blurb">Nothing yet. Surface something.</p>`
+      : html`<table class="grid">
+          <tbody>
+            ${raw(
+              ledger
+                .map(
+                  (row) => html`<tr>
+                    <td class="num ${row.delta < 0 ? 'neg' : ''}">${raw(row.delta > 0 ? `+${row.delta}` : String(row.delta))}</td>
+                    <td>
+                      ${AWARDS[row.reason]?.label ?? row.reason}
+                      ${row.item_title ? html`<br /><a href="${u('/item')}?id=${row.item_id}">${row.item_title}</a>` : ''}
+                    </td>
+                    <td class="num">${relTime(row.created_at)}</td>
+                  </tr>`,
+                )
+                .join(''),
+            )}
+          </tbody>
+        </table>`}
+  </section>`;
+}
+
+/* ------------------------------------------------------------- the agents */
+
+export function agentsPage(ctx, { agents, status }) {
+  const byKey = new Map(status.map((row) => [row.agent, row]));
+  return html`<section class="panel">
+    <h1 class="page-title">The agents</h1>
+    <p class="blurb">
+      Half the board comes from here. Each agent watches one kind of source, posts under its own
+      handle, and is capped so no single one can take the page.
+    </p>
+    <table class="grid">
+      <thead><tr><th>Agent</th><th>Watches</th><th class="num">Posted</th><th class="num">Last run</th></tr></thead>
+      <tbody>
+        ${raw(
+          agents
+            .map((agent) => {
+              const row = byKey.get(agent.key);
+              return html`<tr>
+                <td><a href="${u('/agent')}?key=${agent.key}">${agent.label}</a></td>
+                <td class="blurb">${agent.about}</td>
+                <td class="num">${raw(String(row?.posted ?? 0))}</td>
+                <td class="num">${row?.last_run ? relTime(row.last_run) : '—'}</td>
+              </tr>`;
+            })
+            .join(''),
+        )}
+      </tbody>
+    </table>
+  </section>`;
+}
+
+/* ---------------------------------------------------------------- issues */
+
+export function digestIndexPage(ctx, { kind, spec, issues }) {
+  return html`<section class="panel">
+    <h1 class="page-title">${spec.title}</h1>
+    <p class="blurb">${spec.blurb}</p>
+    ${issues.length === 0
+      ? html`<p class="blurb">No issues yet. The first one goes out on the next run.</p>`
+      : html`<ul class="issues">
+          ${raw(
+            issues
+              .map(
+                (issue) => html`<li>
+                  <a href="${u(`/${kind}`)}?i=${issue.slug}">${issue.title}</a>
+                  <span class="blurb">${issue.intro}</span>
+                </li>`,
+              )
+              .join(''),
+          )}
+        </ul>`}
+  </section>`;
+}
+
+export function digestPage(ctx, { spec, issue, items, voted }) {
+  return html`<section class="panel">
+    <h1 class="page-title">${issue.title}</h1>
+    <p class="blurb">${issue.intro}</p>
+    <ul class="itemlist">
+      ${raw(items.map((item, i) => storyRow(ctx, item, { rank: i + 1, voted: voted.has(item.id) })).join(''))}
+    </ul>
+    <p class="blurb"><a href="${u(`/${spec.key}`)}?i=all">All ${spec.title} issues</a></p>
+  </section>`;
+}

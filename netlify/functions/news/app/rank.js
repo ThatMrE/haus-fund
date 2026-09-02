@@ -93,3 +93,44 @@ function compareScore(a, b) {
     b.id - a.id
   );
 }
+
+/**
+ * The share of the front page the agents are allowed to hold. The feed is
+ * specified as roughly half machine-surfaced and half people-surfaced, so the
+ * two streams are interleaved rather than left to fight it out on score — a
+ * sweep of six agents would otherwise win on volume alone.
+ */
+export const AGENT_SHARE = 0.5;
+
+/**
+ * Compose a ranked list into the page that actually gets served.
+ *
+ * Fresh human submissions still lead outright — that is the promise made to
+ * someone who posts something first. Below them the two streams alternate so
+ * that any prefix of the page holds close to `agentShare` machine posts, with
+ * each stream keeping its own ranked order.
+ */
+export function composeFrontPage(ranked, { agentShare = AGENT_SHARE } = {}) {
+  const humans = ranked.filter((item) => !isAgentPost(item));
+  const agents = ranked.filter(isAgentPost);
+  const out = [];
+  let h = 0;
+  let a = 0;
+
+  while (h < humans.length || a < agents.length) {
+    if (h < humans.length && (humans[h].tier ?? 1) === 0) {
+      out.push(humans[h++]);
+      continue;
+    }
+    const takeAgent =
+      a < agents.length && (h >= humans.length || a < out.length * agentShare);
+    out.push(takeAgent ? agents[a++] : humans[h++]);
+  }
+  return out;
+}
+
+/** What the mix actually came out as — used by the stat line and the tests. */
+export function mixOf(items) {
+  const agent = items.filter(isAgentPost).length;
+  return { agent, human: items.length - agent, total: items.length };
+}
