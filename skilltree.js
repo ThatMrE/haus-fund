@@ -22,6 +22,19 @@
       iframe on click, using youtube-nocookie.
    3. A LOCKED-DOWN BROWSER MUST NOT BREAK THE PAGE. Every localStorage access
       goes through readStore/writeStore, which swallow the private-mode throw.
+
+   TWO MODES
+   ---------
+   Standalone (haus.fund/skilltree) keeps progress in localStorage, because
+   there is nobody to attribute it to.
+
+   Embedded (`?embed=1`, which is how /homeroom/library/tree loads it in an
+   iframe) asks /homeroom/api/library who the member is and what they have
+   finished, and shows THAT instead. Progress then becomes read-only here on
+   purpose: in Homeroom a module is done when the deliverable exists, so the
+   only way to mark one is the module's own form, and every node links to it.
+   If that call fails for any reason — signed out, offline, 401 — the page
+   falls back to localStorage and says nothing.
 */
 
 (function () {
@@ -55,6 +68,10 @@
 
   var byId = {};
   var progress = {};
+  /* EMBED: rendered inside Homeroom. LIVE: Homeroom answered, so `progress`
+     is the member's real progress and this page must not write to it. */
+  var EMBED = false;
+  var LIVE = false;
   var state = { view: 'map', q: '', tracks: {}, only: {}, active: null };
   var pan = { x: PAD, y: PAD, k: 1 };
 
@@ -76,6 +93,13 @@
       return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m];
     });
   };
+  /* Inside the Homeroom iframe a site-relative link must replace the whole
+     Homeroom page, not load Homeroom inside the tree. */
+  function linkAttrs(url) {
+    if (url.charAt(0) !== '/') return ' target="_blank" rel="noopener"';
+    return EMBED ? ' target="_top"' : '';
+  }
+
   function host(url) {
     if (url.charAt(0) === '/') return 'haus.fund';
     return url.replace(/^https:\/\//, '').replace(/^www\./, '').split('/')[0];
@@ -130,7 +154,7 @@
   }
 
   function saveProgress() {
-    writeStore(PROG_KEY, progress);
+    if (!LIVE) writeStore(PROG_KEY, progress);
     paintProgress();
     render();
     if (state.active) renderDrawerFooter(byId[state.active]);
@@ -140,7 +164,8 @@
     var total = DATA.nodes.length, done = 0;
     DATA.nodes.forEach(function (n) { if (progress[n.id] === 'done') done++; });
     $('progBar').style.width = (total ? Math.round((done / total) * 100) : 0) + '%';
-    $('progLbl').textContent = done + ' / ' + total + ' done';
+    $('progLbl').textContent = done + ' / ' + total + ' done'
+      + (LIVE ? ' · from Homeroom' : '');
   }
 
   /* ── chips ───────────────────────────────────────────────────────────── */
@@ -481,8 +506,7 @@
       html += '<div class="sect"><h4>Reading</h4><ul class="reslist">' +
         n.resources.map(function (r) {
           var ext = r.url.charAt(0) !== '/';
-          return '<li><a href="' + esc(r.url) + '"' +
-            (ext ? ' target="_blank" rel="noopener"' : '') + '>' +
+          return '<li><a href="' + esc(r.url) + '"' + linkAttrs(r.url) + '>' +
             '<span>' + esc(r.title) + '</span>' +
             '<span class="host">' + esc(host(r.url)) + (ext ? ' ↗' : '') + '</span></a></li>';
         }).join('') + '</ul></div>';
@@ -509,10 +533,23 @@
 
   function renderDrawerFooter(n) {
     var done = progress[n.id] === 'done';
+    /* With Homeroom answering, done means the deliverable exists. The only
+       place to change that is the module's own form, so this page shows the
+       state and sends you there rather than offering a second, weaker truth. */
+    $('dDone').hidden = LIVE;
     $('dDone').textContent = done ? 'Mark not done' : 'Mark done';
     $('dDone').className = 'btn ' + (done ? 'btn-s' : 'btn-p');
     $('dHomeroom').href = n.link;
-    $('dHomeroom').textContent = n.deliverable ? 'Log the ' + n.deliverable : 'Open in Homeroom';
+    if (EMBED) $('dHomeroom').target = '_top';
+    $('dHomeroom').className = 'btn ' + (LIVE ? 'btn-p' : 'btn-s');
+    $('dHomeroom').textContent = n.deliverable
+      ? (done ? 'Review the ' + n.deliverable : 'Log the ' + n.deliverable)
+      : 'Open in Homeroom';
+    var flag = $('dLive');
+    if (flag) {
+      flag.hidden = !LIVE;
+      flag.textContent = done ? 'done in Homeroom' : 'not logged yet';
+    }
   }
 
   function closeDrawer() {
@@ -555,10 +592,46 @@
     $('empty').classList.toggle('hidden', shown > 0 || state.view === 'map');
   }
 
+  /* ── Homeroom ────────────────────────────────────────────────────────── */
+
+  /*
+   * Ask Homeroom for the signed-in member's module progress. Only ever called
+   * in embed mode, and every failure path is the same: leave localStorage
+   * progress alone and say nothing. A member who is signed out sees the
+   * standalone behaviour rather than an error.
+   */
+  function loadHomeroomProgress() {
+    if (!EMBED || typeof fetch !== 'function') return;
+    fetch('/homeroom/api/library', {
+      credentials: 'same-origin',
+      headers: { Accept: 'application/json' }
+    }).then(function (r) {
+      return r.ok ? r.json() : null;
+    }).then(function (body) {
+      if (!body || !body.ok || !body.modules || !body.modules.length) return;
+      var live = {};
+      body.modules.forEach(function (m) {
+        /* Only slugs this tree actually draws. The manual and the tree share
+           slugs by construction; anything unknown is a module added to the
+           manual since the last build, and belongs in the tree, not here. */
+        if (m && m.slug && byId[m.slug] && m.state) live[m.slug] = m.state;
+      });
+      LIVE = true;
+      progress = live;
+      paintProgress();
+      render();
+      if (state.active) renderDrawerFooter(byId[state.active]);
+      var reset = $('reset');
+      if (reset) reset.hidden = true;
+    }).catch(function () { /* signed out, offline, or Homeroom is down */ });
+  }
+
   /* ── boot ────────────────────────────────────────────────────────────── */
 
   function init() {
     if (!DATA) return;
+    try { EMBED = new URLSearchParams(location.search).get('embed') === '1'; }
+    catch (e) { EMBED = false; }
     DATA.nodes.forEach(function (n) { byId[n.id] = n; });
     progress = readStore(PROG_KEY, {}) || {};
 
@@ -584,6 +657,7 @@
     });
 
     $('reset').addEventListener('click', function () {
+      if (LIVE) return; /* Homeroom owns it; there is nothing local to clear */
       progress = {};
       saveProgress();
     });
@@ -604,7 +678,7 @@
     });
 
     $('dDone').addEventListener('click', function () {
-      if (!state.active) return;
+      if (!state.active || LIVE) return;
       if (progress[state.active] === 'done') delete progress[state.active];
       else progress[state.active] = 'done';
       saveProgress();
@@ -629,6 +703,8 @@
     window.addEventListener('scroll', function () {
       nav.classList.toggle('scrolled', window.scrollY > 40);
     }, { passive: true });
+
+    loadHomeroomProgress();
   }
 
   if (document.readyState === 'loading') {

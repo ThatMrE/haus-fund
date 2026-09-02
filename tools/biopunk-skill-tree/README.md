@@ -5,8 +5,10 @@ The Biopunk Founder Manual drawn as a navigable graph. **47 nodes across seven t
 one coherent dependency graph** that takes a founder from a risk map on day one to a
 company a stranger can diligence in week twelve.
 
-**▶ Live: [haus.fund/skilltree](https://haus.fund/skilltree)** — `noindex`, not in the site
-nav, linked from the [Homeroom Library](https://haus.fund/homeroom/library).
+**▶ Live: [haus.fund/homeroom/library/tree](https://haus.fund/homeroom/library/tree)** — inside
+Homeroom, behind the roster gate, as a third tab of the Library. The same page is served standalone
+at [haus.fund/skilltree](https://haus.fund/skilltree) (`noindex`, not in the site nav), which is what
+Homeroom embeds.
 
 It is a companion to [ThatMrE/biotech-skill-tree](https://github.com/ThatMrE/biotech-skill-tree),
 which does the same thing for the bench. That tree teaches you to run a Gibson assembly;
@@ -96,14 +98,18 @@ Clicking any node anywhere opens a drawer with the summary, the video, *after th
 should be able to*, *the work* as a numbered protocol, the deliverable, clickable
 **builds on** / **leads to** pills, and the reading. Deep links work: `/skilltree#customer-discovery`.
 
-**Progress** is per-node in `localStorage` under `haus.skilltree.progress`, so it survives
-a reload and never leaves the browser. It is a convenience, not the record — the record is
-the deliverable you log against the module in Homeroom, and every node links straight to
-its form.
+**Progress**, served standalone, is per-node in `localStorage` under
+`haus.skilltree.progress`: it survives a reload and never leaves the browser. It is a
+convenience, not the record — the record is the deliverable you log against the module in
+Homeroom, and every node links straight to its form. Inside Homeroom the tree shows that
+record directly instead; see the table below.
 
 **Videos are lazy.** Thirty-three YouTube embeds would mean thirty-three third-party
 connections on a page most people read two nodes of, so each video is a poster button that
 swaps itself for a `youtube-nocookie` iframe on click.
+
+**`?embed=1`** is the contract with Homeroom: it hides the page's own nav, hero and footer,
+retargets site links to `_top`, and switches progress to Homeroom's — see below.
 
 ## How resources were chosen
 
@@ -181,11 +187,27 @@ tools/biopunk-skill-tree/
 resources[]`, plus a `TreeDescriptor` with `initialPosition` and `dependencies`), so a node
 from either tree can be read by the same code.
 
-## A note on where this lives
+## Where it lives, and the two modes
 
-The page is `noindex` and off the public nav, like `/cores` and `/visa`, because the
-Founder Manual is a members' resource served from Homeroom behind the roster gate. The
-tree is the same curriculum in a different shape, so it inherits the same posture: a real
-URL you can send to a resident, not something we ask search engines to index. Moving it
-behind the Homeroom gate, or opening it up, are both one-line changes — the `robots` meta
-tag in `skilltree.html`, and an entry in `sitemap.xml`.
+Its home is Homeroom: `/homeroom/library/tree`, a third tab of the Library next to the
+manual and your deliverables, behind the same roster gate as the curriculum it draws.
+Homeroom does not reimplement it — it embeds `/skilltree.html?embed=1` in an iframe, the
+same way `/homeroom/labs/cores` embeds the Core Facility Finder.
+
+That gives the page two modes, and the difference is progress:
+
+| | Standalone `/skilltree` | Embedded `/homeroom/library/tree` |
+| --- | --- | --- |
+| Chrome | Its own nav, hero and footer | Homeroom's, and it hides its own |
+| Progress | `localStorage`, per browser | The member's real progress, from `/homeroom/api/library` |
+| Marking done | A button, kept locally | **Not possible** — a node is done when the deliverable is logged against its module, and there is one form for that |
+| Site links | Normal | `target="_top"`, so they break out of the iframe |
+
+Embedded mode is the one that matters. A tree that kept its own idea of "done" next to
+Homeroom's would be a second, weaker truth about the same thing; instead it shows
+Homeroom's answer and sends you to the module's form to change it. If that call fails —
+signed out, offline, a 401 — it falls back to `localStorage` and says nothing.
+
+The standalone page stays `noindex` and off the public nav, like `/cores` and `/visa`:
+a real URL you can send to a resident, not something we ask search engines to index.
+Opening it up is the `robots` meta tag in `skilltree.html` plus an entry in `sitemap.xml`.

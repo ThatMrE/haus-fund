@@ -8,6 +8,13 @@
 <meta name="description" content="The Biopunk Founder Manual as a navigable skill tree: 47 nodes across six tracks, each with outcomes, the work, a deliverable, curated reading and a technique video.">
 <meta name="robots" content="noindex, nofollow">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<script>
+/* Set the embed class before first paint, so the Homeroom iframe never flashes
+   the standalone nav and hero before hiding them. */
+try { if (new URLSearchParams(location.search).get('embed') === '1') {
+  document.documentElement.className = 'embed';
+} } catch (e) { /* very old browser: the page just renders standalone */ }
+</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700;800;900&family=Barlow+Condensed:wght@600;700;800;900&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600&family=DM+Mono:wght@400;500&display=swap">
 <style>
@@ -202,6 +209,17 @@ footer{background:#0D0D0D;border-top:1px solid rgba(255,255,255,0.06);padding:32
   .stat-row{gap:32px;}
   footer{padding:32px 24px 96px;}
 }
+/* ── embedded in Homeroom (/homeroom/library/tree) ──
+   Homeroom supplies the chrome: its own nav, its pagehead and its footer. The
+   page drops its own so the two do not stack, and goes transparent so the
+   iframe sits on Homeroom's canvas rather than painting a second one. */
+html.embed nav,html.embed .hero,html.embed footer{display:none;}
+html.embed body{background:transparent;}
+html.embed .wrap{padding:0 0 28px;max-width:none;}
+html.embed .bar{margin:0 0 20px;padding:12px 0;background:#F8F7F3;}
+html.embed .mapwrap{height:min(70vh,660px);}
+.live{font-family:'DM Mono',monospace;font-size:11px;letter-spacing:0.07em;text-transform:uppercase;color:#1B7A48;background:#D8F0E5;border-radius:4px;padding:3px 8px;white-space:nowrap;}
+
 @media(prefers-reduced-motion:reduce){*{transition:none!important;}}
 </style>
 </head>
@@ -313,6 +331,7 @@ footer{background:#0D0D0D;border-top:1px solid rgba(255,255,255,0.06);padding:32
   <div class="dfoot">
     <button type="button" class="btn btn-p" id="dDone">Mark done</button>
     <a class="btn btn-s" id="dHomeroom" href="/homeroom/library">Log it in Homeroom</a>
+    <span class="live" id="dLive" hidden></span>
   </div>
 </aside>
 

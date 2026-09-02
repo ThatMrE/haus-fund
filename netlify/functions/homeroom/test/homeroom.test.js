@@ -114,6 +114,7 @@ test('every members-only surface renders for a signed-in member', async () => {
     '/homeroom/mentors', '/homeroom/hours', '/homeroom/hours/new',
     '/homeroom/jobs', '/homeroom/events', '/homeroom/events/list', '/homeroom/events/new',
     '/homeroom/library', '/homeroom/library/new', '/homeroom/library/notes',
+    '/homeroom/library/tree',
     '/homeroom/publish',
     '/homeroom/intros', '/homeroom/messages',
     '/homeroom/messages/new', '/homeroom/notifications', '/homeroom/saved', '/homeroom/search',

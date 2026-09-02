@@ -13,7 +13,7 @@ shares the domain, the design system and the sign-in.
 | **Funders** | Rate My Funder — the capital map, rated on five axes, with replies. |
 | **Mentors** | A searchable roster, vetted, bookable on their own calendars. |
 | **Events** | A month calendar, with Luma sync for luma.com/biopunk. |
-| **Library** | The Biopunk Founder Manual as a training system with deliverables. |
+| **Library** | The Biopunk Founder Manual as a training system with deliverables, and the same curriculum as a navigable skill tree. |
 | **Publish** | A member sends a post to the public feed at haus.fund/news. |
 
 Plus jobs, a fundraising pipeline, intro requests and messaging.
@@ -424,6 +424,21 @@ Derivative, New Energy Nexus and 5050/50Y. Every module states what you should
 be able to do afterwards and what work produces it, and `deliverable` is the
 same artefact the 90-day calendar asks for in that week. Progress is per member
 and "done" means the artefact exists, with a link to it.
+
+**The skill tree is the same curriculum, drawn as a graph.**
+`/homeroom/library/tree` embeds the tool served at `haus.fund/skilltree`, with
+`?embed=1` so it drops its own nav, hero and footer and Homeroom's chrome is the
+only chrome — the same pattern as the Core Facility Finder at
+`/homeroom/labs/cores`. It then calls `/homeroom/api/library` for the signed-in
+member's progress, so a node reads as done exactly when the deliverable is
+logged against its module. It deliberately cannot mark anything done: there is
+one way to finish a module and it is the module's own form. Signed out, or if
+that call fails, the tool falls back to browser-local progress and says nothing.
+
+The tree draws 47 nodes to the manual's 39 modules; the extra eight are an
+orientation, a showcase capstone, and six subjects the live calendar assumes but
+never teaches. It is generated from `curriculum.js` rather than copying it — see
+`tools/biopunk-skill-tree/README.md`.
 
 ## The data sets
 

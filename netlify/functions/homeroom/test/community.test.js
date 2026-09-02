@@ -583,6 +583,35 @@ test('module notes are private to the member who wrote them', async () => {
   assert.equal(hr.getProgress(nosy.id, module.id), null);
 });
 
+test('the skill tree embeds the tool and reads progress from the library', async () => {
+  const { call, id } = await member('treewalker');
+
+  const page = await (await call('/homeroom/library/tree')).text();
+  assert.match(page, /skilltree\.html\?embed=1/, 'the tool is embedded, not reimplemented');
+  assert.match(page, /Nothing locks/, 'and the page says the dependencies are not gates');
+
+  /* The tree reads the same progress the manual writes, through the same API. */
+  const api = await (await call('/homeroom/api/library?q=risk')).json();
+  const risk = api.modules.find((m) => m.slug === 'risk-mapping');
+  assert.ok(risk, 'the API answers with modules keyed by the slug the tree draws');
+  assert.equal(risk.state, null, 'nothing done yet');
+
+  await call('/homeroom/library/module/risk-mapping/progress', form({
+    csrf: (await csrfFor(call)), state: 'done', note: '', link: '',
+  }));
+
+  const after = await (await call('/homeroom/api/library?q=risk')).json();
+  assert.equal(after.modules.find((m) => m.slug === 'risk-mapping').state, 'done',
+    'so a node the member finished shows as done in the tree');
+  assert.equal(hr.progressSummary(id).done, 1);
+});
+
+test('the skill tree is members-only, like the manual it draws', async () => {
+  const stranger = agent();
+  const body = await (await stranger('/homeroom/library/tree')).text();
+  assert.doesNotMatch(body, /skilltree\.html/, 'a signed-out visitor never gets the tree');
+});
+
 test('the S26 sequence is on the library page', async () => {
   const { call } = await member('sequencereader');
   const page = await (await call('/homeroom/library')).text();

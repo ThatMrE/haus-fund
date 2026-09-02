@@ -136,6 +136,19 @@ if (tree.counts.nodes !== data.nodes.length) {
   fail('tree.json and skilltree-data.js disagree on node count — re-run build_tree.mjs');
 }
 
+/* Homeroom's /homeroom/library/tree page states the node count in prose, and
+   cannot import it: the tree is not in that function's bundle. Check it here
+   instead, so the number in the copy cannot quietly go stale. */
+const routes = await readFile(
+  resolve(ROOT, 'netlify', 'functions', 'homeroom', 'app', 'routes.js'), 'utf8');
+const stated = /const SKILL_TREE_NODES = (\d+);/.exec(routes);
+if (!stated) {
+  fail('homeroom routes.js no longer declares SKILL_TREE_NODES — the tree page needs it');
+} else if (Number(stated[1]) !== data.nodes.length) {
+  fail(`homeroom routes.js says SKILL_TREE_NODES = ${stated[1]}, but the tree draws `
+    + `${data.nodes.length} — update it`);
+}
+
 /* ── report ──────────────────────────────────────────────────────────────── */
 
 if (problems.length) {
