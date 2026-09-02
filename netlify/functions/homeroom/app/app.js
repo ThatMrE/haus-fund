@@ -71,7 +71,17 @@ export async function handle(req, res) {
     if (authHandler) return await authHandler(ctx);
 
     if (pathname === '/homeroom/health') {
-      return sendJson(res, { ok: true, ...hr.networkStats(), now: nowSeconds() });
+      // Reports the integrations too, so "is publishing wired up" is one curl
+      // rather than a deploy and a guess.
+      const { health: supabaseHealth } = await import('./supabase.js');
+      const { configured: lumaConfigured, calendarUrl } = await import('./luma.js');
+      return sendJson(res, {
+        ok: true,
+        ...hr.networkStats(),
+        supabase: await supabaseHealth(),
+        luma: { configured: lumaConfigured(), calendar: calendarUrl() },
+        now: nowSeconds(),
+      });
     }
 
     const handler = homeroomRoute(req.method, pathname);

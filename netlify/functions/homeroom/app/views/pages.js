@@ -24,13 +24,15 @@ export function gatePage(ctx, { stats }) {
       what a reagent actually costs, which funder returns calls, who has a spare minus-80 in
       Lisbon, and the questions you would not put your name to in public.</p>
     <ul class="gatelist">
+      <li><b>Chat</b> ${stats.channels} channels, unranked and unarchived, for everything that does not need to be findable in a year.</li>
       <li><b>Forum</b> ask ${stats.members} members a question and get answers from people who already solved it.</li>
-      <li><b>Directory</b> every member, tagged by what they can actually help with.</li>
-      <li><b>Labs</b> ${stats.orgs} labs, foundries, collectives and startups, with progress updates.</li>
-      <li><b>Deals</b> ${stats.deals} negotiated discounts on reagents, sequencing, synthesis and compute.</li>
-      <li><b>Funders</b> ${stats.funders} funders with ${stats.reviews} member-written reviews. Five stars, no diplomacy.</li>
-      <li><b>Office hours</b> book time with members who have done the thing you are about to do.</li>
-      <li><b>Jobs, events, library</b> the rest of the scaffolding.</li>
+      <li><b>Yearbook</b> every founder, every cohort — what they are building and what they were before.</li>
+      <li><b>Labs</b> the Global Biolab Atlas: ${stats.atlas} community and open-science labs, ${stats.atlasActive} confirmed open. Plus the Core Facility Finder.</li>
+      <li><b>Perks</b> ${stats.deals} programmes across every category of startup support, from cloud credits to gene synthesis to non-dilutive capital.</li>
+      <li><b>Funders</b> ${stats.funders} on the capital map with ${stats.reviews} member-written reviews. Rated on speed, value, terms and whether they would raise again.</li>
+      <li><b>Mentors</b> ${stats.vetted} vetted mentors of ${stats.mentors}, bookable straight on their calendar.</li>
+      <li><b>Library</b> the Biopunk Founder Manual: ${stats.modules} modules across six tracks, each ending in something you actually produced.</li>
+      <li><b>Jobs and events</b> the rest of the scaffolding.</li>
     </ul>
     <div class="gateactions">
       <a class="btn solid" href="/homeroom/signup">Create an account</a>
@@ -167,7 +169,7 @@ export function homePage(ctx, {
     </div>
     <div class="heroactions">
       <a class="btn solid" href="/homeroom/ask">Ask the network</a>
-      <a class="btn ghost" href="/homeroom/people">Find an expert</a>
+      <a class="btn ghost" href="/homeroom/mentors">Find a mentor</a>
     </div>
   </div>
 
@@ -223,9 +225,9 @@ export function homePage(ctx, {
 
       ${section('Fresh deals', deals.length
         ? html`<ul class="rail-list">${deals.map((d) => html`<li>
-            <a href="/homeroom/deal/${d.slug}">${d.vendor}</a>
+            <a href="/homeroom/perk/${d.slug}">${d.vendor}</a>
             <span class="mono dim">${d.worth || d.title}</span></li>`)}</ul>`
-        : html`<p class="mono dim">No deals yet.</p>`, { href: '/homeroom/deals' })}
+        : html`<p class="mono dim">No perks yet.</p>`, { href: '/homeroom/perks' })}
 
       ${section('Answering the most', answerers.length
         ? html`<ul class="rail-list">${answerers.map((a) => html`<li>
@@ -808,62 +810,13 @@ export function updateFormPage(ctx, { org, error = null }) {
 
 /* ------------------------------------------------------------------ deals */
 
-export function dealsPage(ctx, { deals, total, category, q, claimed }) {
-  return html`<div class="pagehead">
-    <div><h1>Deals</h1><p class="lede">${plural(total, 'live deal')} negotiated for the community.
-      Claim one to reveal the code.</p></div>
-    <a class="btn ghost" href="/homeroom/deals/new">Add a deal</a>
-  </div>
-  <form class="searchbar" method="get" action="/homeroom/deals">
-    <input type="search" name="q" value="${q}" placeholder="vendor or what it covers" />
-    <button class="btn" type="submit">Search</button>
-  </form>
-  ${filterBar(DEAL_CATEGORIES, { active: category, basePath: '/homeroom/deals', param: 'category', allLabel: 'everything' })}
-  ${deals.length ? html`<ul class="cards grid">${deals.map((d) => html`<li class="card deal">
-    <a class="cardlink" href="/homeroom/deal/${d.slug}">
-      <div class="grow">
-        <div class="name">${d.vendor} ${claimed.has(d.id) ? pill('claimed', 'ok') : ''}</div>
-        <div class="headline">${d.title}</div>
-        <div class="meta mono">${labelFor(DEAL_CATEGORIES, d.category, d.category)}
-          ${d.worth ? html`<span class="sep">/</span> <b class="worth">${d.worth}</b>` : ''}
-          <span class="sep">/</span> ${plural(d.claim_count, 'claim')}</div>
-        <p class="summary">${d.summary}</p>
-      </div></a>
-  </li>`)}</ul>` : empty('No deals in this category yet.')}`;
-}
 
-export function dealPage(ctx, { deal, claimed, claimCount }) {
-  return html`<div class="profilehead">
-    <div class="grow">
-      <h1>${deal.vendor}</h1>
-      <p class="headline">${deal.title}</p>
-      <div class="mono dim">${labelFor(DEAL_CATEGORIES, deal.category, deal.category)}
-        ${deal.worth ? html` <span class="sep">/</span> worth ${deal.worth}` : ''}
-        <span class="sep">/</span> ${plural(claimCount, 'member')} claimed
-        <span class="sep">/</span> posted by ${memberLink(deal.posted_by)} ${when(deal.created_at)}
-        ${deal.expires_at ? html` <span class="sep">/</span> expires ${stamp(deal.expires_at)}` : ''}</div>
-    </div>
-  </div>
-  ${deal.summary ? html`<p class="lede">${deal.summary}</p>` : ''}
-  ${deal.details ? body(deal.details) : ''}
-  ${claimed
-    ? html`<div class="claimbox">
-        <div class="mono dim">your code</div>
-        <div class="code">${deal.code || 'No code needed — use the link.'}</div>
-        ${deal.url ? html`<a class="btn solid" href="${deal.url}" rel="nofollow noopener" target="_blank">Go to ${deal.vendor}</a>` : ''}
-      </div>`
-    : html`<form method="post" action="/homeroom/deal/${deal.slug}/claim">
-        ${csrfField(ctx)}
-        <button class="btn solid" type="submit">Claim this deal</button>
-        <p class="mono dim">Claiming records that you took it, so the community can renegotiate with real numbers.</p>
-      </form>`}`;
-}
 
 export function dealFormPage(ctx, { error = null, values = {} }) {
   return html`<h1>Add a deal</h1>
   <p class="lede">Something you negotiated that other members can use too.</p>
   ${error ? html`<div class="notice error">${error}</div>` : ''}
-  <form class="stack wide" method="post" action="/homeroom/deals/new">
+  <form class="stack wide" method="post" action="/homeroom/perks/new">
     ${csrfField(ctx)}
     <div class="row">
       <div class="field"><label for="vendor">Vendor</label>
@@ -891,114 +844,7 @@ export function dealFormPage(ctx, { error = null, values = {} }) {
 
 /* ---------------------------------------------------------------- funders */
 
-export function fundersPage(ctx, { funders, total, page, filters, basePath, tracked }) {
-  return html`<div class="pagehead">
-    <div><h1>Funders</h1><p class="lede">${plural(total, 'funder')} on file, rated by members who
-      actually took their money — or did not. Reviews are anonymous by default.</p></div>
-    <div class="heroactions">
-      <a class="btn ghost" href="/homeroom/pipeline">Your pipeline</a>
-      <a class="btn solid" href="/homeroom/funders/new">Add a funder</a>
-    </div>
-  </div>
-  <form class="searchbar" method="get" action="/homeroom/funders">
-    <input type="search" name="q" value="${filters.q}" placeholder="name, thesis, geography" />
-    ${select('kind', FUNDER_KINDS, filters.kind, { blank: 'any kind' })}
-    ${select('sort', [
-      { slug: 'rating', label: 'best rated' }, { slug: 'reviews', label: 'most reviewed' },
-      { slug: 'name', label: 'name' }, { slug: 'new', label: 'newest' },
-    ], filters.sort)}
-    <button class="btn" type="submit">Filter</button>
-  </form>
-  ${funders.length ? html`<ul class="cards">${funders.map((f) => html`<li class="card funder">
-    <div class="grow">
-      <div class="title-line"><a class="title" href="/homeroom/funder/${f.slug}">${f.name}</a>
-        ${pill(labelFor(FUNDER_KINDS, f.kind, f.kind))}
-        ${f.dilutive ? '' : pill('non-dilutive', 'ok')}
-        ${tracked.has(f.id) ? pill('in your pipeline', 'cohort') : ''}</div>
-      <div class="subline mono">${f.focus || 'no stated focus'}
-        ${f.stages ? html`<span class="sep">/</span> ${f.stages}` : ''}
-        ${f.check_size ? html`<span class="sep">/</span> ${f.check_size}` : ''}
-        ${f.location ? html`<span class="sep">/</span> ${f.location}` : ''}</div>
-    </div>
-    <div class="ratingcol">${stars(f.avg_rating, { count: f.review_count })}</div>
-  </li>`)}</ul>` : empty('Nothing matches. Add the funder and be the first to review it.')}
-  ${pager({ page, total, perPage: PER_PAGE, basePath })}`;
-}
 
-export function funderPage(ctx, { funder, reviews, myReview, entry, orgs }) {
-  return html`<div class="profilehead">
-    <div class="grow">
-      <h1>${funder.name}</h1>
-      <div class="mono dim">${labelFor(FUNDER_KINDS, funder.kind, funder.kind)}
-        ${funder.focus ? html` <span class="sep">/</span> ${funder.focus}` : ''}
-        ${funder.stages ? html` <span class="sep">/</span> ${funder.stages}` : ''}
-        ${funder.check_size ? html` <span class="sep">/</span> ${funder.check_size}` : ''}
-        ${funder.location ? html` <span class="sep">/</span> ${funder.location}` : ''}
-        ${funder.website ? html` <span class="sep">/</span> <a href="${funder.website}" rel="nofollow noopener" target="_blank">site</a>` : ''}</div>
-      <div class="bigstars">${stars(funder.avg_rating, { count: funder.review_count })}
-        ${funder.avg_speed ? html`<span class="mono dim">speed ${funder.avg_speed}/5</span>` : ''}
-        ${funder.avg_value ? html`<span class="mono dim">value-add ${funder.avg_value}/5</span>` : ''}</div>
-    </div>
-  </div>
-  ${funder.description ? body(funder.description) : ''}
-
-  <div class="cols">
-    <div class="main">
-      ${section(`Reviews (${reviews.length})`, reviews.length
-        ? html`<ul class="rail-list wide">${reviews.map((r) => html`<li class="review">
-            <div class="mono">${stars(r.rating)}
-              <span class="sep">/</span> ${r.anonymous ? html`<span class="anon">anonymous member</span>` : memberLink(r.user_id)}
-              <span class="sep">/</span> ${when(r.created_at)}
-              ${r.invested ? pill('they invested', 'ok') : pill('did not invest')}
-              ${r.speed ? html`<span class="dim">speed ${r.speed}/5</span>` : ''}
-              ${r.value_add ? html`<span class="dim">value ${r.value_add}/5</span>` : ''}</div>
-            ${r.body ? body(r.body) : ''}
-          </li>`)}</ul>`
-        : html`<p class="mono dim">No reviews yet. Yours would be the first.</p>`)}
-
-      ${section(myReview ? 'Update your review' : 'Write a review', html`
-        <form class="stack" method="post" action="/homeroom/funder/${funder.slug}/review">
-          ${csrfField(ctx)}
-          <div class="row">
-            <div class="field"><label for="rating">Overall</label>
-              ${select('rating', ratingOptions(), String(myReview?.rating || 3))}</div>
-            <div class="field"><label for="speed">Speed to decide</label>
-              ${select('speed', ratingOptions(), String(myReview?.speed || ''), { blank: '—' })}</div>
-            <div class="field"><label for="value_add">Value beyond money</label>
-              ${select('value_add', ratingOptions(), String(myReview?.value_add || ''), { blank: '—' })}</div>
-          </div>
-          <div class="field"><label for="rbody">What happened</label>
-            <textarea id="rbody" name="body" rows="6"
-              placeholder="How they behaved in diligence, how fast, what they did after the wire.">${myReview?.body || ''}</textarea></div>
-          <label class="check"><input type="checkbox" name="invested" value="1" ${raw(myReview?.invested ? 'checked' : '')} /> they ended up investing</label>
-          <label class="check"><input type="checkbox" name="anonymous" value="1" ${raw(myReview && !myReview.anonymous ? '' : 'checked')} /> post anonymously</label>
-          <button class="btn solid" type="submit">${myReview ? 'Update review' : 'Post review'}</button>
-        </form>`)}
-    </div>
-    <aside class="rail">
-      ${section('Your pipeline', html`
-        <form class="stack" method="post" action="/homeroom/funder/${funder.slug}/track">
-          ${csrfField(ctx)}
-          <div class="field"><label for="status">Status</label>
-            ${select('status', PIPELINE_STATUSES, entry?.status || 'researching')}</div>
-          <div class="field"><label for="org">For which lab</label>
-            ${select('org', orgs.map((o) => ({ slug: String(o.id), label: o.name })), String(entry?.org_id || ''), { blank: '— none —' })}</div>
-          <div class="field"><label for="amount">Amount</label>
-            <input id="amount" name="amount" value="${entry?.amount || ''}" maxlength="60" placeholder="€150k SAFE" /></div>
-          <div class="field"><label for="notes">Private notes</label>
-            <textarea id="notes" name="notes" rows="4" maxlength="4000">${entry?.notes || ''}</textarea>
-            <div class="hint">Only you can read these.</div></div>
-          <button class="btn solid" type="submit">${entry ? 'Update' : 'Track this funder'}</button>
-        </form>
-        ${entry ? html`<form method="post" action="/homeroom/funder/${funder.slug}/untrack">
-          ${csrfField(ctx)}<button class="linkish mono" type="submit">remove from pipeline</button></form>` : ''}`)}
-    </aside>
-  </div>`;
-}
-
-function ratingOptions() {
-  return [5, 4, 3, 2, 1].map((n) => ({ slug: String(n), label: `${n} — ${['unusable', 'poor', 'fine', 'good', 'excellent'][n - 1]}` }));
-}
 
 export function funderFormPage(ctx, { error = null, values = {} }) {
   return html`<h1>Add a funder</h1>
@@ -1329,29 +1175,6 @@ export function eventFormPage(ctx, { error = null, defaultStart }) {
 
 /* ---------------------------------------------------------------- library */
 
-export function libraryPage(ctx, { entries, kind, q }) {
-  return html`<div class="pagehead">
-    <div><h1>Library</h1><p class="lede">The answers worth writing down once. Guides, protocols,
-      templates and arguments the network keeps rehashing.</p></div>
-    <a class="btn solid" href="/homeroom/library/new">Write one</a>
-  </div>
-  <form class="searchbar" method="get" action="/homeroom/library">
-    <input type="search" name="q" value="${q}" placeholder="search the library" />
-    <button class="btn" type="submit">Search</button>
-  </form>
-  ${filterBar(LIBRARY_KINDS, { active: kind, basePath: '/homeroom/library', param: 'kind', allLabel: 'everything' })}
-  ${entries.length ? html`<ul class="cards grid">${entries.map((e) => html`<li class="card">
-    <a class="cardlink" href="/homeroom/library/${e.slug}">
-      <div class="grow">
-        <div class="name">${e.title}</div>
-        <div class="meta mono">${labelFor(LIBRARY_KINDS, e.kind, e.kind)}
-          <span class="sep">/</span> ${plural(e.reads, 'read')}
-          <span class="sep">/</span> ${when(e.updated_at)}</div>
-        <p class="summary">${e.summary}</p>
-      </div></a>
-    ${tagList(e.tags).length ? html`<div class="tagrow">${tagList(e.tags).map((t) => html`<span class="tag ghost">${t}</span>`)}</div>` : ''}
-  </li>`)}</ul>` : empty('Nothing in the library yet.')}`;
-}
 
 export function libraryEntryPage(ctx, { entry }) {
   return html`<article class="doc">
@@ -1511,7 +1334,7 @@ export function searchPage(ctx, { query, results, voted }) {
       ${results.funders.length ? section('Funders', html`<ul class="rail-list wide">${results.funders.map((f) => html`<li>
         <a href="/homeroom/funder/${f.slug}">${f.name}</a> ${stars(f.avg_rating, { count: f.review_count })}</li>`)}</ul>`) : ''}
       ${results.deals.length ? section('Deals', html`<ul class="rail-list wide">${results.deals.map((d) => html`<li>
-        <a href="/homeroom/deal/${d.slug}">${d.vendor}</a> <span class="mono dim">${d.title}</span></li>`)}</ul>`) : ''}
+        <a href="/homeroom/perk/${d.slug}">${d.vendor}</a> <span class="mono dim">${d.title}</span></li>`)}</ul>`) : ''}
       ${results.library.length ? section('Library', html`<ul class="rail-list wide">${results.library.map((e) => html`<li>
         <a href="/homeroom/library/${e.slug}">${e.title}</a> <span class="mono dim">${e.summary}</span></li>`)}</ul>`) : ''}
     `}`;
@@ -1529,9 +1352,11 @@ export function aboutPage(ctx, { stats }) {
     <span><b>${stats.comments}</b> replies</span>
     <span><b>${stats.funders}</b> funders</span>
     <span><b>${stats.reviews}</b> reviews</span>
-    <span><b>${stats.deals}</b> deals</span>
+    <span><b>${stats.deals}</b> perks</span>
+    <span><b>${stats.mentors}</b> mentors</span>
+    <span><b>${stats.atlas}</b> atlas labs</span>
+    <span><b>${stats.modules}</b> manual modules</span>
     <span><b>${stats.jobs}</b> roles</span>
-    <span><b>${stats.library}</b> library entries</span>
   </div>
   <h2>The rules</h2>
   <ol class="rules">
@@ -1547,9 +1372,21 @@ export function aboutPage(ctx, { stats }) {
       for agents that could cause mass harm — same line as the public side, no exceptions here either.</li>
   </ol>
   <h2>Where things live</h2>
-  <p>Forum for questions, people for expertise, labs for who is building what, deals for money you
-    do not have to spend, funders for who to talk to and what happened last time, office hours for a
-    real half hour with someone, jobs and events for the rest. Search covers all of it at once.</p>
+  <p><b>Chat</b> for anything that does not need to survive the week — nothing there is ranked,
+    scored or surfaced anywhere else, which is what makes it usable. <b>Forum</b> for the question
+    whose answer should still be findable in a year. If you find yourself writing something good in
+    chat, move it.</p>
+  <p><b>Yearbook</b> for who everyone is and what they were before. <b>Labs</b> for where you can
+    physically do the work: the Global Biolab Atlas for community and open-science labs worldwide,
+    with an activity status a member has confirmed, and the Core Facility Finder for instrument time
+    by technique. <b>Perks</b> for money you do not have to spend. <b>Funders</b> for who to talk to
+    and what happened to the last person who did. <b>Mentors</b> and office hours for a real half
+    hour with someone who has done it. <b>Library</b> for the Founder Manual, which is a training
+    system rather than a reading list: every module ends in something you produced.
+    Search covers all of it at once.</p>
+  <p><b>Publishing.</b> Anything worth the public seeing goes out through
+    <a href="/homeroom/publish">Publish to news</a>, under your handle, after a steward reads it.
+    That is the only door between this room and the public site, and it only opens outward.</p>
   <p class="mono dim">Homeroom pages carry <code>noindex</code> and are invisible to logged-out visitors.
     Your email is used to sign in and to reset your password, and is never shown to other
     members.</p>`;
@@ -1562,3 +1399,9 @@ export function notFoundPage() {
 export function errorPage(message = 'Something went wrong.') {
   return html`<div class="empty mono">${message}</div>`;
 }
+
+/*
+ * The community rebuild's own pages live next door and are re-exported here, so
+ * routes.js keeps its single `import * as views from './views/pages.js'`.
+ */
+export * from './surfaces.js';

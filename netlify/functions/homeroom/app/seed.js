@@ -11,6 +11,13 @@ import { getDb } from './db.js';
 import { nowSeconds } from './util.js';
 import { hashPassword } from './auth.js';
 import * as bf from './models.js';
+import { PERKS } from './data/perks.js';
+// Aliased: this file already has fictional FUNDERS/LIBRARY constants of its own,
+// and the researched data sets are a different thing entirely.
+import { FUNDERS as CAPITAL_MAP } from './data/funders.js';
+import { ATLAS_LABS } from './data/atlas.js';
+import { MENTORS as MENTOR_ROSTER } from './data/mentors.js';
+import { TRACKS, LIBRARY_MODULES } from './data/curriculum.js';
 
 const HOUR = 3600;
 const DAY = 86400;
@@ -21,9 +28,87 @@ export const SAMPLE_PASSWORD = 'homeroom-sample-pass';
 const SAMPLE_TABLES = [
   'hr_poll_votes', 'hr_poll_options', 'hr_votes', 'hr_saves', 'hr_follows', 'hr_post_tags',
   'hr_comments', 'hr_posts', 'hr_updates', 'hr_org_members', 'hr_orgs', 'hr_deal_claims',
-  'hr_deals', 'hr_funder_reviews', 'hr_pipeline', 'hr_funders', 'hr_bookings', 'hr_slots',
-  'hr_applications', 'hr_jobs', 'hr_rsvps', 'hr_events', 'hr_library', 'hr_intros',
+  'hr_deals', 'hr_review_votes', 'hr_review_comments', 'hr_funder_reviews', 'hr_pipeline',
+  'hr_funders', 'hr_bookings', 'hr_slots', 'hr_mentors',
+  'hr_applications', 'hr_jobs', 'hr_rsvps', 'hr_event_sources', 'hr_events', 'hr_library',
+  'hr_progress', 'hr_modules', 'hr_tracks', 'hr_intros',
+  'hr_chat_reactions', 'hr_chat', 'hr_channel_reads', 'hr_channels',
+  'hr_signatures', 'hr_yearbook', 'hr_atlas_reports', 'hr_atlas', 'hr_news_submissions',
   'hr_messages', 'hr_thread_members', 'hr_threads', 'hr_notifications', 'hr_expertise', 'hr_members',
+];
+
+/**
+ * The channels a new room opens with.
+ *
+ * Deliberately few. A chat that opens with twenty channels reads as abandoned
+ * on day one; five that fill up can be split later, and splitting a busy
+ * channel is a much easier conversation than reviving a dead one.
+ */
+const CHANNELS = [
+  ['general', 'general', 'Anything. The default room.', 'open'],
+  ['wetlab', 'wetlab', 'Protocols going wrong, reagents going missing, kit that will not behave.', 'open'],
+  ['fundraising', 'fundraising', 'Live raises, investor behaviour, term sheet questions. Say the real numbers.', 'open'],
+  ['perks', 'perks', 'Codes, credits and who has actually redeemed what. Stewards post confirmed codes here.', 'open'],
+  ['mentors', 'mentors', 'Who to ask about what, and intro requests that do not need a whole form.', 'open'],
+  ['showcase', 'showcase', 'Wins, launches, papers, first customers. Post yours.', 'open'],
+];
+
+/**
+ * Founder-wall entries for the sample members.
+ *
+ * [handle, cohort, house, venture, one-liner, quote, building, before]
+ */
+const YEARBOOK = [
+  ['helix_witch', 'S25', 'Punkhaus', 'Cultura Aberta',
+    'A community lab in Lisbon that gets forty people through their first transformation.',
+    'The institution was never the point. The bench was.',
+    'Standing up a public wet lab without a university behind it: the lease, the insurance, the waste contract, and the conversation with the landlord that decides everything.',
+    'Six years of molecular biology inside an institute that would not let the public through the door.'],
+  ['pipette_punk', 'W25', 'Punkhaus', 'Openbench',
+    'Open-hardware wet lab instruments a school can actually solder.',
+    'If the BOM is not public, it is not a tool. It is a subscription.',
+    'A thermocycler bill of materials under €150, and the thermal design work that makes the ramp rate honest.',
+    'Hardware engineering in industrial automation, then two years reverse-engineering lab kit for fun.'],
+  ['crispr_kid', 'S26', 'Punkhaus', 'Off-target',
+    'A cheap off-target assay that does not need a sequencing core.',
+    'Everyone cites the off-target rate. Almost nobody measures their own.',
+    'Base editing with an honest off-target readout, at a cost a two-person company can run weekly.',
+    'Mid-PhD, and increasingly convinced the assay is the product.'],
+  ['ferment_or_die', 'S25', 'Femhaus', 'Loam Foods',
+    'Single-cell protein that does not taste like a compromise.',
+    'Scale-up is where the strain finds out what you actually selected for.',
+    'Getting a food-grade single-cell protein from 5L to 500L without losing the strain or the flavour.',
+    'Process engineering at a dairy CMO, which taught me more about food than any lab did.'],
+  ['mycelium_max', 'W26', 'Punkhaus', 'Hyphae Works',
+    'Mycelium composite panels that pass a commercial fire rating.',
+    'Growing the material is the easy part. The notified body is the hard part.',
+    'Fungal composites for interiors, and the EN 13501 certification path that decides whether any of it ships.',
+    'Furniture design, then four years of contamination at increasing scale.'],
+  ['garage_genome', 'W26', 'Safehaus', 'Kitchen Sequencing Club',
+    'Metagenomics on a laptop and a €700 sequencer.',
+    'The sequencer got cheap. Everything around it did not. That gap is the work.',
+    'A nanopore metagenomics workflow that runs without a cluster, and the reagent logistics for places couriers dislike.',
+    'Bioinformatics contracting, and a long argument with the price of flow cells.'],
+  ['biosafety_bee', 'S24', 'Safehaus', 'Independent',
+    'A risk assessment a two-person lab can actually complete.',
+    'Containment is not paperwork. The paperwork is how you prove you meant it.',
+    'Biosafety, dual-use review and export control for companies too small to have an officer.',
+    'Institutional biosafety officer for eleven years, which is where the templates come from.'],
+  ['open_assay', 'W25', 'Pharmhaus', 'Openbench',
+    'A cell-free kit that survives a courier in August.',
+    'A protocol nobody else can repeat is a hobby.',
+    'Assay validation and lyophilisation, so an open protocol still works when it arrives somewhere hot.',
+    'Assay development in diagnostics, and a growing intolerance for methods sections.'],
+  ['wetware_ann', 'S24', 'Femhaus', 'Kowalczyk Group',
+    'Cortical organoids with vasculature that survives past week twelve.',
+    'The ethics section is not an obstacle. It is the part where you say what you are actually doing.',
+    'Vascularised cortical organoids, and IRB submissions for human-derived material that do not get bounced.',
+    'Principal investigator, still is, and unconvinced those are separate careers.'],
+  ['plasmid_mule', 'S26', 'Punkhaus', 'Independent',
+    'Taking six-week cloning backlogs off other people’s hands.',
+    'Somebody has to do the cloning. It may as well be someone who is fast.',
+    'Contract molecular biology, and the MTAs and customs paperwork that move constructs across borders.',
+    'Ten years at the bench in three countries, and a strong view on shipping conditions.'],
 ];
 
 const MEMBERS = [
@@ -478,19 +563,42 @@ function seedHomeroom({ reset = false } = {}) {
     }
   }
 
-  /* ---- deals ---- */
+  /* ---- perks ----
+     The catalogue is researched rather than invented, so it goes in as-is and
+     the fictional DEALS list below it only adds the community-negotiated ones
+     that would not exist on a vendor's public page. */
+  const steward = named.includes('helix_witch') ? 'helix_witch' : named[0];
+  for (const perk of PERKS) {
+    const id = bf.createDeal({
+      vendor: perk.vendor, title: perk.title, category: perk.category,
+      summary: perk.summary, details: perk.details, worth: perk.worth,
+      code: perk.code || '', url: perk.url || null, access: perk.access,
+      requirement: perk.requirement || '', checked: perk.checked || '',
+      postedBy: steward,
+    });
+    setCreatedAt('hr_deals', id, now - Math.floor(random() * 90 * DAY));
+    for (const handle of handles.slice(0, Math.floor(random() * 8))) bf.claimDeal(id, handle);
+  }
   for (const [vendor, title, category, worth, code, url, details] of DEALS) {
     const id = bf.createDeal({
       vendor, title, category, worth, code, url, details,
-      summary: title,
-      postedBy: named.includes('helix_witch') ? 'helix_witch' : named[0],
+      summary: title, access: code ? 'code' : 'partner',
+      postedBy: steward,
     });
     setCreatedAt('hr_deals', id, now - Math.floor(random() * 60 * DAY));
     for (const handle of handles.slice(0, Math.floor(random() * 14))) bf.claimDeal(id, handle);
   }
 
-  /* ---- funders and reviews ---- */
+  /* ---- the capital map ----
+     Real, publicly listed programmes. Deliberately WITHOUT ratings: a seeded
+     review would be an invented claim about a real organisation, which is the
+     one thing a review site cannot come back from. The fictional funders below
+     carry the sample reviews instead, so the UI still has something to show. */
   const funderIds = new Map();
+  for (const funder of CAPITAL_MAP) {
+    const id = bf.createFunder({ ...funder, checkSize: funder.checkSize, addedBy: steward });
+    funderIds.set(funder.name, id);
+  }
   for (const [name, kind, focus, stages, checkSize, location, website, dilutive, description] of FUNDERS) {
     const id = bf.createFunder({
       name, kind, focus, stages, checkSize, location, website, dilutive, description,
@@ -501,7 +609,33 @@ function seedHomeroom({ reset = false } = {}) {
   for (const [funderName, user, rating, speed, valueAdd, invested, anonymous, body] of REVIEWS) {
     const funderId = funderIds.get(funderName);
     if (!funderId || !handles.includes(user)) continue;
-    bf.upsertReview({ funderId, userId: user, rating, speed, valueAdd, invested, anonymous, body });
+    bf.upsertReview({
+      funderId, userId: user, rating, speed, valueAdd, invested, anonymous, body,
+      founderFriendly: Math.max(1, Math.min(5, rating + (random() < 0.5 ? 0 : 1))),
+      terms: Math.max(1, Math.min(5, rating)),
+      wouldAgain: rating >= 4,
+      outcome: invested ? 'invested' : 'passed',
+      stage: pick(['pre-seed', 'seed', 'pre-revenue', 'one paper, no product']),
+      tags: pick([
+        'fast-decision,deeply-technical', 'slow-process,helpful-pass', 'great-intros,hands-on',
+        'clean-terms,kept-word', 'ghosted', 'hands-off,clean-terms',
+      ]),
+    });
+  }
+  // A few reviews get corroborated, which is what makes the sort order legible.
+  for (const review of instance.prepare('SELECT id, user_id FROM hr_funder_reviews').all()) {
+    for (const handle of handles.filter((h) => h !== review.user_id).slice(0, Math.floor(random() * 5))) {
+      bf.toggleReviewHelpful(review.id, handle);
+    }
+    if (random() < 0.4) {
+      const author = pick(handles.filter((h) => h !== review.user_id));
+      if (author) {
+        bf.addReviewComment({
+          reviewId: review.id, authorId: author, anonymous: random() < 0.6,
+          body: 'Same experience here, a cohort later. Sample reply — fictional demo data.',
+        });
+      }
+    }
   }
   // One worked-through pipeline so the board is not empty on first look.
   const pipelineRows = [
@@ -563,6 +697,114 @@ function seedHomeroom({ reset = false } = {}) {
     }
   }
 
+  /* ---- the biolab atlas ---- */
+  for (const [name, city, country, region, kind, status, bsl, website, capabilities, note, source] of ATLAS_LABS) {
+    bf.upsertLab({ name, city, country, region, kind, status, bsl, website, capabilities, note, source });
+  }
+  // Two member reports, so the "been there?" loop is visibly a loop.
+  const genspace = bf.getLab('genspace-brooklyn-ny');
+  if (genspace && handles.includes('garage_genome')) {
+    bf.reportLab({
+      labId: genspace.id, userId: 'garage_genome', status: 'active',
+      body: 'Sample report — fictional demo data. Membership was straightforward and the thermocyclers were free most evenings.',
+    });
+  }
+  const paillasse = bf.getLab('la-paillasse-paris');
+  if (paillasse && handles.includes('open_assay')) {
+    bf.reportLab({
+      labId: paillasse.id, userId: 'open_assay', status: 'dormant',
+      body: 'Sample report — fictional demo data. The organisation answers email; there was no open bench when I asked.',
+    });
+  }
+
+  /* ---- mentors ---- */
+  for (const mentor of MENTOR_ROSTER) bf.upsertMentor(mentor);
+  // A handful of the vetted ones publish Homeroom slots as well as their own
+  // scheduler, so the booking flow has something to book.
+  const vetted = instance
+    .prepare('SELECT id, name, track FROM hr_mentors WHERE vetted = 1 ORDER BY id LIMIT 14')
+    .all();
+  for (const [index, mentor] of vetted.entries()) {
+    const slotId = bf.createSlot({
+      hostId: steward,
+      mentorId: mentor.id,
+      title: `Office hours with ${mentor.name}`,
+      description: 'Sample slot — fictional demo data. Send your question in advance.',
+      format: index % 5 === 0 ? 'group' : 'one-on-one',
+      startsAt: now + (2 + index) * DAY + 17 * HOUR,
+      minutes: index % 5 === 0 ? 60 : 30,
+      capacity: index % 5 === 0 ? 6 : 1,
+      place: 'Video call',
+      topics: mentor.track,
+    });
+    if (index % 3 === 0) {
+      const booker = pick(handles.filter((h) => h !== steward));
+      if (booker) bf.bookSlot(slotId, booker, 'Sample booking question — fictional demo data.');
+    }
+  }
+
+  /* ---- the yearbook ---- */
+  for (const [handle, cohort, house, venture, oneLiner, quote, building, before] of YEARBOOK) {
+    if (!handles.includes(handle)) continue;
+    bf.upsertYearbook(handle, {
+      cohort, house, venture, one_liner: oneLiner, quote, building, before_haus: before,
+    });
+  }
+  const signable = YEARBOOK.map(([handle]) => handle).filter((h) => handles.includes(h));
+  for (const handle of signable) {
+    for (const author of signable.filter((h) => h !== handle).slice(0, 2 + Math.floor(random() * 3))) {
+      bf.signYearbook({
+        userId: handle, authorId: author,
+        body: 'Sample signature — fictional demo data. Ask them about the thing they will not shut up about.',
+      });
+    }
+  }
+
+  /* ---- chat ---- */
+  for (const [index, [slug, name, topic, kind]] of CHANNELS.entries()) {
+    bf.createChannel({ slug, name, topic, kind, position: index, createdBy: steward });
+  }
+  const CHAT_SAMPLE = [
+    ['general', 'helix_witch', 'Morning. Waste contractor finally signed — we are legal as of today.'],
+    ['general', 'pipette_punk', 'Congratulations. How long did that take in the end?'],
+    ['general', 'helix_witch', 'Eleven weeks and four site visits. Happy to write it up if anyone is about to do the same.'],
+    ['wetlab', 'crispr_kid', 'Anyone got a GUIDE-seq alternative that does not need a core? Sample message — fictional demo data.'],
+    ['wetlab', 'open_assay', 'Depends how much sensitivity you can give up. Book me in office hours and bring the construct.'],
+    ['fundraising', 'ferment_or_die', 'Second partner meeting done. They want twelve months of pilot data before they move.'],
+    ['fundraising', 'mycelium_max', 'That is the standard ask now. Did they say twelve months of data, or twelve months of the same customer?'],
+    ['perks', 'plasmid_mule', 'Reminder that the Twist first-order rate is negotiated, not the web promo. Ask before you order.'],
+    ['mentors', 'biosafety_bee', 'I have four slots next week. Bring an actual risk assessment, not a description of one.'],
+    ['showcase', 'garage_genome', 'First external run finished on the kitchen setup. Sample message — fictional demo data.'],
+  ];
+  for (const [slug, author, text] of CHAT_SAMPLE) {
+    const channel = bf.getChannel(slug);
+    if (!channel || !handles.includes(author)) continue;
+    bf.postChat({ channelId: channel.id, authorId: author, body: text });
+  }
+  for (const message of instance.prepare('SELECT id FROM hr_chat ORDER BY id').all()) {
+    if (random() < 0.4) {
+      const who = pick(handles);
+      if (who) bf.toggleReaction(message.id, who, pick(['👍', '🧪', '🔥']));
+    }
+  }
+
+  /* ---- the founder manual ---- */
+  for (const [index, track] of TRACKS.entries()) bf.upsertTrack(track, index);
+  for (const [index, module] of LIBRARY_MODULES.entries()) bf.upsertModule(module, index);
+  // One member part-way through, so the progress bars are not all at zero.
+  if (handles.includes('ferment_or_die')) {
+    const started = instance.prepare('SELECT id, deliverable FROM hr_modules ORDER BY position LIMIT 7').all();
+    for (const [index, module] of started.entries()) {
+      bf.setProgress({
+        userId: 'ferment_or_die',
+        moduleId: module.id,
+        state: index < 4 ? 'done' : 'started',
+        note: 'Sample progress note — fictional demo data.',
+        link: index < 4 ? 'https://example.org/deliverable' : '',
+      });
+    }
+  }
+
   /* ---- intros and messages ---- */
   if (handles.includes('mycelium_max') && handles.includes('ferment_or_die')) {
     const request = bf.requestIntro({
@@ -606,8 +848,10 @@ if (isMain) {
     const s = result.stats;
     console.log(
       `Seeded ${s.members} members, ${s.orgs} labs, ${s.posts} threads, ${s.comments} replies, `
-      + `${s.deals} deals, ${s.funders} funders (${s.reviews} reviews), ${s.jobs} roles, `
-      + `${s.slots} office-hour slots, ${s.events} events, ${s.library} library entries.`,
+      + `${s.deals} perks, ${s.funders} funders (${s.reviews} reviews), ${s.jobs} roles, `
+      + `${s.slots} office-hour slots, ${s.events} events, ${s.library} library entries, `
+      + `${s.mentors} mentors, ${s.atlas} atlas labs, ${s.modules} manual modules, `
+      + `${s.channels} chat channels (${s.chat} messages).`,
     );
     console.log(`Sample logins: any handle above, password "${SAMPLE_PASSWORD}".`);
     console.log('All sample content is fictional.');

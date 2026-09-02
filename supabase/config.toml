@@ -1,0 +1,25 @@
+# Supabase project config for haus.fund.
+#
+#   supabase login
+#   supabase link --project-ref rppcppflvitypfrkzirk
+#   supabase db push
+#
+# Only the local-development section is meaningful in this file; the linked
+# project's real settings live in the dashboard. `project_id` is the local
+# container name, not the remote ref — `supabase link` records that separately
+# in .supabase/, which is gitignored.
+
+project_id = "haus-fund"
+
+[db]
+port = 54322
+major_version = 15
+
+[api]
+port = 54321
+schemas = ["public"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
+
+[studio]
+port = 54323
