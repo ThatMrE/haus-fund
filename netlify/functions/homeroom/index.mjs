@@ -23,14 +23,32 @@ async function boot() {
     const { getDb } = await import('./app/db.js');
     const db = getDb();
     // An empty Homeroom is indistinguishable from a broken one, so a fresh
-    // container fills itself with the sample network. HOMEROOM_SEED=off turns
-    // that off once there is real content to protect.
-    if (
-      process.env.HOMEROOM_SEED !== 'off'
-      && db.prepare('SELECT COUNT(*) AS n FROM users').get().n === 0
-    ) {
-      const { seedHomeroom } = await import('./app/seed.js');
-      seedHomeroom();
+    // container fills itself. What with, depends:
+    //
+    //   (unset)  the full sample network — ten invented accounts sharing a
+    //            documented password, plus invented labs, threads and mentors.
+    //            Right for reviewing the design, wrong for production, where
+    //            those accounts are ten working keys.
+    //   real     only the researched reference data: perks, the capital map,
+    //            the atlas, the manual and the channels. No accounts, no posts,
+    //            nothing invented. This is the production setting while storage
+    //            is still ephemeral — every cold container rebuilds the
+    //            catalogue and nobody inherits a fake login.
+    //   off      nothing at all.
+    //
+    // NOTE that `real` creates the house account, so userCount is 1 afterwards
+    // and the first person to sign up is NOT made a steward. With `off` the
+    // count stays 0 and they would be — which is why `off` should be paired
+    // with HOMEROOM_ACCESS=closed or a roster token.
+    const seedMode = process.env.HOMEROOM_SEED;
+    if (seedMode !== 'off' && db.prepare('SELECT COUNT(*) AS n FROM users').get().n === 0) {
+      if (seedMode === 'real') {
+        const { seedReal } = await import('./app/seed-real.js');
+        seedReal();
+      } else {
+        const { seedHomeroom } = await import('./app/seed.js');
+        seedHomeroom();
+      }
     }
     const { handle } = await import('./app/app.js');
     return handle;
