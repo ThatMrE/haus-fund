@@ -26,7 +26,43 @@ house under a double opt-in rule:
   agreed to anything.
 - [`docs/MENTOR-ENGINE.md`](docs/MENTOR-ENGINE.md) — mentors onboarded through
   an Airtable form, with the booking link gated behind a per-request accept.
-  People who did agree, which makes it a different problem.
+  People who did agree, which makes it a different problem. **Phase 1 of this
+  one is built** — see below.
+
+## The mentor desk
+
+A mentor's booking link used to be visible to every signed-in member, and
+downloadable in bulk from `/homeroom/api/mentors`, because `searchMentors()`
+selected `m.*` and `scheduler` rode along. It no longer does: the column is not
+in `MENTOR_FIELDS`, and `mentordesk.schedulerFor()` is the only reader.
+
+A member now writes a short request; the mentor answers it from an email, with
+no Homeroom account, through a tokenised link; and a yes mints a **grant** —
+one member, one mentor, 14 days, revocable, logged — which
+`/homeroom/mentor/:slug/book/:grant` resolves at click time. The URL never
+appears in a page.
+
+The mechanism protecting a mentor is **capacity, not privacy**: they filled in
+a form and a member picked them off a list, so hiding a decline would be
+theatre. What they need is to not be asked an eleventh time this month, so the
+cap is checked *before* a request can be written and a mentor at their limit is
+never asked at all.
+
+| Variable | Default | Notes |
+| --- | --- | --- |
+| `HOMEROOM_MENTOR_GATE` | `1` | `0` restores the old behaviour — the link straight on the page. |
+| `HOMEROOM_MENTOR_MAIL_FROM` | falls back to `HOMEROOM_MAIL_FROM` | Should be its own identity: mentor mail goes outside the house and a spam report must not land on password resets. |
+| `HOMEROOM_MENTOR_CAPACITY_DEFAULT` | `2` | Sessions a month, when the mentor did not say. |
+| `HOMEROOM_MENTOR_MAX_OPEN` | `3` | Open requests per member. |
+| `HOMEROOM_MENTOR_MAX_MONTHLY` | `6` | New requests per member per month. |
+| `HOMEROOM_MENTOR_REASK_DAYS` | `90` | Before asking the same mentor again after a decline. |
+| `HOMEROOM_MENTOR_REQUEST_DAYS` | `10` | Before an unanswered request ages out. |
+| `HOMEROOM_MENTOR_GRANT_DAYS` | `14` | How long a booking link works. |
+
+**No imported mentor has an email address**, so until the onboarding form
+exists (Phase 2) every profile says so rather than sending a request nobody
+will receive. `/homeroom/health` reports the gate, the listed and paused
+counts, requests waiting, and grants issued this month.
 
 It started as a reskin of Bookface, Y Combinator's internal network. The idea it
 copies is that the value comes from the room being closed: people say what a

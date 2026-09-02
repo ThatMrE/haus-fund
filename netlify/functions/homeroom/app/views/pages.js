@@ -1472,3 +1472,4 @@ export function errorPage(message = 'Something went wrong.') {
  * routes.js keeps its single `import * as views from './views/pages.js'`.
  */
 export * from './surfaces.js';
+export * from './mentordesk.js';

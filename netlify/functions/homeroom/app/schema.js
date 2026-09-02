@@ -563,6 +563,97 @@ CREATE TABLE IF NOT EXISTS hr_mentors (
 
 CREATE INDEX IF NOT EXISTS idx_hr_mentors_track ON hr_mentors(track, vetted DESC);
 
+/* ------------------------------------------------------------ mentor desk */
+
+/*
+ * Gating the booking link behind a per-request accept.
+ *
+ * The roster above says who is willing to mentor. These tables say whether a
+ * particular member may have a particular mentor's calendar, which until now
+ * was "everyone, always" — scheduler went out with every mentor row, to the
+ * page and to /homeroom/api/mentors alike.
+ *
+ * The scarce thing here is not the mentor's privacy; they filled in a form
+ * saying they want to help, and a member who picked them off a list obviously
+ * knows who they asked. The scarce thing is their calendar. So the mechanism
+ * is capacity — checked before a request can be written, so a mentor at their
+ * limit never has to decline — rather than the invisibility the intro engine
+ * needs. See docs/MENTOR-ENGINE.md §3.
+ */
+
+CREATE TABLE IF NOT EXISTS hr_mentor_requests (
+  id            INTEGER PRIMARY KEY AUTOINCREMENT,
+  mentor_id     INTEGER NOT NULL REFERENCES hr_mentors(id) ON DELETE CASCADE,
+  member_id     TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  track         TEXT NOT NULL DEFAULT '',
+  need          TEXT NOT NULL,
+  why_them      TEXT NOT NULL DEFAULT '',
+  tried         TEXT NOT NULL DEFAULT '',
+  asking_for    TEXT NOT NULL DEFAULT '',
+  state         TEXT NOT NULL DEFAULT 'sent'
+                CHECK (state IN ('sent','accepted','declined','expired','withdrawn')),
+  auto          INTEGER NOT NULL DEFAULT 0,  -- accepted without asking, per consent_mode
+  decline_note  TEXT NOT NULL DEFAULT '',    -- the mentor's own words, passed through
+  paused_mentor INTEGER NOT NULL DEFAULT 0,  -- the "not right now" button was used
+  token_hash    TEXT NOT NULL DEFAULT '',    -- sha256; the token itself is never stored
+  token_expires INTEGER,
+  created_at    INTEGER NOT NULL,
+  answered_at   INTEGER
+);
+
+CREATE INDEX IF NOT EXISTS idx_hr_mreq_mentor ON hr_mentor_requests(mentor_id, state, created_at);
+CREATE INDEX IF NOT EXISTS idx_hr_mreq_member ON hr_mentor_requests(member_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_hr_mreq_token ON hr_mentor_requests(token_hash);
+
+/*
+ * The exposed booking link: one member, one mentor, one window.
+ *
+ * The member never receives the scheduler URL. They receive a link to
+ * /homeroom/mentor/:slug/book/:grant, which checks this row and redirects. A
+ * rendered href is scrapeable by every member forever; a grant expires, is
+ * attributable, and can be revoked for anyone who has not yet clicked. It is
+ * not DRM — whoever clicks once can read the destination — and the mentor is
+ * told exactly that rather than left to assume otherwise.
+ */
+CREATE TABLE IF NOT EXISTS hr_mentor_grants (
+  id          TEXT PRIMARY KEY,
+  request_id  INTEGER NOT NULL REFERENCES hr_mentor_requests(id) ON DELETE CASCADE,
+  mentor_id   INTEGER NOT NULL REFERENCES hr_mentors(id) ON DELETE CASCADE,
+  member_id   TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  expires_at  INTEGER NOT NULL,
+  revoked     INTEGER NOT NULL DEFAULT 0,
+  clicks      INTEGER NOT NULL DEFAULT 0,
+  first_click INTEGER,
+  created_at  INTEGER NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_hr_grants_member ON hr_mentor_grants(member_id, expires_at);
+CREATE INDEX IF NOT EXISTS idx_hr_grants_request ON hr_mentor_grants(request_id);
+
+/* Did it happen, and was it any good. The only measure that matters. */
+CREATE TABLE IF NOT EXISTS hr_mentor_outcomes (
+  request_id INTEGER PRIMARY KEY REFERENCES hr_mentor_requests(id) ON DELETE CASCADE,
+  met        INTEGER NOT NULL DEFAULT 0,
+  useful     INTEGER,
+  note       TEXT NOT NULL DEFAULT '',
+  logged_at  INTEGER NOT NULL
+);
+
+/* Append-only. Answers "why did this member get this calendar link". */
+CREATE TABLE IF NOT EXISTS hr_mentor_events (
+  id         INTEGER PRIMARY KEY AUTOINCREMENT,
+  mentor_id  INTEGER,
+  request_id INTEGER,
+  actor_id   TEXT REFERENCES users(id) ON DELETE SET NULL,
+  actor_kind TEXT NOT NULL DEFAULT 'member'
+             CHECK (actor_kind IN ('member','steward','mentor','system','agent')),
+  event      TEXT NOT NULL,
+  detail     TEXT NOT NULL DEFAULT '',
+  created_at INTEGER NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_hr_mentor_events ON hr_mentor_events(request_id, created_at);
+
 /* ------------------------------------------------------- funder reviews++ */
 
 /* Rate My Funder: a review gets replies, because one bad experience is an

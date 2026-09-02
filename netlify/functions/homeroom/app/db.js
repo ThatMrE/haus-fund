@@ -99,6 +99,19 @@ const ADDED_COLUMNS = [
   ['hr_deals', 'access', "TEXT NOT NULL DEFAULT 'code'"],
   ['hr_deals', 'requirement', "TEXT NOT NULL DEFAULT ''"],
   ['hr_deals', 'checked', "TEXT NOT NULL DEFAULT ''"],
+  // Mentor desk: standing consent, availability and how much of it there is.
+  // `state` defaults to 'listed' so every existing row keeps behaving as it
+  // did — a migration that quietly unlisted the whole roster would be worse
+  // than no gate at all.
+  ['hr_mentors', 'state', "TEXT NOT NULL DEFAULT 'listed'"],
+  ['hr_mentors', 'consent_mode', "TEXT NOT NULL DEFAULT 'ask-me'"],
+  ['hr_mentors', 'capacity', 'INTEGER NOT NULL DEFAULT 2'],
+  ['hr_mentors', 'tracks', "TEXT NOT NULL DEFAULT ''"],
+  ['hr_mentors', 'email', "TEXT NOT NULL DEFAULT ''"],
+  ['hr_mentors', 'airtable_id', "TEXT NOT NULL DEFAULT ''"],
+  ['hr_mentors', 'confirmed_at', 'INTEGER'],
+  ['hr_mentors', 'paused_until', 'INTEGER'],
+  ['hr_mentors', 'synced_at', 'INTEGER'],
 ];
 
 function addColumns(instance) {

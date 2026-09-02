@@ -581,13 +581,30 @@ worse than a roster of 60, and counting the first number is how you get it.
 request tokens outlive a container recycle by design, and a mentor clicking
 accept into a 500 is the same failure as a target clicking yes into one.
 
-**Phase 1 — the gate, on the roster that already exists.** (~4 days)
+**Phase 1 — the gate, on the roster that already exists. BUILT.**
 `state`, `capacity`, `consent_mode`; requests and grants; the redirect; the
 `scheduler` column out of the shared query and its test; the four messages.
 Mentors are still imported by the existing script.
 
 *Done when:* no member-facing response contains a scheduler URL, and a booking
-link is reachable only through a grant.
+link is reachable only through a grant. Both are asserted in
+`test/mentordesk.test.js` against rendered bodies.
+
+Shipped as `app/mentordesk.js` (the state machine), `app/mentormail.js`,
+`app/views/mentordesk.js`, and the `hr_mentor_*` tables. Five things came out
+differently from the sketch above, each for a reason found while building:
+
+| Change | Why |
+| --- | --- |
+| **One link in the request email, not three** | Mail gateways fetch every URL in a message before delivering it. Three GET links — yes, no, not now — means a corporate link scanner can accept on a mentor's behalf. One link to a page with three POST buttons costs one tap and removes that entirely. |
+| **Pausing does not revoke outstanding grants** | §10.2 said it should. It should not: a mentor hitting "not right now" is saying *stop sending me requests*, not *take back the yes I already gave someone else*, and the member holding that grant did nothing wrong. |
+| **A mentor with no address cannot be asked at all** | New refusal, `no-contact`. Without it the request is written, never delivered, and expires ten days later looking like a mentor who ignored it. It also makes the state of the current roster visible: **no imported mentor has an address**, so nobody is askable until Phase 2 collects one. |
+| **`email` is read the same deliberate way as `scheduler`** | It is not in `MENTOR_FIELDS` either, so it cannot ride a row into a template or the JSON API. `contactFor(id)` is the only way to get it. |
+| **`email` is stored in plaintext, not hashed** | §8.3 proposed a hash plus a re-fetch at send time. There is nothing to re-fetch from until the Airtable sync exists, and a hash cannot be mailed. Revisit in Phase 2, when the sync is the source of truth — noted as **M-O-6**. |
+
+Also lazy rather than scheduled: `expireStale()` runs when request pages are
+read, not on a cron. A container in `/tmp` has no cron of its own, so anything
+that only runs on a timer does not run.
 
 **Phase 2 — the form and the sync.** (~3 days)
 The Airtable form, the field allowlist, the scheduled sync plus "sync now", the
@@ -683,6 +700,11 @@ addressed to a mentor.
 - **M-O-4. Should mentors see outcomes?** A mentor who learns their advice
   changed something stays a mentor. A mentor who learns their session was rated
   2 of 5 may not. Aggregate-only, once a year, is the likely answer.
+- **M-O-6. Mentor addresses at rest.** Phase 1 stores them in plaintext because
+  there is no sync to re-fetch from and a hash cannot be mailed. Once Phase 2
+  makes Airtable the source of truth, the address can be a hash plus a
+  send-time lookup, as §8.3 proposed. Until then `hr_mentors.email` is the most
+  sensitive column this app holds and `contactFor()` is the only reader.
 - **M-O-5. Capacity across lanes.** A mentor who is also reachable through the
   intro engine could be booked twice over. Simplest fix: once someone is a
   listed mentor, the intro engine stops surfacing them entirely — proposed in

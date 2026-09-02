@@ -83,6 +83,7 @@ export async function handle(req, res) {
         supabase: await supabaseHealth(),
         roster: { ...(await roster.health()), ...hr.rosterCounts() },
         luma: { configured: lumaConfigured(), calendar: calendarUrl() },
+        mentors: (await import('./mentordesk.js')).deskStats(),
         now: nowSeconds(),
       });
     }
