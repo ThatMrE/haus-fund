@@ -1168,3 +1168,110 @@ function submissionPill(status) {
   const cls = { published: 'ok', rejected: 'bad', failed: 'bad', queued: 'cohort' }[status] || '';
   return pill(status, cls);
 }
+
+/* ==========================================================================
+ * THE FRONT DOOR, FOR STEWARDS
+ * ======================================================================== */
+
+/**
+ * Where a steward resolves the cases the rule will not decide.
+ *
+ * The queue at the top is the point of the page. Everything else is context for
+ * the one question it asks: this person's dates say they live in the house and
+ * their status says the offer was declined or deferred — which is true?
+ */
+export function accessAdminPage(ctx, { counts, mode, health, pending, recent, lookup = null }) {
+  return html`<div class="pagehead">
+    <div>
+      <h1>Front door</h1>
+      <p class="lede">Who the programme roster lets into Homeroom, and the conflicts it cannot
+        settle on its own.</p>
+    </div>
+  </div>
+
+  <div class="statstrip">
+    <span><b>${counts.pending}</b> awaiting a decision</span>
+    <span><b>${counts.allow}</b> allowed</span>
+    <span><b>${counts.deny}</b> denied</span>
+    <span><b>${counts.review}</b> conflicts seen</span>
+  </div>
+
+  <div class="notice ${health.configured && health.reachable !== false ? '' : 'bad'}">
+    Mode <b>${mode}</b>.
+    ${mode === 'open' ? 'Anybody can create an account — this is the local-development setting, not a launch setting.' : ''}
+    ${mode === 'closed' ? 'Self-signup is off; stewards create accounts by hand.' : ''}
+    ${mode === 'roster' ? (health.configured
+      ? (health.reachable === false
+        ? 'The roster is configured but not answering. Signups are being refused with “try again shortly”, which is the correct behaviour but not a good one to leave running.'
+        : 'Signups are checked against the Airtable People table.')
+      : 'No token is set, so every signup is being refused. Set HOMEROOM_ROSTER_TOKEN.') : ''}
+  </div>
+
+  ${section('Needs a decision', pending.length
+    ? html`<p class="mono dim tiny">The date fields and the status field disagree. Nobody has been
+        let in and nobody has been turned away — the room is waiting on you.</p>
+      <ul class="cards">${pending.map((row) => html`<li class="card review-row">
+        <div class="grow">
+          <div class="title-line"><span class="title">${row.name || row.masked}</span>
+            ${pill('conflict', 'cohort')}</div>
+          <div class="subline mono">${row.masked}
+            <span class="sep">/</span> status <b>${row.status || '—'}</b>
+            <span class="sep">/</span> lifecycle <b>${row.lifecycle || '—'}</b>
+            ${row.resident_type ? html`<span class="sep">/</span> ${row.resident_type}` : ''}
+            ${row.cohort ? html`<span class="sep">/</span> ${row.cohort}` : ''}
+            <span class="sep">/</span> asked ${when(row.checked_at)}
+            ${row.attempts > 1 ? html`<span class="sep">/</span> ${row.attempts} attempts` : ''}</div>
+        </div>
+        <div class="decide">
+          <form method="post" action="/homeroom/stewards/access/${row.email_hash}/decide" class="inline">
+            ${csrfField(ctx)}
+            <input type="hidden" name="decision" value="allow" />
+            <button class="btn small solid" type="submit">Let them in</button>
+          </form>
+          <form method="post" action="/homeroom/stewards/access/${row.email_hash}/decide" class="inline">
+            ${csrfField(ctx)}
+            <input type="hidden" name="decision" value="deny" />
+            <button class="btn small" type="submit">Keep out</button>
+          </form>
+        </div>
+      </li>`)}</ul>`
+    : html`<p class="mono dim">Nothing waiting. Conflicts appear here the first time someone with
+        one tries to sign up.</p>`)}
+
+  ${section('Check an address', html`
+    <form class="searchbar" method="post" action="/homeroom/stewards/access/lookup">
+      ${csrfField(ctx)}
+      <input type="email" name="email" required placeholder="the address they applied with"
+        value="${lookup?.email || ''}" />
+      <button class="btn" type="submit">Check the roster</button>
+    </form>
+    <p class="mono dim tiny">Asks Airtable live. Use this when somebody says they cannot get in —
+      it answers “which of their addresses is on the record” in one go.</p>
+    ${lookup ? html`<div class="lookup ${lookup.verdict}">
+      <div class="mono"><b>${lookup.verdict}</b> <span class="sep">/</span> ${lookup.reason}
+        ${lookup.error ? html`<span class="sep">/</span> ${lookup.error}` : ''}</div>
+      ${lookup.person?.name ? html`<div>${lookup.person.name}
+        <span class="mono dim">status ${lookup.person.status || '—'} ·
+        lifecycle ${lookup.person.lifecycle || '—'} ·
+        ${lookup.person.residentType || 'no resident type'}
+        ${lookup.person.cohort ? html`· ${lookup.person.cohort}` : ''}</span></div>` : ''}
+    </div>` : ''}`)}
+
+  ${section('Recent checks', recent.length
+    ? html`<ul class="rail-list wide">${recent.map((row) => html`<li class="mono">
+        ${verdictPill(row.decision || row.verdict)}
+        <span class="sep">/</span> ${row.masked}
+        <span class="sep">/</span> ${row.decision ? html`decided by ${memberLink(row.decided_by)}` : row.reason}
+        <span class="sep">/</span> ${when(row.checked_at)}
+        ${row.user_id ? html`<span class="sep">/</span> ${memberLink(row.user_id)}` : ''}
+      </li>`)}</ul>`
+    : html`<p class="mono dim">Nothing yet.</p>`)}
+
+  <p class="mono dim tiny">Addresses are stored here only as a SHA-256 and shown masked — this
+    table is a decision log, not a copy of the roster.</p>`;
+}
+
+function verdictPill(verdict) {
+  const cls = { allow: 'ok', deny: 'bad', review: 'cohort' }[verdict] || '';
+  return pill(verdict, cls);
+}

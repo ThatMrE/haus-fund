@@ -73,7 +73,8 @@ inherits any change to the design system automatically.
 
 Homeroom owns its own accounts rather than borrowing an identity provider —
 one table, one scrypt hash, one signed cookie — which is what keeps it
-deployable with nothing to sign up for.
+deployable with nothing to sign up for. Who is *allowed* an account is a
+separate question, answered by the roster below.
 
 - **Signup** takes a handle, an email and a password of at least 10 characters.
   The handle is permanent and public; the email is only ever used to sign in and
@@ -95,6 +96,106 @@ Set a mail sender or resets cannot be delivered:
 | `HOMEROOM_RESEND_KEY` | Resend API key. Without it the link is written to the function log and nothing is sent. |
 | `HOMEROOM_MAIL_FROM` | The From address, e.g. `Homeroom <homeroom@haus.fund>`. |
 | `HOMEROOM_SHOW_RESET_LINK` | `1` puts the link on screen instead of mailing it. Local development only — never set this in production. |
+
+## The front door: who gets in
+
+Homeroom is members-only, and until the roster gate existed that meant "members
+only once you are inside" — anyone who found the URL could create an account.
+Signup is now checked against the Airtable People table, which is where the
+programme's own record of who was accepted already lives.
+
+### The rule
+
+Two Airtable fields describe someone's standing and they do not always agree.
+`Status` is the decision (Applied, Interviewed, Ready to Reject, Accepted,
+Declined, Pending, Rescinded, Waitlist, Deferred). `Lifecycle Status (Computed)`
+is a formula over the move-in and move-out dates (Alumni, Resident, Applicant,
+Past applicant).
+
+At the time this was built, of 141 people, **eight were `Resident` or `Alumni`
+by the dates while their `Status` said Rescinded, Declined or Deferred** —
+someone whose offer was pulled but whose move-in date was never cleared, or who
+declined a residency and later subletted. Those eight are the whole problem,
+because both obvious rules get them wrong: trusting `Status` alone locks out
+people who genuinely live in the house, and trusting the dates alone lets
+somebody whose offer was rescinded into a private room.
+
+So the verdict is three-valued:
+
+| Verdict | When | What happens |
+| --- | --- | --- |
+| `allow` | `Status = Accepted`, **or** lifecycle is Resident/Alumni, **or** resident type is Core resident / Subletter / RA / Alum / Co-founder | Account created, profile prefilled from the roster |
+| `deny` | Rescinded or Ready to Reject (these override *everything*, including an active residency), or no positive signal at all | Turned away |
+| `review` | The dates say resident and the status says Declined or Deferred | **Nobody is let in and nobody is turned away.** It lands in a steward queue at `/homeroom/stewards/access` with both fields shown |
+
+Rescinded overriding an active residency is deliberate: it is the most explicit
+signal the table can carry that someone's place was taken away, and an access
+gate should fail closed on it. If the date is what is wrong, a steward fixes the
+date.
+
+### The two failure directions
+
+This is the part to keep if any of it is ever rewritten:
+
+- **Signup fails closed.** If Airtable cannot be reached we do not know whether
+  this person belongs here, and creating an account on a guess is how a
+  members-only room stops being one. They get "try again shortly" and a 503 —
+  which is true — rather than "you are not a resident", which might not be.
+- **Login fails open.** They already have an account; the roster said yes at
+  least once. An Airtable outage must never lock the whole house out of its own
+  forum. Only a definite, freshly-confirmed "no longer eligible" revokes access,
+  and stewards are exempt entirely — the people who fix the roster have to be
+  able to reach it.
+
+A rescinded place therefore takes effect at the member's next login after the
+cached verdict expires, not instantly. That is the right trade for a hand-
+maintained roster.
+
+### Denied and not-found look identical
+
+The "Residents only" page is the same whether the address was rejected, held for
+review, or simply absent. A precise message would turn signup into a way to test
+whether any given person is a resident, and handles are public. The page tells a
+real resident the two things actually worth checking — the address they applied
+with, and how recently they were accepted — and gives them somewhere to write.
+
+### Privacy
+
+The People table also holds medical notes, allergies, emergency contacts, home
+addresses, visa status and whether someone asked for financial help. `FIELDS` in
+`roster.js` is the complete list of what is ever requested, in the same spirit as
+the mentors edge function: nothing outside it is fetched, ever.
+
+Verdicts are cached against a **SHA-256 of the address**, never the address, so a
+copy of the Homeroom database is not also a copy of the resident list. The
+steward view shows `el****@haus.fund`, which is enough to recognise a row and not
+enough to be a mailing list.
+
+### Configuration
+
+| Variable | Default | Notes |
+| --- | --- | --- |
+| `HOMEROOM_ROSTER_TOKEN` | falls back to `AIRTABLE_TOKEN` | Airtable PAT with read access to the People base. **Without it every signup is refused** when the mode is `roster`. |
+| `HOMEROOM_ACCESS` | `roster` with a token, `open` without | `roster` · `open` (anyone, for local development) · `closed` (no self-signup at all). |
+| `HOMEROOM_ALWAYS_ALLOW` | — | Comma-separated addresses that always get in, for staff who are not in the People table. |
+| `HOMEROOM_ROSTER_TTL_DAYS` | `7` | How long a verdict is trusted before login re-checks it. |
+| `HOMEROOM_ROSTER_BASE` / `_TABLE` | the People base | Override to point at a different base. |
+| `HOMEROOM_ROSTER_STATUSES` | `accepted` | Statuses that grant access on their own. |
+| `HOMEROOM_ROSTER_LIFECYCLES` | `resident,alumni` | Lifecycles that grant access on their own. |
+| `HOMEROOM_ROSTER_TYPES` | `core resident,subletter,ra,alum,co-founder` | Resident types that grant access. |
+| `HOMEROOM_ROSTER_BLOCKED` | `rescinded,ready to reject` | Statuses that revoke regardless of the dates. |
+| `HOMEROOM_ROSTER_AMBIGUOUS` | `declined,deferred` | Statuses that conflict with a residency rather than settling it. |
+
+`/homeroom/health` reports the mode, whether the token is set, whether Airtable
+answers, and how many decisions are waiting on a steward — so "is the door
+wired up" is one curl rather than a deploy and a guess.
+
+### The steward page
+
+`/homeroom/stewards/access` is the queue of conflicts, a live "check this
+address" lookup for when somebody says they cannot get in, and a log of recent
+decisions. A steward's ruling is stored separately from the computed verdict and
+outranks it, so the next weekly re-check does not quietly undo their work.
 
 ## Environment
 

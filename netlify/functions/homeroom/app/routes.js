@@ -12,6 +12,8 @@ import { checkCsrf } from './auth.js';
 import { clampInt, nowSeconds, normalizeUrl } from './util.js';
 import * as bf from './models.js';
 import * as supabase from './supabase.js';
+import * as roster from './roster.js';
+import * as access from './access.js';
 import * as luma from './luma.js';
 import { homeroomLayout } from './views/layout.js';
 import * as views from './views/pages.js';
@@ -1420,6 +1422,51 @@ async function progressSubmit(ctx, { slug }) {
   seeOther(ctx, `/homeroom/library/module/${module.slug}`);
 }
 
+/* ------------------------------------------------------- the front door */
+
+function stewardsOnly(ctx) {
+  if (ctx.user.is_admin) return true;
+  oops(ctx, 'Stewards only.', 403);
+  return false;
+}
+
+async function accessAdminHandler(ctx, lookup = null) {
+  if (!stewardsOnly(ctx)) return;
+  render(
+    ctx,
+    views.accessAdminPage(ctx, {
+      counts: bf.rosterCounts(),
+      mode: roster.accessMode(),
+      // Actually probe it. A steward opening this page is usually here because
+      // somebody cannot get in, and "is the door wired up" is the first thing
+      // they need — a banner that assumes it is fine would be worse than none.
+      health: await roster.health(),
+      pending: bf.pendingRoster(),
+      recent: bf.recentRoster({ limit: 40 }),
+      lookup,
+    }),
+    { title: 'Front door' },
+  );
+}
+
+/**
+ * Live lookup for a steward chasing "why can't they sign in".
+ *
+ * Deliberately does NOT write to the cache: a steward checking somebody should
+ * not change what happens the next time that person tries the door, or the
+ * queue above would quietly empty itself as it was read.
+ */
+async function accessLookupHandler(ctx) {
+  const { fields } = await readBody(ctx.req);
+  if (!csrfOk(ctx, fields)) return;
+  if (!stewardsOnly(ctx)) return;
+  const email = trimmed(fields.email, 200);
+  const result = await roster.lookup(email);
+  await accessAdminHandler(ctx, result.ok
+    ? { email, verdict: result.verdict, reason: result.reason, person: result.person }
+    : { email, verdict: 'error', reason: 'roster-unreachable', error: result.error });
+}
+
 /* -------------------------------------------------------------- publish */
 
 async function publishHandler(ctx) {
@@ -1916,6 +1963,17 @@ const ROUTES = [
       query, results, voted: bf.votedIds(ctx.user.id, 'post', results.posts.map((p) => p.id)),
     }), { title: query ? `Search: ${query}` : 'Search' });
   }],
+  ['GET', '/homeroom/stewards/access', (ctx) => accessAdminHandler(ctx)],
+  ['POST', '/homeroom/stewards/access/lookup', accessLookupHandler],
+  ['POST', '/homeroom/stewards/access/:hash/decide', action((ctx, fields, p) => {
+    if (!stewardsOnly(ctx)) return;
+    const decision = fields.decision === 'allow' ? 'allow' : 'deny';
+    const row = bf.rosterRow(p.hash);
+    if (!row) return notFound(ctx);
+    bf.decideRoster({ hash: p.hash, userId: ctx.user.id, decision, note: trimmed(fields.note, 500) });
+    seeOther(ctx, '/homeroom/stewards/access');
+  })],
+
   ['GET', '/homeroom/publish', publishHandler],
   ['POST', '/homeroom/publish', publishSubmit],
 

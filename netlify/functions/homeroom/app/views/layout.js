@@ -146,6 +146,7 @@ function footer(ctx) {
     <a href="/homeroom/jobs">Jobs</a>
     <a href="/homeroom/intros">Intros</a>
     <a href="/homeroom/publish">Publish to news</a>
+    ${ctx.user?.is_admin ? '<a href="/homeroom/stewards/access">Front door</a>' : ''}
     <a href="/homeroom/about">About Homeroom</a>
     <a href="/">Haus</a>
     ${out}

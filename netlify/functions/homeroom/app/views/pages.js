@@ -34,6 +34,9 @@ export function gatePage(ctx, { stats }) {
       <li><b>Library</b> the Biopunk Founder Manual: ${stats.modules} modules across six tracks, each ending in something you actually produced.</li>
       <li><b>Jobs and events</b> the rest of the scaffolding.</li>
     </ul>
+    <p class="fineprint">Accounts are for people on the Biopunk programme roster — residents,
+      alumni, and anyone holding an accepted place. Sign up with the email address on your
+      application and it is checked against that roster.</p>
     <div class="gateactions">
       <a class="btn solid" href="/homeroom/signup">Create an account</a>
       <a class="btn ghost" href="/homeroom/login">Sign in</a>
@@ -66,9 +69,13 @@ export function loginPage(ctx, { values = {}, error = null, next = '/homeroom' }
   </div>`;
 }
 
-export function signupPage(ctx, { values = {}, error = null }) {
+export function signupPage(ctx, { values = {}, error = null, mode = 'open' }) {
   return html`<h1>Create an account</h1>
-  <p class="lede">Residents, alumni and mentors. One account covers all of Homeroom.</p>
+  <p class="lede">Residents and alumni of the Biopunk programme. One account covers all of
+    Homeroom.</p>
+  ${mode === 'roster' ? html`<div class="notice">Use the email address on your application. It is
+    checked against the programme roster, so a different address will not be recognised even if it
+    is yours.</div>` : ''}
   ${error ? html`<div class="notice bad">${error}</div>` : ''}
   <form class="stack" method="post" action="/homeroom/signup">
     <input type="hidden" name="csrf" value="${ctx.csrf}" />
@@ -88,6 +95,66 @@ export function signupPage(ctx, { values = {}, error = null }) {
     <button class="btn solid wide" type="submit">Create account</button>
   </form>
   <div class="alt"><a href="/homeroom/login">I already have an account</a></div>`;
+}
+
+/*
+ * The three ways the front door can say no.
+ *
+ * They are separate pages because they are separate situations, and a member
+ * standing in front of one needs to know which: "we cannot check right now" and
+ * "you are not on the list" call for completely different next actions, and
+ * collapsing them into one message would leave a real resident guessing.
+ */
+
+/** Denied, or held for review. One page for both, and for found and not-found. */
+export function notOnRosterPage(ctx, { email }) {
+  return html`<h1>Residents only</h1>
+  <p class="lede">Homeroom is open to people who are on the Biopunk programme roster —
+    residents, alumni, and anyone with an accepted place. <b>${email}</b> is not showing as one of
+    them.</p>
+  <p>Two things are worth checking before anything else:</p>
+  <ul class="rules">
+    <li><b>The address.</b> Use the one on your application. If you applied with a university
+      address and signed up with a personal one, the roster will not match them.</li>
+    <li><b>The timing.</b> Records are updated by hand. If you were accepted in the last day or two
+      it may not have reached the roster yet.</li>
+  </ul>
+  <p>If both look right, mail <a href="mailto:homeroom@haus.fund">homeroom@haus.fund</a> and a
+    steward will check it against the programme records. Say which address you applied with.</p>
+  <div class="alt"><a href="/homeroom/login">I already have an account</a></div>`;
+}
+
+/** The roster is unreachable. Our problem, and it should read like our problem. */
+export function rosterUnavailablePage(ctx, { values = {} }) {
+  return html`<h1>Try again shortly</h1>
+  <p class="lede">We could not reach the programme roster just now, so we cannot confirm your
+    place — and we would rather make you wait than guess.</p>
+  <p>Nothing you typed was saved. Try again in a few minutes; if it keeps happening, mail
+    <a href="mailto:homeroom@haus.fund">homeroom@haus.fund</a>.</p>
+  <form class="stack" method="get" action="/homeroom/signup">
+    <button class="btn solid wide" type="submit">Back to signup</button>
+  </form>
+  ${values.handle ? html`<p class="mono dim">Your handle, so you do not have to remember it:
+    ${values.handle}</p>` : ''}`;
+}
+
+export function signupClosedPage() {
+  return html`<h1>Accounts are closed</h1>
+  <p class="lede">Homeroom is not taking new accounts at the moment. A steward creates them
+    directly during onboarding.</p>
+  <p>If you are a resident and do not have one, mail
+    <a href="mailto:homeroom@haus.fund">homeroom@haus.fund</a>.</p>
+  <div class="alt"><a href="/homeroom/login">I already have an account</a></div>`;
+}
+
+/** An existing account whose place has since been rescinded. */
+export function accessRevokedPage() {
+  return html`<h1>Access ended</h1>
+  <p class="lede">This account is no longer on the programme roster, so it cannot open Homeroom.
+    Your posts stay where they are.</p>
+  <p>If that is wrong — and it can be, the roster is maintained by hand — mail
+    <a href="mailto:homeroom@haus.fund">homeroom@haus.fund</a> and a steward will look at it.</p>
+  <div class="alt"><a href="/">Back to Haus</a></div>`;
 }
 
 export function forgotPage(ctx, { error = null, values = {} }) {

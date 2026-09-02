@@ -616,6 +616,19 @@ ul.tight { list-style: none; display: flex; flex-direction: column; gap: 8px;
 .sequence .when { min-width: 62px; font-size: 11px; color: var(--bronze-3); }
 .sequence .block { display: block; font-size: 11px; margin-top: 3px; }
 
+/* ── the front door ────────────────────────────────────────────────── */
+
+.card.review-row { display: flex; gap: 18px; align-items: center; flex-wrap: wrap; }
+.decide { display: flex; gap: 8px; flex-shrink: 0; }
+.lookup { border: 1px solid var(--border-1); background: var(--canvas-0); border-left-width: 3px;
+  border-radius: var(--radius-md); padding: 14px 16px; margin-top: 14px; }
+.lookup.allow { border-left-color: var(--forest-2); }
+.lookup.deny { border-left-color: var(--bronze-2); }
+.lookup.review { border-left-color: var(--bronze-3); }
+.lookup.error { border-left-color: var(--border-2); }
+.lookup .mono { font-size: 12px; }
+.lookup .mono b { text-transform: uppercase; letter-spacing: var(--tracking-caps); }
+
 /* ── publishing ────────────────────────────────────────────────────── */
 
 .card.sub.s-published { border-left: 3px solid var(--forest-2); }

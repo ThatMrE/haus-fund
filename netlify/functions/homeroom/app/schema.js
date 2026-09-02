@@ -665,4 +665,36 @@ CREATE TABLE IF NOT EXISTS hr_news_submissions (
 );
 
 CREATE INDEX IF NOT EXISTS idx_hr_news_user ON hr_news_submissions(user_id, created_at DESC);
+
+/* ----------------------------------------------------------------- roster */
+
+/* Who the Airtable said was in the programme, and when we last asked.
+   The address is stored as a SHA-256 and never in the clear: a copy of this
+   database should not also be a copy of the resident list. "masked" keeps
+   enough for a steward to recognise a row ("el****@haus.fund") without it
+   being a list of addresses. */
+CREATE TABLE IF NOT EXISTS hr_roster (
+  email_hash    TEXT PRIMARY KEY,
+  masked        TEXT NOT NULL DEFAULT '',
+  verdict       TEXT NOT NULL DEFAULT 'deny'
+                CHECK (verdict IN ('allow','deny','review','error')),
+  reason        TEXT NOT NULL DEFAULT '',
+  name          TEXT NOT NULL DEFAULT '',
+  cohort        TEXT NOT NULL DEFAULT '',
+  house         TEXT NOT NULL DEFAULT '',
+  status        TEXT NOT NULL DEFAULT '',
+  lifecycle     TEXT NOT NULL DEFAULT '',
+  resident_type TEXT NOT NULL DEFAULT '',
+  user_id       TEXT REFERENCES users(id) ON DELETE SET NULL,
+  attempts      INTEGER NOT NULL DEFAULT 1,
+  checked_at    INTEGER NOT NULL,
+  /* A steward resolving a "review" by hand. Their decision outranks the rule
+     until the Airtable itself changes. */
+  decided_by    TEXT REFERENCES users(id) ON DELETE SET NULL,
+  decided_at    INTEGER,
+  decision      TEXT CHECK (decision IN ('allow','deny')),
+  note          TEXT NOT NULL DEFAULT ''
+);
+
+CREATE INDEX IF NOT EXISTS idx_hr_roster_verdict ON hr_roster(verdict, checked_at DESC);
 `;

@@ -92,6 +92,9 @@ const ADDED_COLUMNS = [
   // Office hours held by a mentor rather than by a member.
   ['hr_slots', 'mentor_id', 'INTEGER'],
   ['hr_slots', 'url', "TEXT NOT NULL DEFAULT ''"],
+  // Which roster verdict let this account in, and when it was last confirmed.
+  ['users', 'roster_status', "TEXT NOT NULL DEFAULT ''"],
+  ['users', 'roster_checked_at', 'INTEGER NOT NULL DEFAULT 0'],
   // Perks: how you actually redeem the thing.
   ['hr_deals', 'access', "TEXT NOT NULL DEFAULT 'code'"],
   ['hr_deals', 'requirement', "TEXT NOT NULL DEFAULT ''"],

@@ -2530,3 +2530,81 @@ export function newsSubmissions(userId, { limit = 30 } = {}) {
     .prepare('SELECT * FROM hr_news_submissions WHERE user_id = ? ORDER BY created_at DESC LIMIT ?')
     .all(userId, limit);
 }
+
+/* ==========================================================================
+ * THE ROSTER
+ *
+ * Cached Airtable verdicts. The address is only ever a SHA-256 here — see
+ * roster.js for why — so every function takes a hash, not an email.
+ * ======================================================================== */
+
+export function recordVerdict({ hash, masked, verdict, reason, person = {} }) {
+  const now = nowSeconds();
+  getDb()
+    .prepare(
+      `INSERT INTO hr_roster (email_hash, masked, verdict, reason, name, cohort, house,
+                              status, lifecycle, resident_type, attempts, checked_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?)
+       ON CONFLICT (email_hash) DO UPDATE SET
+         masked = excluded.masked, verdict = excluded.verdict, reason = excluded.reason,
+         name = excluded.name, cohort = excluded.cohort, house = excluded.house,
+         status = excluded.status, lifecycle = excluded.lifecycle,
+         resident_type = excluded.resident_type,
+         attempts = hr_roster.attempts + 1, checked_at = excluded.checked_at`,
+    )
+    .run(hash, masked, verdict, reason, person.name || '', person.cohort || '', person.house || '',
+      person.status || '', person.lifecycle || '', person.residentType || '', now);
+  return rosterRow(hash);
+}
+
+export function rosterRow(hash) {
+  return getDb().prepare('SELECT * FROM hr_roster WHERE email_hash = ?').get(hash) ?? null;
+}
+
+export function linkRosterUser(hash, userId) {
+  getDb().prepare('UPDATE hr_roster SET user_id = ? WHERE email_hash = ?').run(userId, hash);
+}
+
+export function setUserRoster(userId, status) {
+  getDb()
+    .prepare('UPDATE users SET roster_status = ?, roster_checked_at = ? WHERE id = ?')
+    .run(status, nowSeconds(), userId);
+}
+
+/**
+ * A steward's decision on a conflict.
+ *
+ * Stored separately from `verdict`, not overwriting it, so the next Airtable
+ * check does not silently erase a human judgement — and so the steward view can
+ * still show what the data said when they overrode it.
+ */
+export function decideRoster({ hash, userId, decision, note = '' }) {
+  getDb()
+    .prepare('UPDATE hr_roster SET decision = ?, decided_by = ?, decided_at = ?, note = ? WHERE email_hash = ?')
+    .run(decision, userId, nowSeconds(), String(note || '').slice(0, 500), hash);
+  return rosterRow(hash);
+}
+
+/** Conflicts a steward has not ruled on yet. This is the queue that matters. */
+export function pendingRoster() {
+  return getDb()
+    .prepare(`SELECT * FROM hr_roster WHERE verdict = 'review' AND decision IS NULL
+              ORDER BY checked_at DESC LIMIT 100`)
+    .all();
+}
+
+export function recentRoster({ limit = 60 } = {}) {
+  return getDb()
+    .prepare('SELECT * FROM hr_roster ORDER BY checked_at DESC LIMIT ?')
+    .all(limit);
+}
+
+export function rosterCounts() {
+  const rows = getDb()
+    .prepare('SELECT verdict, COUNT(*) AS n FROM hr_roster GROUP BY verdict')
+    .all();
+  const out = { allow: 0, deny: 0, review: 0, error: 0 };
+  for (const row of rows) out[row.verdict] = row.n;
+  out.pending = pendingRoster().length;
+  return out;
+}
