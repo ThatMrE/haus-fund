@@ -1,0 +1,71 @@
+{
+  "treeId": "biopunk-accelerator",
+  "id": "safes-and-mtas",
+  "title": {
+    "name": "Orrick 3: SAFEs, MTAs and negotiating agreements",
+    "level": 2
+  },
+  "track": "legal-ip-and-regulatory",
+  "kind": "workshop",
+  "week": 0,
+  "minutes": 90,
+  "deliverable": "Contract Checklist",
+  "defaultStatus": "inProgress",
+  "isUnlocked": true,
+  "onMainPath": false,
+  "link": "/homeroom/library/module/safes-and-mtas",
+  "initialPosition": [
+    4,
+    2
+  ],
+  "dependencies": [
+    "company-formation"
+  ],
+  "leadsTo": [],
+  "overview": {
+    "description": "A line-by-line SAFE walkthrough, plus side letters, MTAs, NDAs, consulting and advisor agreements, term sheet fundamentals, and negotiating with pharma, corporates and universities. Includes live document review.",
+    "objectives": [
+      "Read a SAFE line by line and know which lines matter",
+      "Recognise contract red flags, and know when to push back and when not to",
+      "Handle an MTA without giving away rights to what you make with the material"
+    ],
+    "prerequisites": [
+      "Orrick 1: Formation and startup foundations"
+    ]
+  },
+  "steps": {
+    "intro": "A line-by-line SAFE walkthrough, plus side letters, MTAs, NDAs, consulting and advisor agreements, term sheet fundamentals, and negotiating with pharma, corporates and universities. Includes live document review.",
+    "estimatedMinutes": 90,
+    "instructions": [
+      "Bring your actual documents to the session. It is worth several times more with one on the table.",
+      "Build the contract checklist: what you sign, who reviews it, what never gets signed same-day.",
+      "Note: the resident agreement grants 1% advisory equity post-programme — confirm the instrument with Orrick."
+    ]
+  },
+  "submission": {
+    "description": "Produce the Contract Checklist and log it against this module in Homeroom. Done means the artefact exists, not that you read the page."
+  },
+  "video": {
+    "url": "https://www.youtube.com/watch?v=IQ9badFovnk",
+    "title": "Material Transfer Agreements: the IP risks that can kill a startup",
+    "source": "Technology transfer counsel"
+  },
+  "resources": [
+    {
+      "title": "YC — the SAFE, line by line",
+      "url": "https://www.ycombinator.com/safe"
+    },
+    {
+      "title": "The OpenMTA — a material transfer agreement built for exchange",
+      "url": "https://biobricks.org/openmta/"
+    },
+    {
+      "title": "Addgene — how an MTA actually moves material",
+      "url": "https://www.addgene.org/mta/"
+    },
+    {
+      "title": "Orrick Tech Studio — NDAs, advisor and consulting agreements",
+      "url": "https://www.orrick.com/en/tech-studio/resources/forms"
+    }
+  ]
+}

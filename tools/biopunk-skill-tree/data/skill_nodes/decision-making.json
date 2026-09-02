@@ -1,0 +1,69 @@
+{
+  "treeId": "biopunk-accelerator",
+  "id": "decision-making",
+  "title": {
+    "name": "Deciding on incomplete information",
+    "level": 1
+  },
+  "track": "founder-fundamentals",
+  "kind": "playbook",
+  "week": 0,
+  "minutes": 60,
+  "deliverable": "",
+  "defaultStatus": "inProgress",
+  "isUnlocked": true,
+  "onMainPath": false,
+  "link": "/homeroom/library/module/decision-making",
+  "initialPosition": [
+    1,
+    3
+  ],
+  "dependencies": [
+    "orientation"
+  ],
+  "leadsTo": [
+    "prioritization-map"
+  ],
+  "overview": {
+    "description": "The completeness fallacy: waiting for the data that would make the decision obvious. In a startup that data arrives after the decision was needed, or never.",
+    "objectives": [
+      "Decide at the point where more information stops being worth its delay",
+      "Tell reversible decisions from unwindable ones and spend your deliberation accordingly",
+      "Know when to listen to advice and when to ignore it"
+    ],
+    "prerequisites": [
+      "Orientation: how to read this tree"
+    ]
+  },
+  "steps": {
+    "intro": "The completeness fallacy: waiting for the data that would make the decision obvious. In a startup that data arrives after the decision was needed, or never.",
+    "estimatedMinutes": 60,
+    "instructions": [
+      "List every decision you are currently deferring.",
+      "Mark each reversible or not. Make every reversible one today.",
+      "For each unwindable one, write what specific evidence would settle it and how you will get it."
+    ]
+  },
+  "submission": {
+    "description": "No named deliverable. Work the steps and keep the notes with the module in Homeroom."
+  },
+  "video": {
+    "url": "https://www.youtube.com/watch?v=D56QeyyQMLI",
+    "title": "The Biggest Mistakes First-Time Founders Make",
+    "source": "Michael Seibel, Y Combinator"
+  },
+  "resources": [
+    {
+      "title": "Paul Graham — the essays, on judgement under uncertainty",
+      "url": "https://www.paulgraham.com/articles.html"
+    },
+    {
+      "title": "YC — early stage advice",
+      "url": "https://www.ycombinator.com/library/carousel/Early%20Stage%20Advice"
+    },
+    {
+      "title": "Kauffman Founders School — free founder curriculum",
+      "url": "https://www.entrepreneurship.org/learning-paths"
+    }
+  ]
+}

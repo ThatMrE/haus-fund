@@ -1,0 +1,73 @@
+{
+  "treeId": "biopunk-accelerator",
+  "id": "showcase-capstone",
+  "title": {
+    "name": "The showcase and what you leave with",
+    "level": 5
+  },
+  "track": "program",
+  "kind": "workshop",
+  "week": 12,
+  "minutes": 120,
+  "deliverable": "Showcase Package",
+  "defaultStatus": "inProgress",
+  "isUnlocked": true,
+  "onMainPath": true,
+  "link": "/homeroom/library/module/showcase-capstone",
+  "initialPosition": [
+    0,
+    8
+  ],
+  "dependencies": [
+    "demo-day",
+    "diligence-room",
+    "customer-discovery"
+  ],
+  "leadsTo": [],
+  "overview": {
+    "description": "Not a pitch night — an immersive demonstration of the company, the data and the raise. The capstone is the assembly: everything the other forty-six nodes produced, in one package a stranger can evaluate without you in the room.",
+    "objectives": [
+      "Assemble the deck, the data room, the demo and the follow-up into one package",
+      "Present science to a room that does not share your field and hold it",
+      "Convert showcase interest into scheduled meetings inside a week",
+      "Leave with the artefacts, not just the memory of the twelve weeks"
+    ],
+    "prerequisites": [
+      "Demo day preparation and pitch review",
+      "Diligence, data rooms and fundraising readiness",
+      "Customer discovery for scientists"
+    ]
+  },
+  "steps": {
+    "intro": "Not a pitch night — an immersive demonstration of the company, the data and the raise. The capstone is the assembly: everything the other forty-six nodes produced, in one package a stranger can evaluate without you in the room.",
+    "estimatedMinutes": 120,
+    "instructions": [
+      "Assemble the package: narrative, deck, data room, TPP or roadmap, and the ask.",
+      "Have someone outside your field evaluate it with you silent in the room.",
+      "Rehearse the five questions you least want. Two sentences each.",
+      "Write the follow-up email before the showcase. Send it within 48 hours."
+    ]
+  },
+  "submission": {
+    "description": "Produce the Showcase Package and log it against this module in Homeroom. Done means the artefact exists, not that you read the page."
+  },
+  "video": {
+    "url": "https://www.youtube.com/watch?v=oElUqWybV-4",
+    "title": "IndieBio Demo Day — what a biotech showcase actually looks like",
+    "source": "SOSV / IndieBio"
+  },
+  "resources": [
+    {
+      "title": "The 2050 Final Showcase",
+      "url": "/showcase"
+    },
+    {
+      "title": "YC — the 10-slide deck the package is built around",
+      "url": "https://www.ycombinator.com/library/4T-how-to-design-a-better-pitch-deck"
+    },
+    {
+      "title": "Haus portfolio — companies that came out of the programme",
+      "url": "/portfolio"
+    }
+  ]
+}

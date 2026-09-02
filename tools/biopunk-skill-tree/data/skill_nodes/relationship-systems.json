@@ -1,0 +1,65 @@
+{
+  "treeId": "biopunk-accelerator",
+  "id": "relationship-systems",
+  "title": {
+    "name": "Mentor networks and the personal board",
+    "level": 1
+  },
+  "track": "brand-network-and-life",
+  "kind": "playbook",
+  "week": 0,
+  "minutes": 45,
+  "deliverable": "",
+  "defaultStatus": "inProgress",
+  "isUnlocked": true,
+  "onMainPath": false,
+  "link": "/homeroom/library/module/relationship-systems",
+  "initialPosition": [
+    6,
+    2
+  ],
+  "dependencies": [
+    "orientation"
+  ],
+  "leadsTo": [
+    "community-building"
+  ],
+  "overview": {
+    "description": "Relationship mapping, maintaining weak ties, giving before asking, and building a personal board of directors that is not your cap table.",
+    "objectives": [
+      "Assemble five people you can ask a hard question without consequence",
+      "Maintain weak ties at a sustainable cost",
+      "Give before asking, consistently enough that it is not a tactic"
+    ],
+    "prerequisites": [
+      "Orientation: how to read this tree"
+    ]
+  },
+  "steps": {
+    "intro": "Relationship mapping, maintaining weak ties, giving before asking, and building a personal board of directors that is not your cap table.",
+    "estimatedMinutes": 45,
+    "instructions": [
+      "Name your five. If any seat is empty, find it in the mentor directory.",
+      "Book one office-hours slot this week with someone outside your discipline.",
+      "Do one unprompted useful thing for someone in the cohort."
+    ]
+  },
+  "submission": {
+    "description": "No named deliverable. Work the steps and keep the notes with the module in Homeroom."
+  },
+  "video": null,
+  "resources": [
+    {
+      "title": "Haus mentors — the directory this node draws on",
+      "url": "/mentors"
+    },
+    {
+      "title": "Kauffman Founders School — networks and advisors",
+      "url": "https://www.entrepreneurship.org/learning-paths"
+    },
+    {
+      "title": "Homeroom office hours",
+      "url": "/homeroom/hours"
+    }
+  ]
+}

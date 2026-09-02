@@ -1,0 +1,80 @@
+{
+  "treeId": "biopunk-accelerator",
+  "id": "risk-mapping",
+  "title": {
+    "name": "Technical risk, market risk and the risk map",
+    "level": 1
+  },
+  "track": "founder-fundamentals",
+  "kind": "workshop",
+  "week": 1,
+  "minutes": 90,
+  "deliverable": "Risk Map",
+  "defaultStatus": "inProgress",
+  "isUnlocked": true,
+  "onMainPath": true,
+  "link": "/homeroom/library/module/risk-mapping",
+  "initialPosition": [
+    1,
+    0
+  ],
+  "dependencies": [
+    "orientation"
+  ],
+  "leadsTo": [
+    "beachhead-market-memo",
+    "capital-efficiency",
+    "prioritization-map",
+    "raising-on-an-idea",
+    "target-product-profile",
+    "credibility-stack"
+  ],
+  "overview": {
+    "description": "The first workshop of the programme, and the one everything else hangs off. Technical risk is what might not work. Market risk is what might work and still not matter. Most scientific founders are fluent in the first and blind to the second.",
+    "objectives": [
+      "Separate scientific risk from engineering risk from market risk, and say which one is killing you now",
+      "Name your highest-risk assumption in one sentence",
+      "Design the smallest experiment that settles it",
+      "Sequence technical milestones so each one unlocks the next round rather than the next paper"
+    ],
+    "prerequisites": [
+      "Orientation: how to read this tree"
+    ]
+  },
+  "steps": {
+    "intro": "The first workshop of the programme, and the one everything else hangs off. Technical risk is what might not work. Market risk is what might work and still not matter. Most scientific founders are fluent in the first and blind to the second.",
+    "estimatedMinutes": 90,
+    "instructions": [
+      "Write every assumption your company depends on, one per line.",
+      "Mark each one technical, market or execution.",
+      "Rank by (cost if wrong) × (probability wrong). The top three are your Risk Map.",
+      "For the top one, write the cheapest experiment that would change your mind, and what result would."
+    ]
+  },
+  "submission": {
+    "description": "Produce the Risk Map and log it against this module in Homeroom. Done means the artefact exists, not that you read the page."
+  },
+  "video": {
+    "url": "https://www.youtube.com/watch?v=S4nCY0H4598",
+    "title": "The Principles of Lean — hypotheses, and testing them before you build",
+    "source": "Steve Blank"
+  },
+  "resources": [
+    {
+      "title": "Steve Blank — the Lean LaunchPad and hypothesis testing",
+      "url": "https://steveblank.com/category/lean-launchpad/"
+    },
+    {
+      "title": "Bruce Booth — what kills early biotechs",
+      "url": "https://lifescivc.com/category/biotech-startup-advice/"
+    },
+    {
+      "title": "NCATS — the translational science gaps, named",
+      "url": "https://ncats.nih.gov/about/about-translational-science"
+    },
+    {
+      "title": "The Lean Approach: Getting Out of the Building",
+      "url": "https://www.youtube.com/watch?v=lLEebbiYIkI"
+    }
+  ]
+}

@@ -1,0 +1,76 @@
+{
+  "treeId": "biopunk-accelerator",
+  "id": "customer-discovery",
+  "title": {
+    "name": "Customer discovery for scientists",
+    "level": 4
+  },
+  "track": "customers-and-commercialization",
+  "kind": "workshop",
+  "week": 4,
+  "minutes": 90,
+  "deliverable": "Customer Discovery Plan",
+  "defaultStatus": "inProgress",
+  "isUnlocked": true,
+  "onMainPath": true,
+  "link": "/homeroom/library/module/customer-discovery",
+  "initialPosition": [
+    2,
+    1
+  ],
+  "dependencies": [
+    "primary-market-research"
+  ],
+  "leadsTo": [
+    "design-partner-pipeline",
+    "technoeconomics",
+    "showcase-capstone"
+  ],
+  "overview": {
+    "description": "Operator-led. Scientists are unusually good at interviews once they stop pitching — it is the same skill as not leading a witness.",
+    "objectives": [
+      "Run an interview that produces information rather than encouragement",
+      "Tell real demand from polite interest",
+      "Build a design partner pipeline rather than a list of well-wishers"
+    ],
+    "prerequisites": [
+      "Primary market research, personas and market sizing"
+    ]
+  },
+  "steps": {
+    "intro": "Operator-led. Scientists are unusually good at interviews once they stop pitching — it is the same skill as not leading a witness.",
+    "estimatedMinutes": 90,
+    "instructions": [
+      "Write your ideal customer profile with enough specificity that you could name ten.",
+      "Name them. Find the actual humans.",
+      "Draft the interview guide: past behaviour, not future intentions. No product mentioned in the first ten minutes.",
+      "Target fifteen conversations a week. Log every one."
+    ]
+  },
+  "submission": {
+    "description": "Produce the Customer Discovery Plan and log it against this module in Homeroom. Done means the artefact exists, not that you read the page."
+  },
+  "video": {
+    "url": "https://www.youtube.com/watch?v=z1iF1c8w5Lg",
+    "title": "How To Talk To Users",
+    "source": "Gustaf Alströmer, Y Combinator Startup School"
+  },
+  "resources": [
+    {
+      "title": "I-Corps at NIH — 100+ interviews, and the method behind them",
+      "url": "https://seed.nih.gov/support-training/i-corps-at-nih"
+    },
+    {
+      "title": "Steve Blank — customer discovery, start to finish",
+      "url": "https://steveblank.com/category/customer-development/"
+    },
+    {
+      "title": "The Mom Test — questions that survive a polite answer",
+      "url": "https://www.momtestbook.com/"
+    },
+    {
+      "title": "The Lean Approach: Getting Out of the Building",
+      "url": "https://www.youtube.com/watch?v=lLEebbiYIkI"
+    }
+  ]
+}

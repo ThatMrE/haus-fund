@@ -1,0 +1,67 @@
+{
+  "treeId": "biopunk-accelerator",
+  "id": "founder-resources",
+  "title": {
+    "name": "Founder resources and arbitrage",
+    "level": 1
+  },
+  "track": "team-and-operations",
+  "kind": "reference",
+  "week": 0,
+  "minutes": 30,
+  "deliverable": "",
+  "defaultStatus": "inProgress",
+  "isUnlocked": true,
+  "onMainPath": false,
+  "link": "/homeroom/library/module/founder-resources",
+  "initialPosition": [
+    5,
+    6
+  ],
+  "dependencies": [
+    "orientation"
+  ],
+  "leadsTo": [],
+  "overview": {
+    "description": "Startup, software, cloud and lab credits, university resources, shared equipment and incubators. The programme issues this as a playbook to every resident.",
+    "objectives": [
+      "Stack credit programmes without duplicating applications",
+      "Use a core facility instead of buying an instrument",
+      "Find the equipment you were about to buy inside the network"
+    ],
+    "prerequisites": [
+      "Orientation: how to read this tree"
+    ]
+  },
+  "steps": {
+    "intro": "Startup, software, cloud and lab credits, university resources, shared equipment and incubators. The programme issues this as a playbook to every resident.",
+    "estimatedMinutes": 30,
+    "instructions": [
+      "Work the Perks page category by category. Claim the free tiers today.",
+      "Search the Core Facility Finder before any instrument purchase over $10K.",
+      "Check the Biolab Atlas for a lab in your city before signing a lease."
+    ]
+  },
+  "submission": {
+    "description": "No named deliverable. Work the steps and keep the notes with the module in Homeroom."
+  },
+  "video": null,
+  "resources": [
+    {
+      "title": "Haus perks — the credit programmes, claimed",
+      "url": "/homeroom/perks"
+    },
+    {
+      "title": "Core Facility Finder — 830+ cores by technique",
+      "url": "/cores"
+    },
+    {
+      "title": "Visa Desk — immigration support letters",
+      "url": "/visa"
+    },
+    {
+      "title": "NIH SEED — non-dilutive capital and training",
+      "url": "https://seed.nih.gov/"
+    }
+  ]
+}

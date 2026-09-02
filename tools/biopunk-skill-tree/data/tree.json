@@ -1,0 +1,889 @@
+{
+  "treeId": "biopunk-accelerator",
+  "name": "Biopunk Accelerator Skill Tree",
+  "subtitle": "from a risk map to a company that can be diligenced",
+  "source": "The Biopunk Founder Manual (Homeroom Library), Fall 2026 programme design",
+  "generated": "tools/biopunk-skill-tree/scripts/build_tree.mjs",
+  "counts": {
+    "nodes": 47,
+    "tracks": 7,
+    "videos": 33,
+    "resources": 161,
+    "deliverables": 27,
+    "liveWeeks": 12
+  },
+  "tracks": [
+    {
+      "slug": "program",
+      "title": "The programme spine",
+      "focus": "Where the ninety days start and what they end in",
+      "blurb": "Two nodes: the orientation that opens the tree and the showcase that closes it. Everything else hangs between them."
+    },
+    {
+      "slug": "founder-fundamentals",
+      "title": "Founder fundamentals and decision-making",
+      "focus": "Decision-making, prioritisation, risk, founder psychology",
+      "blurb": "The track that decides whether the other five matter. Most companies at this stage die of a decision, not of a technology."
+    },
+    {
+      "slug": "customers-and-commercialization",
+      "title": "Customers, markets and commercialisation",
+      "focus": "Customer discovery, beachhead markets, technoeconomics, partnerships",
+      "blurb": "Translating science into something a named person will pay for, and finding out which named person before you build it."
+    },
+    {
+      "slug": "fundraising-and-capital",
+      "title": "Fundraising, capital and investor relations",
+      "focus": "Venture, grants, diligence, fundraising readiness",
+      "blurb": "What can be proven with nothing, with $50K, with $500K and with $2M — and how to ask for each in turn."
+    },
+    {
+      "slug": "legal-ip-and-regulatory",
+      "title": "Legal, IP, regulatory and company infrastructure",
+      "focus": "Formation, IP, FDA, governance, contracts",
+      "blurb": "Delivered live by Orrick across four workshops and standing office hours. The mistakes here are the expensive, unwindable kind."
+    },
+    {
+      "slug": "team-and-operations",
+      "title": "Team building, operations and scale",
+      "focus": "Hiring, manufacturing, scale-up, labs",
+      "blurb": "From the first hire to the first pilot plant, plus the lab operations nobody teaches in a PhD."
+    },
+    {
+      "slug": "brand-network-and-life",
+      "title": "Brand, network and founder life",
+      "focus": "Communication, credibility, media, relationships",
+      "blurb": "The scientific credibility stack, and what investors, customers, regulators, recruits and journalists each actually trust."
+    }
+  ],
+  "mainPathNodes": [
+    "orientation",
+    "risk-mapping",
+    "beachhead-market-memo",
+    "company-formation",
+    "raising-on-an-idea",
+    "customer-discovery",
+    "ip-and-spinouts",
+    "grants-and-nondilutive",
+    "manufacturing-scaleup",
+    "regulatory-strategy",
+    "prioritization-map",
+    "fundraising-narrative",
+    "diligence-room",
+    "scientific-communication",
+    "hiring-and-governance",
+    "demo-day",
+    "showcase-capstone"
+  ],
+  "nodes": [
+    {
+      "id": "orientation",
+      "title": "Orientation: how to read this tree",
+      "track": "program",
+      "kind": "playbook",
+      "week": 1,
+      "description": "Forty-seven nodes across six tracks and a spine. Nothing here locks: the dependencies are guidance about what a node reads better after, never a gate. Week one is for picking the three you will actually finish.",
+      "defaultStatus": "inProgress",
+      "link": "/homeroom/library/module/orientation",
+      "initialPosition": [
+        0,
+        0
+      ],
+      "dependencies": []
+    },
+    {
+      "id": "showcase-capstone",
+      "title": "The showcase and what you leave with",
+      "track": "program",
+      "kind": "workshop",
+      "week": 12,
+      "description": "Not a pitch night — an immersive demonstration of the company, the data and the raise. The capstone is the assembly: everything the other forty-six nodes produced, in one package a stranger can evaluate without you in the room.",
+      "defaultStatus": "inProgress",
+      "link": "/homeroom/library/module/showcase-capstone",
+      "initialPosition": [
+        0,
+        8
+      ],
+      "dependencies": [
+        "demo-day",
+        "diligence-room",
+        "customer-discovery"
+      ]
+    },
+    {
+      "id": "risk-mapping",
+      "title": "Technical risk, market risk and the risk map",
+      "track": "founder-fundamentals",
+      "kind": "workshop",
+      "week": 1,
+      "description": "The first workshop of the programme, and the one everything else hangs off. Technical risk is what might not work. Market risk is what might work and still not matter. Most scientific founders are fluent in the first and blind to the second.",
+      "defaultStatus": "inProgress",
+      "link": "/homeroom/library/module/risk-mapping",
+      "initialPosition": [
+        1,
+        0
+      ],
+      "dependencies": [
+        "orientation"
+      ]
+    },
+    {
+      "id": "beachhead-market-memo",
+      "title": "Beachhead markets and why superior products fail",
+      "track": "founder-fundamentals",
+      "kind": "workshop",
+      "week": 1,
+      "description": "A technically superior product losing to a worse one is the default outcome, not the exception. Usually because the better product asked the customer to change more than the improvement was worth.",
+      "defaultStatus": "inProgress",
+      "link": "/homeroom/library/module/beachhead-market-memo",
+      "initialPosition": [
+        1,
+        1
+      ],
+      "dependencies": [
+        "risk-mapping"
+      ]
+    },
+    {
+      "id": "founder-scorecard",
+      "title": "The founder scorecard and goal setting",
+      "track": "founder-fundamentals",
+      "kind": "playbook",
+      "week": 1,
+      "description": "Orientation-week baseline. A scorecard exists so that in week 12 you can tell whether the ninety days moved anything, rather than reasoning from how tired you feel.",
+      "defaultStatus": "inProgress",
+      "link": "/homeroom/library/module/founder-scorecard",
+      "initialPosition": [
+        1,
+        2
+      ],
+      "dependencies": [
+        "orientation"
+      ]
+    },
+    {
+      "id": "decision-making",
+      "title": "Deciding on incomplete information",
+      "track": "founder-fundamentals",
+      "kind": "playbook",
+      "week": 0,
+      "description": "The completeness fallacy: waiting for the data that would make the decision obvious. In a startup that data arrives after the decision was needed, or never.",
+      "defaultStatus": "inProgress",
+      "link": "/homeroom/library/module/decision-making",
+      "initialPosition": [
+        1,
+        3
+      ],
+      "dependencies": [
+        "orientation"
+      ]
+    },
+    {
+      "id": "study-the-greats",
+      "title": "Study the greats: case studies and pattern recognition",
+      "track": "founder-fundamentals",
+      "kind": "playbook",
+      "week": 0,
+      "description": "A gap the programme review flagged explicitly: most accelerators skip this, and 5050 does not. Reverse-engineering companies that worked, and companies that did not, is cheaper than learning the same lessons live.",
+      "defaultStatus": "inProgress",
+      "link": "/homeroom/library/module/study-the-greats",
+      "initialPosition": [
+        1,
+        4
+      ],
+      "dependencies": [
+        "orientation"
+      ]
+    },
+    {
+      "id": "capital-efficiency",
+      "title": "Burn rate versus learning rate",
+      "track": "founder-fundamentals",
+      "kind": "playbook",
+      "week": 0,
+      "description": "Capital efficiency is not frugality. It is the ratio of what you learned to what you spent, and expensive validation is the most common way to get it badly wrong.",
+      "defaultStatus": "inProgress",
+      "link": "/homeroom/library/module/capital-efficiency",
+      "initialPosition": [
+        1,
+        5
+      ],
+      "dependencies": [
+        "risk-mapping"
+      ]
+    },
+    {
+      "id": "prioritization-map",
+      "title": "Founder judgment and the prioritisation map",
+      "track": "founder-fundamentals",
+      "kind": "workshop",
+      "week": 10,
+      "description": "Biopunk workshop 2 in the medium case. By week 10 the problem is no longer what to do, it is what to stop.",
+      "defaultStatus": "inProgress",
+      "link": "/homeroom/library/module/prioritization-map",
+      "initialPosition": [
+        1,
+        6
+      ],
+      "dependencies": [
+        "decision-making",
+        "risk-mapping"
+      ]
+    },
+    {
+      "id": "founder-wellbeing",
+      "title": "Founder wellbeing and sustainable ambition",
+      "track": "founder-fundamentals",
+      "kind": "playbook",
+      "week": 0,
+      "description": "Carried in the curriculum taxonomy because the review found it missing from most comparable programmes. A founder who breaks in month nine has not made a trade-off, they have made a mistake.",
+      "defaultStatus": "inProgress",
+      "link": "/homeroom/library/module/founder-wellbeing",
+      "initialPosition": [
+        1,
+        7
+      ],
+      "dependencies": [
+        "orientation"
+      ]
+    },
+    {
+      "id": "primary-market-research",
+      "title": "Primary market research, personas and market sizing",
+      "track": "customers-and-commercialization",
+      "kind": "playbook",
+      "week": 0,
+      "description": "Between choosing a beachhead and interviewing anyone sits the machinery that makes both defensible: who the end user actually is, how many of them exist, and what a bottom-up market size looks like when it is not a slide. MIT teaches this as the first six of the twenty-four steps; I-Corps teaches it as the front half of the canvas.",
+      "defaultStatus": "inProgress",
+      "link": "/homeroom/library/module/primary-market-research",
+      "initialPosition": [
+        2,
+        0
+      ],
+      "dependencies": [
+        "beachhead-market-memo"
+      ]
+    },
+    {
+      "id": "customer-discovery",
+      "title": "Customer discovery for scientists",
+      "track": "customers-and-commercialization",
+      "kind": "workshop",
+      "week": 4,
+      "description": "Operator-led. Scientists are unusually good at interviews once they stop pitching — it is the same skill as not leading a witness.",
+      "defaultStatus": "inProgress",
+      "link": "/homeroom/library/module/customer-discovery",
+      "initialPosition": [
+        2,
+        1
+      ],
+      "dependencies": [
+        "primary-market-research"
+      ]
+    },
+    {
+      "id": "design-partner-pipeline",
+      "title": "Design partners, LOIs and pilots",
+      "track": "customers-and-commercialization",
+      "kind": "playbook",
+      "week": 4,
+      "description": "A letter of intent is worth exactly what the person signing it risks by signing. Most are worth nothing. Some are worth a round.",
+      "defaultStatus": "inProgress",
+      "link": "/homeroom/library/module/design-partner-pipeline",
+      "initialPosition": [
+        2,
+        2
+      ],
+      "dependencies": [
+        "customer-discovery"
+      ]
+    },
+    {
+      "id": "founder-led-sales",
+      "title": "Founder-led sales for scientists",
+      "track": "customers-and-commercialization",
+      "kind": "workshop",
+      "week": 0,
+      "description": "Selling before the product is finished is not dishonest, it is how anything hard gets built. The dishonest version is promising a date.",
+      "defaultStatus": "inProgress",
+      "link": "/homeroom/library/module/founder-led-sales",
+      "initialPosition": [
+        2,
+        3
+      ],
+      "dependencies": [
+        "design-partner-pipeline"
+      ]
+    },
+    {
+      "id": "technoeconomics",
+      "title": "Technoeconomics, cost curves and willingness to pay",
+      "track": "customers-and-commercialization",
+      "kind": "playbook",
+      "week": 0,
+      "description": "Flagged in the programme review as arguably as important as customer discovery for biotech and hard tech, and usually absent.",
+      "defaultStatus": "inProgress",
+      "link": "/homeroom/library/module/technoeconomics",
+      "initialPosition": [
+        2,
+        4
+      ],
+      "dependencies": [
+        "customer-discovery"
+      ]
+    },
+    {
+      "id": "business-model",
+      "title": "Business model and pricing for science companies",
+      "track": "customers-and-commercialization",
+      "kind": "playbook",
+      "week": 0,
+      "description": "Platform, tool, service, therapeutic and product companies have irreconcilable economics. Choosing late is expensive.",
+      "defaultStatus": "inProgress",
+      "link": "/homeroom/library/module/business-model",
+      "initialPosition": [
+        2,
+        5
+      ],
+      "dependencies": [
+        "technoeconomics"
+      ]
+    },
+    {
+      "id": "category-design",
+      "title": "Category creation versus market entry",
+      "track": "customers-and-commercialization",
+      "kind": "playbook",
+      "week": 0,
+      "description": "Another gap the review identified. Many frontier science companies are creating a category and pricing as though they are entering one.",
+      "defaultStatus": "inProgress",
+      "link": "/homeroom/library/module/category-design",
+      "initialPosition": [
+        2,
+        6
+      ],
+      "dependencies": [
+        "beachhead-market-memo"
+      ]
+    },
+    {
+      "id": "strategic-partnerships",
+      "title": "Partnerships, CROs and sponsored research",
+      "track": "customers-and-commercialization",
+      "kind": "reference",
+      "week": 0,
+      "description": "Partner or build is a capital allocation question disguised as a strategy question.",
+      "defaultStatus": "inProgress",
+      "link": "/homeroom/library/module/strategic-partnerships",
+      "initialPosition": [
+        2,
+        7
+      ],
+      "dependencies": [
+        "business-model"
+      ]
+    },
+    {
+      "id": "raising-on-an-idea",
+      "title": "Raising on an idea",
+      "track": "fundraising-and-capital",
+      "kind": "workshop",
+      "week": 3,
+      "description": "Delivered in week 3 alongside Reverse Demo Day. Proof-point fundraising: what you can credibly raise on before you have data.",
+      "defaultStatus": "inProgress",
+      "link": "/homeroom/library/module/raising-on-an-idea",
+      "initialPosition": [
+        3,
+        0
+      ],
+      "dependencies": [
+        "risk-mapping",
+        "company-formation"
+      ]
+    },
+    {
+      "id": "venture-math",
+      "title": "Venture capital, fund economics and venture math",
+      "track": "fundraising-and-capital",
+      "kind": "workshop",
+      "week": 0,
+      "description": "Fund economics explain investor behaviour better than any conversation with an investor will. A fund that needs a $1B outcome cannot fund a $100M company, however good it is.",
+      "defaultStatus": "inProgress",
+      "link": "/homeroom/library/module/venture-math",
+      "initialPosition": [
+        3,
+        1
+      ],
+      "dependencies": [
+        "raising-on-an-idea"
+      ]
+    },
+    {
+      "id": "grants-and-nondilutive",
+      "title": "Grants and non-dilutive capital",
+      "track": "fundraising-and-capital",
+      "kind": "workshop",
+      "week": 7,
+      "description": "Sponsor-led, with grants office hours the same week. SBIR, STTR, NIH, NSF, ARPA-H, DoD, DOE — and the registration steps that quietly eat a month.",
+      "defaultStatus": "inProgress",
+      "link": "/homeroom/library/module/grants-and-nondilutive",
+      "initialPosition": [
+        3,
+        2
+      ],
+      "dependencies": [
+        "raising-on-an-idea"
+      ]
+    },
+    {
+      "id": "investor-psychology",
+      "title": "Investor psychology and signalling",
+      "track": "fundraising-and-capital",
+      "kind": "reference",
+      "week": 0,
+      "description": "What a term sheet, a pass, a slow no and a party round each actually signal — to you and to the next investor.",
+      "defaultStatus": "inProgress",
+      "link": "/homeroom/library/module/investor-psychology",
+      "initialPosition": [
+        3,
+        3
+      ],
+      "dependencies": [
+        "venture-math"
+      ]
+    },
+    {
+      "id": "fundraising-narrative",
+      "title": "The fundraising narrative and investor communication",
+      "track": "fundraising-and-capital",
+      "kind": "workshop",
+      "week": 11,
+      "description": "Investors fund a story that is consistent with the data, not a story instead of the data — and not the data instead of a story.",
+      "defaultStatus": "inProgress",
+      "link": "/homeroom/library/module/fundraising-narrative",
+      "initialPosition": [
+        3,
+        4
+      ],
+      "dependencies": [
+        "raising-on-an-idea",
+        "credibility-stack"
+      ]
+    },
+    {
+      "id": "diligence-room",
+      "title": "Diligence, data rooms and fundraising readiness",
+      "track": "fundraising-and-capital",
+      "kind": "workshop",
+      "week": 11,
+      "description": "Orrick 3 territory. Diligence readiness is credibility through documentation: what you have written down is what you are believed to have done.",
+      "defaultStatus": "inProgress",
+      "link": "/homeroom/library/module/diligence-room",
+      "initialPosition": [
+        3,
+        5
+      ],
+      "dependencies": [
+        "company-formation",
+        "ip-and-spinouts",
+        "venture-math"
+      ]
+    },
+    {
+      "id": "company-formation",
+      "title": "Orrick 1: Formation and startup foundations",
+      "track": "legal-ip-and-regulatory",
+      "kind": "workshop",
+      "week": 2,
+      "description": "Delivered live by Orrick with office hours the same week. Incorporation, Delaware C-corps, founder agreements, vesting, cap tables, 83(b) elections and choosing counsel.",
+      "defaultStatus": "inProgress",
+      "link": "/homeroom/library/module/company-formation",
+      "initialPosition": [
+        4,
+        0
+      ],
+      "dependencies": [
+        "orientation"
+      ]
+    },
+    {
+      "id": "ip-and-spinouts",
+      "title": "Orrick 2: IP, academic spinouts and research commercialisation",
+      "track": "legal-ip-and-regulatory",
+      "kind": "workshop",
+      "week": 6,
+      "description": "Patents, provisional patents, trade secrets, publication timing, university IP, licensing, sponsored research agreements, freedom to operate and advisor agreements. Followed by founder-specific IP review.",
+      "defaultStatus": "inProgress",
+      "link": "/homeroom/library/module/ip-and-spinouts",
+      "initialPosition": [
+        4,
+        1
+      ],
+      "dependencies": [
+        "company-formation"
+      ]
+    },
+    {
+      "id": "safes-and-mtas",
+      "title": "Orrick 3: SAFEs, MTAs and negotiating agreements",
+      "track": "legal-ip-and-regulatory",
+      "kind": "workshop",
+      "week": 0,
+      "description": "A line-by-line SAFE walkthrough, plus side letters, MTAs, NDAs, consulting and advisor agreements, term sheet fundamentals, and negotiating with pharma, corporates and universities. Includes live document review.",
+      "defaultStatus": "inProgress",
+      "link": "/homeroom/library/module/safes-and-mtas",
+      "initialPosition": [
+        4,
+        2
+      ],
+      "dependencies": [
+        "company-formation"
+      ]
+    },
+    {
+      "id": "target-product-profile",
+      "title": "The target product profile",
+      "track": "legal-ip-and-regulatory",
+      "kind": "playbook",
+      "week": 0,
+      "description": "A TPP states what the product must be to be worth approving, buying and reimbursing — population, dose or use, endpoints, effect size, safety, and the label you intend to earn. It is the document a regulatory strategy is derived from, and the one that tells you which experiment is worth running.",
+      "defaultStatus": "inProgress",
+      "link": "/homeroom/library/module/target-product-profile",
+      "initialPosition": [
+        4,
+        3
+      ],
+      "dependencies": [
+        "risk-mapping",
+        "beachhead-market-memo"
+      ]
+    },
+    {
+      "id": "regulatory-strategy",
+      "title": "Validation, regulatory pathways and quality systems",
+      "track": "legal-ip-and-regulatory",
+      "kind": "workshop",
+      "week": 10,
+      "description": "Sponsor-led with regulatory office hours. FDA fundamentals across diagnostics, therapeutics, devices and software as a medical device; reimbursement, regulatory milestones, GLP, GMP, GCP and documentation culture.",
+      "defaultStatus": "inProgress",
+      "link": "/homeroom/library/module/regulatory-strategy",
+      "initialPosition": [
+        4,
+        4
+      ],
+      "dependencies": [
+        "target-product-profile"
+      ]
+    },
+    {
+      "id": "ind-and-clinical-path",
+      "title": "Preclinical, IND and the clinical path",
+      "track": "legal-ip-and-regulatory",
+      "kind": "reference",
+      "week": 0,
+      "description": "The therapeutics counterpart to the regulatory workshop, which leans device and diagnostic. IND-enabling work, the pre-IND meeting, what phase 1 actually costs and how long each gate really takes — because the gates, not the science, set your financing plan.",
+      "defaultStatus": "inProgress",
+      "link": "/homeroom/library/module/ind-and-clinical-path",
+      "initialPosition": [
+        4,
+        5
+      ],
+      "dependencies": [
+        "regulatory-strategy"
+      ]
+    },
+    {
+      "id": "reimbursement-and-access",
+      "title": "Reimbursement, payers and market access",
+      "track": "legal-ip-and-regulatory",
+      "kind": "reference",
+      "week": 0,
+      "description": "Approval is permission to sell; reimbursement is permission to be bought. The I-Corps life-science curriculum treats this as a first-class subject for a reason — coding, coverage and payment are decided by people who never read your paper, and the evidence they want is not the evidence the agency wanted.",
+      "defaultStatus": "inProgress",
+      "link": "/homeroom/library/module/reimbursement-and-access",
+      "initialPosition": [
+        4,
+        6
+      ],
+      "dependencies": [
+        "regulatory-strategy",
+        "technoeconomics"
+      ]
+    },
+    {
+      "id": "biosafety-and-compliance",
+      "title": "Biosafety, EHS and dual-use review",
+      "track": "legal-ip-and-regulatory",
+      "kind": "reference",
+      "week": 0,
+      "description": "The documented risk assessment a landlord, an insurer and a customer will each eventually ask for — and which is much easier to write before you need it.",
+      "defaultStatus": "inProgress",
+      "link": "/homeroom/library/module/biosafety-and-compliance",
+      "initialPosition": [
+        4,
+        7
+      ],
+      "dependencies": [
+        "company-formation"
+      ]
+    },
+    {
+      "id": "hiring-and-governance",
+      "title": "Orrick 4: Hiring, governance and legal pitfalls",
+      "track": "legal-ip-and-regulatory",
+      "kind": "workshop",
+      "week": 12,
+      "description": "Run in the high case and in week 11 or 12. Contractors versus employees, international hiring, firing abroad, advisor equity, seed-stage governance, compliance, and diligence readiness.",
+      "defaultStatus": "inProgress",
+      "link": "/homeroom/library/module/hiring-and-governance",
+      "initialPosition": [
+        4,
+        8
+      ],
+      "dependencies": [
+        "company-formation",
+        "first-hires"
+      ]
+    },
+    {
+      "id": "cofounders",
+      "title": "Cofounders: alignment, conflict and breakups",
+      "track": "team-and-operations",
+      "kind": "playbook",
+      "week": 0,
+      "description": "Founder breakups kill more early companies than technology does, and almost all of them were visible months earlier.",
+      "defaultStatus": "inProgress",
+      "link": "/homeroom/library/module/cofounders",
+      "initialPosition": [
+        5,
+        0
+      ],
+      "dependencies": [
+        "company-formation"
+      ]
+    },
+    {
+      "id": "first-hires",
+      "title": "First hires and scientific hiring",
+      "track": "team-and-operations",
+      "kind": "playbook",
+      "week": 0,
+      "description": "The first three hires set the culture whether or not you meant them to. In a wet lab they also set the safety practice.",
+      "defaultStatus": "inProgress",
+      "link": "/homeroom/library/module/first-hires",
+      "initialPosition": [
+        5,
+        1
+      ],
+      "dependencies": [
+        "company-formation"
+      ]
+    },
+    {
+      "id": "lab-operations",
+      "title": "Startup labs versus academic labs",
+      "track": "team-and-operations",
+      "kind": "playbook",
+      "week": 0,
+      "description": "A startup lab optimises for repeatability under time pressure. An academic lab optimises for novelty. The equipment looks identical and almost nothing else is.",
+      "defaultStatus": "inProgress",
+      "link": "/homeroom/library/module/lab-operations",
+      "initialPosition": [
+        5,
+        2
+      ],
+      "dependencies": [
+        "biosafety-and-compliance"
+      ]
+    },
+    {
+      "id": "operating-cadence",
+      "title": "Founder-operator systems and operating cadence",
+      "track": "team-and-operations",
+      "kind": "playbook",
+      "week": 0,
+      "description": "The weekly loop that makes the other tracks compound: what got done, what is blocked, what must happen next week.",
+      "defaultStatus": "inProgress",
+      "link": "/homeroom/library/module/operating-cadence",
+      "initialPosition": [
+        5,
+        3
+      ],
+      "dependencies": [
+        "founder-scorecard"
+      ]
+    },
+    {
+      "id": "ai-founder-stack",
+      "title": "The AI founder stack",
+      "track": "team-and-operations",
+      "kind": "workshop",
+      "week": 0,
+      "description": "Workshop 8 of the delivered S26 calendar, restored here. Where a two-person company should spend model tokens instead of headcount — literature triage, protocol drafting, diligence prep, grant boilerplate, customer research synthesis — and where using a model is how you get something confidently wrong.",
+      "defaultStatus": "inProgress",
+      "link": "/homeroom/library/module/ai-founder-stack",
+      "initialPosition": [
+        5,
+        4
+      ],
+      "dependencies": [
+        "operating-cadence"
+      ]
+    },
+    {
+      "id": "manufacturing-scaleup",
+      "title": "Manufacturing, biomanufacturing and scale-up",
+      "track": "team-and-operations",
+      "kind": "workshop",
+      "week": 9,
+      "description": "Sponsor-led. OEMs, RFQs, supplier qualification, DFM, DFT, sourcing, logistics, domestic and Shenzhen manufacturing, pilot plants, CMOs, CDMOs and tech transfer.",
+      "defaultStatus": "inProgress",
+      "link": "/homeroom/library/module/manufacturing-scaleup",
+      "initialPosition": [
+        5,
+        5
+      ],
+      "dependencies": [
+        "technoeconomics",
+        "lab-operations"
+      ]
+    },
+    {
+      "id": "founder-resources",
+      "title": "Founder resources and arbitrage",
+      "track": "team-and-operations",
+      "kind": "reference",
+      "week": 0,
+      "description": "Startup, software, cloud and lab credits, university resources, shared equipment and incubators. The programme issues this as a playbook to every resident.",
+      "defaultStatus": "inProgress",
+      "link": "/homeroom/library/module/founder-resources",
+      "initialPosition": [
+        5,
+        6
+      ],
+      "dependencies": [
+        "orientation"
+      ]
+    },
+    {
+      "id": "credibility-stack",
+      "title": "The scientific credibility stack",
+      "track": "brand-network-and-life",
+      "kind": "workshop",
+      "week": 0,
+      "description": "Publications, patents, grants, advisors, LOIs, pilots, validation studies, regulatory milestones, media and community reputation — and which audience trusts which.",
+      "defaultStatus": "inProgress",
+      "link": "/homeroom/library/module/credibility-stack",
+      "initialPosition": [
+        6,
+        0
+      ],
+      "dependencies": [
+        "risk-mapping"
+      ]
+    },
+    {
+      "id": "scientific-communication",
+      "title": "Explaining science to people who are not scientists",
+      "track": "brand-network-and-life",
+      "kind": "workshop",
+      "week": 11,
+      "description": "Delivered alongside Orrick 3 in week 11 and again in demo day preparation. Investors, customers, journalists, policymakers and patients each need a different version, and none of them need the abstract.",
+      "defaultStatus": "inProgress",
+      "link": "/homeroom/library/module/scientific-communication",
+      "initialPosition": [
+        6,
+        1
+      ],
+      "dependencies": [
+        "credibility-stack"
+      ]
+    },
+    {
+      "id": "relationship-systems",
+      "title": "Mentor networks and the personal board",
+      "track": "brand-network-and-life",
+      "kind": "playbook",
+      "week": 0,
+      "description": "Relationship mapping, maintaining weak ties, giving before asking, and building a personal board of directors that is not your cap table.",
+      "defaultStatus": "inProgress",
+      "link": "/homeroom/library/module/relationship-systems",
+      "initialPosition": [
+        6,
+        2
+      ],
+      "dependencies": [
+        "orientation"
+      ]
+    },
+    {
+      "id": "community-building",
+      "title": "Community as a moat",
+      "track": "brand-network-and-life",
+      "kind": "reference",
+      "week": 0,
+      "description": "Building communities around ideas, convening people, and movement building — the thing this network is itself an instance of.",
+      "defaultStatus": "inProgress",
+      "link": "/homeroom/library/module/community-building",
+      "initialPosition": [
+        6,
+        3
+      ],
+      "dependencies": [
+        "relationship-systems"
+      ]
+    },
+    {
+      "id": "press-and-media",
+      "title": "Press, personal brand and building in public",
+      "track": "brand-network-and-life",
+      "kind": "playbook",
+      "week": 0,
+      "description": "When press matters — recruiting, fundraising, customers — and when it is a distraction dressed as progress.",
+      "defaultStatus": "inProgress",
+      "link": "/homeroom/library/module/press-and-media",
+      "initialPosition": [
+        6,
+        4
+      ],
+      "dependencies": [
+        "scientific-communication"
+      ]
+    },
+    {
+      "id": "immigration-and-o1",
+      "title": "Immigration, the O-1 and building from abroad",
+      "track": "brand-network-and-life",
+      "kind": "reference",
+      "week": 0,
+      "description": "The S26 flex session, and the reason this network runs a Visa Desk. For a foreign founder the visa is on the critical path of the company, not beside it — and the evidence an O-1 wants is evidence you can start accumulating in week one.",
+      "defaultStatus": "inProgress",
+      "link": "/homeroom/library/module/immigration-and-o1",
+      "initialPosition": [
+        6,
+        5
+      ],
+      "dependencies": [
+        "company-formation"
+      ]
+    },
+    {
+      "id": "demo-day",
+      "title": "Demo day preparation and pitch review",
+      "track": "brand-network-and-life",
+      "kind": "workshop",
+      "week": 12,
+      "description": "Week 12. Pitch review, investor feedback, narrative refinement, Q&A preparation and media training, then the Final Showcase.",
+      "defaultStatus": "inProgress",
+      "link": "/homeroom/library/module/demo-day",
+      "initialPosition": [
+        6,
+        6
+      ],
+      "dependencies": [
+        "fundraising-narrative",
+        "scientific-communication"
+      ]
+    }
+  ]
+}

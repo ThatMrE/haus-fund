@@ -23,7 +23,15 @@ import * as invites from './invites.js';
 import { homeroomLayout } from './views/layout.js';
 import * as views from './views/pages.js';
 import { parseWhen, toLocalInput } from './views/components.js';
-import { S26_SEQUENCE } from './data/curriculum.js';
+import { S26_SEQUENCE, LIBRARY_MODULES } from './data/curriculum.js';
+
+/*
+ * How many nodes the skill tree draws. The tree lives outside this function's
+ * bundle (tools/biopunk-skill-tree), so the count is stated here rather than
+ * imported — and tools/biopunk-skill-tree/scripts/validate.mjs fails if this
+ * number and the generated tree ever disagree, so it cannot quietly rot.
+ */
+const SKILL_TREE_NODES = 47;
 
 const PER_PAGE = bf.PAGE_SIZE;
 
@@ -724,7 +732,7 @@ function libraryHandler(ctx) {
       entries: bf.listLibrary({ limit: 12 }).entries,
       sequence: S26_SEQUENCE,
     }),
-    { title: 'Library' },
+    { title: 'Library', subnav: views.subnav(views.LIBRARY_TABS, 'manual') },
   );
 }
 
@@ -1658,9 +1666,12 @@ const ROUTES = [
 
   ['GET', '/homeroom/library/new', (ctx) => render(ctx, views.libraryFormPage(ctx, {}), { title: 'Write for the library' })],
   ['POST', '/homeroom/library/new', libraryCreate],
+  ['GET', '/homeroom/library/tree', (ctx) => render(ctx, views.treePage(ctx, {
+    moduleCount: LIBRARY_MODULES.length, nodeCount: SKILL_TREE_NODES,
+  }), { title: 'Skill tree', subnav: views.subnav(views.LIBRARY_TABS, 'tree'), wide: true })],
   ['GET', '/homeroom/library/notes', (ctx) => render(ctx, views.deliverablesPage(ctx, {
     rows: bf.deliverables(ctx.user.id), progress: bf.progressSummary(ctx.user.id),
-  }), { title: 'Your deliverables' })],
+  }), { title: 'Your deliverables', subnav: views.subnav(views.LIBRARY_TABS, 'notes') })],
   ['GET', '/homeroom/library/track/:slug', trackHandler],
   ['GET', '/homeroom/library/module/:slug', moduleHandler],
   ['POST', '/homeroom/library/module/:slug/progress', progressSubmit],

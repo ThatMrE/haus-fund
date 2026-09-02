@@ -1,0 +1,75 @@
+{
+  "treeId": "biopunk-accelerator",
+  "id": "primary-market-research",
+  "title": {
+    "name": "Primary market research, personas and market sizing",
+    "level": 3
+  },
+  "track": "customers-and-commercialization",
+  "kind": "playbook",
+  "week": 0,
+  "minutes": 75,
+  "deliverable": "End User Profile and TAM",
+  "defaultStatus": "inProgress",
+  "isUnlocked": true,
+  "onMainPath": false,
+  "link": "/homeroom/library/module/primary-market-research",
+  "initialPosition": [
+    2,
+    0
+  ],
+  "dependencies": [
+    "beachhead-market-memo"
+  ],
+  "leadsTo": [
+    "customer-discovery"
+  ],
+  "overview": {
+    "description": "Between choosing a beachhead and interviewing anyone sits the machinery that makes both defensible: who the end user actually is, how many of them exist, and what a bottom-up market size looks like when it is not a slide. MIT teaches this as the first six of the twenty-four steps; I-Corps teaches it as the front half of the canvas.",
+    "objectives": [
+      "Segment a market from primary evidence rather than from an analyst report",
+      "Write an end-user profile specific enough that you could recognise the person in a room",
+      "Build a bottom-up TAM you can defend line by line, and say why top-down is not one",
+      "Separate the end user, the economic buyer and the champion, who are usually three people"
+    ],
+    "prerequisites": [
+      "Beachhead markets and why superior products fail"
+    ]
+  },
+  "steps": {
+    "intro": "Between choosing a beachhead and interviewing anyone sits the machinery that makes both defensible: who the end user actually is, how many of them exist, and what a bottom-up market size looks like when it is not a slide. MIT teaches this as the first six of the twenty-four steps; I-Corps teaches it as the front half of the canvas.",
+    "estimatedMinutes": 75,
+    "instructions": [
+      "List six to twelve candidate segments. For each: who uses it, who pays, what breaks today.",
+      "Score them on reachability, urgency, and whether you can serve them with what you have.",
+      "Write one persona from a real named person you have actually spoken to.",
+      "Build the TAM bottom-up: number of end users × annual spend. Show the arithmetic."
+    ]
+  },
+  "submission": {
+    "description": "Produce the End User Profile and TAM and log it against this module in Homeroom. Done means the artefact exists, not that you read the page."
+  },
+  "video": {
+    "url": "https://www.youtube.com/watch?v=GtWexnfPhKk",
+    "title": "Disciplined Entrepreneurship — market segmentation to end-user profile",
+    "source": "Bill Aulet, MIT"
+  },
+  "resources": [
+    {
+      "title": "Disciplined Entrepreneurship — steps 1-6, market segmentation to persona",
+      "url": "https://disciplinedentrepreneurship.com/"
+    },
+    {
+      "title": "I-Corps at NIH — the customer discovery curriculum",
+      "url": "https://seed.nih.gov/support-training/i-corps-at-nih"
+    },
+    {
+      "title": "Strategyzer — the Business Model Canvas",
+      "url": "https://www.strategyzer.com/library/the-business-model-canvas"
+    },
+    {
+      "title": "The Mom Test — interviewing without leading the witness",
+      "url": "https://www.momtestbook.com/"
+    }
+  ]
+}

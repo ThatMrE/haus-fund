@@ -1,0 +1,69 @@
+{
+  "treeId": "biopunk-accelerator",
+  "id": "ai-founder-stack",
+  "title": {
+    "name": "The AI founder stack",
+    "level": 3
+  },
+  "track": "team-and-operations",
+  "kind": "workshop",
+  "week": 0,
+  "minutes": 90,
+  "deliverable": "Founder Automation Map",
+  "defaultStatus": "inProgress",
+  "isUnlocked": true,
+  "onMainPath": false,
+  "link": "/homeroom/library/module/ai-founder-stack",
+  "initialPosition": [
+    5,
+    4
+  ],
+  "dependencies": [
+    "operating-cadence"
+  ],
+  "leadsTo": [],
+  "overview": {
+    "description": "Workshop 8 of the delivered S26 calendar, restored here. Where a two-person company should spend model tokens instead of headcount — literature triage, protocol drafting, diligence prep, grant boilerplate, customer research synthesis — and where using a model is how you get something confidently wrong.",
+    "objectives": [
+      "Pick the three tasks in your week worth automating first, by hours rather than novelty",
+      "Build a retrieval workflow over your own protocols, papers and notes",
+      "Know which outputs need a human check before they leave the building, and enforce it",
+      "Keep confidential science, unpublished data and patient information out of the wrong tools"
+    ],
+    "prerequisites": [
+      "Founder-operator systems and operating cadence"
+    ]
+  },
+  "steps": {
+    "intro": "Workshop 8 of the delivered S26 calendar, restored here. Where a two-person company should spend model tokens instead of headcount — literature triage, protocol drafting, diligence prep, grant boilerplate, customer research synthesis — and where using a model is how you get something confidently wrong.",
+    "estimatedMinutes": 90,
+    "instructions": [
+      "Log a week. Mark every task repetitive, judgment, or bench.",
+      "Automate the top three repetitive ones. Measure the hours back next week.",
+      "Write the review rule: what never ships without a named human reading it.",
+      "Write the data rule: what never goes into a third-party tool, and where that is recorded."
+    ]
+  },
+  "submission": {
+    "description": "Produce the Founder Automation Map and log it against this module in Homeroom. Done means the artefact exists, not that you read the page."
+  },
+  "video": null,
+  "resources": [
+    {
+      "title": "NIST — the AI Risk Management Framework, for what needs a human",
+      "url": "https://www.nist.gov/itl/ai-risk-management-framework"
+    },
+    {
+      "title": "Anthropic — building with Claude",
+      "url": "https://docs.claude.com/"
+    },
+    {
+      "title": "YC Startup Library — AI tooling for small teams",
+      "url": "https://www.ycombinator.com/library"
+    },
+    {
+      "title": "NIH — data sharing and privacy expectations that survive a model",
+      "url": "https://sharing.nih.gov/"
+    }
+  ]
+}

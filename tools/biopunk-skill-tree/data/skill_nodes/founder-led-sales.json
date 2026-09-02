@@ -1,0 +1,67 @@
+{
+  "treeId": "biopunk-accelerator",
+  "id": "founder-led-sales",
+  "title": {
+    "name": "Founder-led sales for scientists",
+    "level": 6
+  },
+  "track": "customers-and-commercialization",
+  "kind": "workshop",
+  "week": 0,
+  "minutes": 90,
+  "deliverable": "Early Sales Pipeline",
+  "defaultStatus": "inProgress",
+  "isUnlocked": true,
+  "onMainPath": false,
+  "link": "/homeroom/library/module/founder-led-sales",
+  "initialPosition": [
+    2,
+    3
+  ],
+  "dependencies": [
+    "design-partner-pipeline"
+  ],
+  "leadsTo": [],
+  "overview": {
+    "description": "Selling before the product is finished is not dishonest, it is how anything hard gets built. The dishonest version is promising a date.",
+    "objectives": [
+      "Map every stakeholder in a scientific purchase, including the one who can only say no",
+      "Navigate procurement, vendor onboarding, insurance and compliance requirements",
+      "Run an enterprise or pharma sales cycle without losing a year to it"
+    ],
+    "prerequisites": [
+      "Design partners, LOIs and pilots"
+    ]
+  },
+  "steps": {
+    "intro": "Selling before the product is finished is not dishonest, it is how anything hard gets built. The dishonest version is promising a date.",
+    "estimatedMinutes": 90,
+    "instructions": [
+      "Draw the buying committee for your top account. Name each seat.",
+      "Find out what their procurement process requires before you are in it.",
+      "Write the one-page technical summary the internal champion will forward without editing."
+    ]
+  },
+  "submission": {
+    "description": "Produce the Early Sales Pipeline and log it against this module in Homeroom. Done means the artefact exists, not that you read the page."
+  },
+  "video": {
+    "url": "https://www.youtube.com/watch?v=0fKYVl12VTA",
+    "title": "Enterprise Sales",
+    "source": "Pete Koomen, Y Combinator Startup School"
+  },
+  "resources": [
+    {
+      "title": "How to Sell — Tyler Bosmeny, YC",
+      "url": "https://www.youtube.com/watch?v=xZi4kTJG-LE"
+    },
+    {
+      "title": "YC Startup Library — sales",
+      "url": "https://www.ycombinator.com/library"
+    },
+    {
+      "title": "NIH — selling into academic and clinical procurement",
+      "url": "https://seed.nih.gov/"
+    }
+  ]
+}
