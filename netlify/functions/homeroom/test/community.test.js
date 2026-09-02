@@ -133,77 +133,6 @@ test('the researched data sets are well formed', () => {
   }
 });
 
-/* ========================================================== community chat */
-
-test('chat delivers, counts unread for others and never for yourself', async () => {
-  const speaker = await member('chatspeaker');
-  const listener = await member('chatlistener');
-
-  const channel = hr.getChannel('general') || hr.getChannel(hr.createChannel({ slug: 'general', name: 'general' }));
-  assert.ok(channel, 'the seeded room should have a general channel');
-
-  const posted = await speaker.call(`/homeroom/chat/${channel.slug}`, form({
-    csrf: speaker.csrf, body: 'The autoclave is free after four.',
-  }));
-  assert.equal(posted.status, 303);
-
-  assert.equal(unreadIn(speaker.id, channel.slug), 0, 'your own message is never unread');
-  assert.ok(unreadIn(listener.id, channel.slug) > 0, 'somebody else should see it as unread');
-
-  // Reading the channel clears it.
-  const page = await (await listener.call(`/homeroom/chat/${channel.slug}`)).text();
-  assert.match(page, /autoclave is free after four/);
-  assert.equal(unreadIn(listener.id, channel.slug), 0, 'reading the channel clears the badge');
-});
-
-test('the chat poll returns only what you do not already have', async () => {
-  const poster = await member('chatpoller');
-  const channel = hr.getChannel('general');
-
-  const first = await (await poster.call(`/homeroom/api/chat/${channel.slug}?since=0`)).json();
-  assert.equal(first.ok, true);
-  const high = first.last;
-
-  const empty = await (await poster.call(`/homeroom/api/chat/${channel.slug}?since=${high}`)).json();
-  assert.equal(empty.messages.length, 0, 'a caught-up poll costs nothing');
-
-  await poster.call(`/homeroom/chat/${channel.slug}`, form({ csrf: poster.csrf, body: 'New line.' }));
-  const after = await (await poster.call(`/homeroom/api/chat/${channel.slug}?since=${high}`)).json();
-  assert.equal(after.messages.length, 1);
-  assert.equal(after.messages[0].body, 'New line.');
-  assert.equal(after.messages[0].mine, true);
-});
-
-test('muting a channel keeps it out of the badge', async () => {
-  const talker = await member('chatmuter1');
-  const muter = await member('chatmuter2');
-  const channel = hr.getChannel('general');
-
-  await muter.call(`/homeroom/chat/${channel.slug}`);          // catch up first
-  const before = hr.unreadChatCount(muter.id);
-  await muter.call(`/homeroom/chat/${channel.slug}/mute`, form({ csrf: muter.csrf }));
-  await talker.call(`/homeroom/chat/${channel.slug}`, form({ csrf: talker.csrf, body: 'Noise.' }));
-
-  assert.ok(unreadIn(muter.id, channel.slug) > 0, 'the channel still shows its own pip');
-  assert.equal(hr.unreadChatCount(muter.id), before,
-    'but a muted channel does not raise the masthead badge');
-});
-
-test('chat is not the forum: deleting yours works, deleting theirs does not', async () => {
-  const author = await member('chatauthor');
-  const stranger = await member('chatstranger');
-  const channel = hr.getChannel('general');
-
-  await author.call(`/homeroom/chat/${channel.slug}`, form({ csrf: author.csrf, body: 'Deletable.' }));
-  const message = getDb().prepare('SELECT id FROM hr_chat ORDER BY id DESC LIMIT 1').get();
-
-  assert.equal(hr.deleteChat(message.id, stranger.id), false, 'not yours to delete');
-  assert.equal(hr.deleteChat(message.id, author.id), true);
-  assert.equal(
-    getDb().prepare('SELECT deleted FROM hr_chat WHERE id = ?').get(message.id).deleted, 1,
-  );
-});
-
 /* ================================================================ yearbook */
 
 test('a yearbook entry appears on the wall and can be signed once', async () => {
@@ -635,13 +564,15 @@ test('a member only ever sees their own submissions', async () => {
 
 /* ================================================================ the nav */
 
-test('the masthead names every section, and Deals is gone from it', async () => {
+test('the masthead names every section, and the retired ones are gone', async () => {
   const { call } = await member('navreader');
   const page = await (await call('/homeroom')).text();
-  for (const label of ['Chat', 'Yearbook', 'Labs', 'Perks', 'Funders', 'Mentors', 'Events', 'Library']) {
+  for (const label of ['Yearbook', 'Labs', 'Perks', 'Funders', 'Mentors', 'Events', 'Library']) {
     assert.match(page, new RegExp(`>${label}</a>`), `${label} should be in the nav`);
   }
   assert.match(page, /href="\/homeroom\/jobs">Jobs<\/a>/, 'Jobs moved to the footer, not away');
   assert.doesNotMatch(page, />Deals</, 'Deals became Perks');
   assert.doesNotMatch(page, />People</, 'People became the Yearbook');
+  assert.doesNotMatch(page, />Chat</, 'chat was removed');
+  assert.doesNotMatch(page, />Forum</, 'the forum was removed');
 });

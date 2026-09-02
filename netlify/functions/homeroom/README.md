@@ -5,8 +5,6 @@ shares the domain, the design system and the sign-in.
 
 | Surface | What it is |
 | --- | --- |
-| **Chat** | Channels, polled not socketed. Unranked and unarchived on purpose. |
-| **Forum** | The question whose answer should still be findable in a year. |
 | **Yearbook** | The founder wall: every cohort, what they build, and signatures. |
 | **Labs** | The Global Biolab Atlas plus the Core Facility Finder. |
 | **Perks** | Every category of startup support, researched, with how to redeem it. |
@@ -45,29 +43,38 @@ netlify/functions/homeroom/
 ├── index.mjs          Netlify entry point — claims /homeroom and /homeroom/*
 ├── server.js          local dev server, also serves the site root like Netlify does
 ├── app/
-│   ├── app.js         sessions, the four pre-login pages, the dispatcher
-│   ├── routes.js      every members-only surface
-│   ├── models.js      data layer for all of it
-│   ├── schema.js      the hr_ tables
-│   ├── db.js          accounts, sessions, reset tokens, migrations, transactions
-│   ├── auth.js        scrypt hashing, sessions, CSRF, password resets
-│   ├── mail.js        the one message this app sends
-│   ├── supabase.js    durable storage for publishing to /news (no SDK)
-│   ├── luma.js        the luma.com/biopunk calendar sync
-│   ├── seed.js        the sample network, plus the researched data sets
-│   ├── http.js        send/redirect/body/rate-limit helpers
-│   ├── util.js        escaping, html`` templating, time, URL handling
-│   ├── data/          the researched data: perks, the capital map, the atlas,
-│   │                  the mentor roster, the Founder Manual curriculum
-│   └── views/         layout, components, pages, surfaces
+│   ├── app.js            sessions, the four pre-login pages, the dispatcher
+│   ├── routes.js         every members-only surface
+│   ├── models.js         data layer for all of it
+│   ├── schema.js         the hr_ tables
+│   ├── db.js             accounts, sessions, reset tokens, migrations, transactions
+│   ├── auth.js           scrypt hashing, sessions, CSRF, password resets
+│   ├── mail.js           the one message this app sends
+│   ├── supabase.js       durable storage for publishing to /news (no SDK)
+│   ├── supabase-auth.js  Supabase Auth as the credential store (no SDK)
+│   ├── steward.js        the admin account, rebuilt from the environment
+│   ├── luma.js           the luma.com/biopunk calendar sync
+│   ├── seed.js           the sample network, for reviewing the design
+│   ├── seed-real.js      the researched data only — no accounts, no invented content
+│   ├── http.js           send/redirect/body/rate-limit helpers
+│   ├── util.js           escaping, html`` templating, time, URL handling
+│   ├── data/             the researched data: perks, the capital map, the atlas,
+│   │                     the mentor roster, the Founder Manual curriculum
+│   └── views/            layout, components, pages, surfaces
 ├── scripts/
-│   └── import-mentors.js   replace the sample roster from Airtable or a CSV
+│   ├── import-mentors.js     replace the sample roster from Airtable or a CSV
+│   ├── check-roster.js       what the front door would do, before switching it on
+│   ├── make-steward.js       mint the steward environment variables
+│   └── make-supabase-user.js create an account and prove it can sign in
 └── test/              unit and HTTP integration tests
 ```
 
 Static assets live at the repo root in `homeroom-assets/` so the CDN serves
 them; the stylesheet imports the site's own `tokens/*.css`, so Homeroom
-inherits any change to the design system automatically.
+inherits any change to the design system automatically. There is no client-side
+JavaScript bundle: every surface is a server-rendered page and a plain form, and
+the one script left in the app is a dozen lines inline on the password-reset
+page.
 
 ## Accounts
 
@@ -143,7 +150,7 @@ This is the part to keep if any of it is ever rewritten:
   which is true — rather than "you are not a resident", which might not be.
 - **Login fails open.** They already have an account; the roster said yes at
   least once. An Airtable outage must never lock the whole house out of its own
-  forum. Only a definite, freshly-confirmed "no longer eligible" revokes access,
+  room. Only a definite, freshly-confirmed "no longer eligible" revokes access,
   and stewards are exempt entirely — the people who fix the roster have to be
   able to reach it.
 
@@ -294,7 +301,7 @@ under `auth`.
 **What moves and what does not.** Supabase owns the password, its hashing, the
 reset tokens and the recovery email. It owns nothing else. Homeroom keeps its
 own `users` row and its own session cookie, because every table in the schema
-hangs off `users.id` by foreign key — posts, chat, reviews, progress, bookings.
+hangs off `users.id` by foreign key — profiles, reviews, progress, bookings.
 `users.supabase_id` links the two. A Supabase access token is never stored or
 put in a cookie: nothing here acts on a member's behalf at Supabase, so keeping
 one would be liability without use.
@@ -360,19 +367,13 @@ repeated run updates rather than duplicating.
 
 Every surface requires an account, and the pages carry `noindex`. Beyond that:
 
-- **Anonymous posts** hide the handle in the page and in the JSON API. Stewards
-  can still look it up — anonymity is for candour, not cover.
 - **Deal codes** are only rendered to a member who has claimed the deal, and
   claims are counted so the community can renegotiate on real numbers.
 - **Pipeline notes** are read back only for the member who wrote them.
 - **Message threads** are readable only by their members; an intro request opens
   one with both people in it when it is accepted.
 - **Applicant lists** are visible to the poster and lab admins, not to everyone.
-
 - **Module notes** in the library are read back only for the member who wrote them.
-- **Chat** is not searchable from the public API, not ranked, and not surfaced
-  on any other page. Deleting your own message works; deleting someone else's
-  does not, unless you are a steward.
 - **Review replies** can be anonymous independently of the review itself.
 - **The ICS feed** carries title, time and place — never the description or the
   attendee list, because a calendar file gets forwarded far more casually than
@@ -383,18 +384,6 @@ Every surface requires an account, and the pages carry `noindex`. Beyond that:
 claims most likely to quietly stop being true.
 
 ## The surfaces, and why they are shaped that way
-
-**Chat and the forum are separate on purpose.** The forum ranks, scores and
-archives; that is what makes it useful in a year and what makes people hesitate
-before posting. Chat does none of those things, which is what makes people type
-in it. Keeping them in one table would have meant one set of expectations, and
-the room would have lost whichever half it compromised.
-
-Chat delivery is polling, not sockets: a Netlify function cannot hold a
-connection open. The client polls every five seconds, stops entirely while the
-tab is hidden, and backs off to thirty seconds after five empty polls. `since`
-is the last message id the client holds, so the usual response is an empty array
-and one indexed range scan.
 
 **The atlas leads with whether a lab is open.** Every DIYbio directory on the
 internet mixes live spaces with ones that closed in 2017 and renders them
@@ -454,19 +443,6 @@ time, or a cold container puts them back.
 `network.js` (`source = 'calendar'`) survive it. To promote one of them to
 bookable, set `vetted` and a `scheduler` — which should happen only after the
 person has actually said yes.
-
-## Ranking
-
-```
-score = (points - 1 + 0.75 × replies + 1) / (age_hours + 2) ^ 1.5
-        × 1.6 if it is a question with no replies and under 48 hours old
-        × 1.15 if an answer has been accepted
-
-pinned threads sort above everything
-```
-
-A reply is worth much more than a vote, because an answered question is the
-product. The lift on an unanswered question is what stops one dying unseen.
 
 ## Storage: read this before inviting anyone
 

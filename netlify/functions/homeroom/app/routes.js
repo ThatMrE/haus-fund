@@ -43,7 +43,6 @@ const LIMITS = {
 export function render(ctx, content, { title, description, status = 200, flash, error, subnav } = {}) {
   ctx.badges = ctx.user
     ? {
-        chat: bf.unreadChatCount(ctx.user.id),
         messages: bf.unreadMessageCount(ctx.user.id),
         notifications: bf.unreadNotificationCount(ctx.user.id) + bf.pendingIntroCount(ctx.user.id),
       }
@@ -112,173 +111,24 @@ const trimmed = (value, max) => String(value || '').trim().slice(0, max);
 function homeHandler(ctx) {
   const member = bf.ensureMember(ctx.user.id);
   bf.touchMember(ctx.user.id);
-  const { posts } = bf.feed({ sort: 'hot', limit: 12 });
-  const voted = bf.votedIds(ctx.user.id, 'post', posts.map((p) => p.id));
   render(
     ctx,
     views.homePage(ctx, {
       member,
-      posts,
-      voted,
       stats: bf.networkStats(),
       upcomingSlots: bf.listSlots({ upcoming: true, limit: 5 }),
-      upcomingEvents: bf.listEvents({ upcoming: true, limit: 5 }),
+      upcomingEvents: bf.listEvents({ upcoming: true, limit: 6 }),
       myOrgs: bf.userOrgs(ctx.user.id),
-      deals: bf.listDeals({ limit: 5 }).deals,
+      deals: bf.listDeals({ limit: 6 }).deals,
+      funders: bf.listFunders({ limit: 5 }).funders,
+      mentors: bf.searchMentors({ limit: 5 }).mentors,
+      modules: bf.listModules({ limit: 5 }),
       updates: bf.recentUpdates(4),
-      answerers: bf.topAnswerers(6),
       intros: bf.introsFor(ctx.user.id).incoming.filter((i) => i.status === 'pending'),
-      unansweredCount: bf.feed({ unanswered: true, kind: 'question', limit: 1 }).total,
       profileComplete: !!(member.headline && (member.expertise || []).length),
     }),
     { title: 'Home' },
   );
-}
-
-function forumHandler(ctx) {
-  const page = pageParam(ctx);
-  const category = ctx.query.get('category') || '';
-  const kind = ctx.query.get('kind') || '';
-  const tag = ctx.query.get('tag') || '';
-  const sort = ctx.query.get('sort') || 'hot';
-  const unanswered = ctx.query.get('unanswered') === '1';
-  const { posts, total } = bf.feed({
-    sort, category, kind, tag, unanswered, limit: PER_PAGE, offset: offsetFor(page),
-  });
-  const params = new URLSearchParams();
-  for (const [key, value] of [['category', category], ['kind', kind], ['tag', tag],
-    ['sort', sort === 'hot' ? '' : sort], ['unanswered', unanswered ? '1' : '']]) {
-    if (value) params.set(key, value);
-  }
-  const qs = params.toString();
-  render(
-    ctx,
-    views.forumPage(ctx, {
-      posts,
-      voted: bf.votedIds(ctx.user.id, 'post', posts.map((p) => p.id)),
-      total, page, sort, category, kind, tag, unanswered,
-      counts: bf.categoryCounts(),
-      tags: bf.tagCloud(24),
-      basePath: `/homeroom/forum${qs ? `?${qs}` : ''}`,
-    }),
-    { title: 'Forum' },
-  );
-}
-
-function postHandler(ctx, { id }) {
-  const post = bf.getPost(id);
-  if (!post || post.deleted) return notFound(ctx);
-  bf.bumpViews(post.id);
-  const comments = bf.commentTree(post.id);
-  render(
-    ctx,
-    views.postPage(ctx, {
-      post,
-      comments,
-      voted: bf.hasVoted(ctx.user.id, 'post', post.id),
-      commentVoted: bf.votedIds(ctx.user.id, 'comment', comments.map((c) => c.id)),
-      options: post.kind === 'poll' ? bf.pollOptions(post.id) : [],
-      myOption: bf.myPollVote(post.id, ctx.user.id),
-      following: bf.isFollowing(ctx.user.id, 'post', post.id),
-      saved: bf.isSaved(ctx.user.id, 'post', post.id),
-      canEdit: post.author_id === ctx.user.id || !!ctx.user.is_admin,
-      isAuthor: post.author_id === ctx.user.id,
-    }),
-    { title: post.title },
-  );
-}
-
-function askFormHandler(ctx) {
-  render(
-    ctx,
-    views.composePage(ctx, { values: Object.fromEntries(ctx.query), orgs: bf.userOrgs(ctx.user.id) }),
-    { title: 'New post' },
-  );
-}
-
-async function askSubmitHandler(ctx) {
-  const { fields } = await readBody(ctx.req);
-  if (!csrfOk(ctx, fields)) return;
-  if (limited(ctx, 'post', LIMITS.post)) return;
-
-  const values = {
-    title: trimmed(fields.title, 160),
-    body: trimmed(fields.body, 20_000),
-    kind: bf.normalizeKind(fields.kind),
-    category: bf.normalizeCategory(fields.category),
-    tags: fields.tags || '',
-    org: fields.org || '',
-    options: fields.options || '',
-    anonymous: checkbox(fields.anonymous),
-  };
-  const fail = (message) =>
-    render(ctx, views.composePage(ctx, { values, error: message, orgs: bf.userOrgs(ctx.user.id) }),
-      { title: 'New post', status: 400 });
-
-  if (values.title.length < 8) return fail('Give it a real title — eight characters or more.');
-  const options = values.options.split('\n').map((line) => trimmed(line, 120)).filter(Boolean);
-  if (values.kind === 'poll' && options.length < 2) return fail('A poll needs at least two options.');
-
-  const orgId = Number(values.org) || null;
-  if (orgId && !bf.isOrgMember(orgId, ctx.user.id)) return fail('You are not listed with that lab.');
-
-  const id = bf.createPost({
-    authorId: ctx.user.id,
-    kind: values.kind,
-    category: values.category,
-    title: values.title,
-    body: values.body,
-    orgId,
-    anonymous: values.anonymous,
-    tags: bf.parseTags(values.tags),
-    options,
-  });
-  seeOther(ctx, `/homeroom/post/${id}`);
-}
-
-async function editPostSubmit(ctx, { id }) {
-  const post = bf.getPost(id);
-  if (!post || post.deleted) return notFound(ctx);
-  if (post.author_id !== ctx.user.id && !ctx.user.is_admin) return oops(ctx, 'Not yours to edit.', 403);
-  const { fields } = await readBody(ctx.req);
-  if (!csrfOk(ctx, fields)) return;
-  const title = trimmed(fields.title, 160);
-  if (title.length < 8) {
-    return render(ctx, views.editPostPage(ctx, { post, error: 'Give it a real title.' }), { status: 400 });
-  }
-  bf.editPost(post.id, {
-    title,
-    body: trimmed(fields.body, 20_000),
-    category: bf.normalizeCategory(fields.category),
-    tags: bf.parseTags(fields.tags),
-  });
-  seeOther(ctx, `/homeroom/post/${post.id}`);
-}
-
-async function commentSubmit(ctx) {
-  const { fields } = await readBody(ctx.req);
-  if (!csrfOk(ctx, fields)) return;
-  if (limited(ctx, 'comment', LIMITS.comment)) return;
-  const post = bf.getPost(fields.post);
-  if (!post || post.deleted) return notFound(ctx);
-  if (post.locked) return oops(ctx, 'That thread is locked.', 403);
-  const text = trimmed(fields.text, 20_000);
-  if (!text) return seeOther(ctx, `/homeroom/post/${post.id}`);
-  const parentId = fields.parent ? Number(fields.parent) : null;
-  if (parentId && bf.getComment(parentId)?.post_id !== post.id) return notFound(ctx);
-
-  const anonymous = checkbox(fields.anonymous);
-  const id = bf.createComment({ postId: post.id, parentId, authorId: ctx.user.id, body: text, anonymous });
-  const who = anonymous ? 'An anonymous member' : ctx.user.id;
-  bf.notifyFollowers({
-    postId: post.id,
-    actorId: ctx.user.id,
-    text: `${who} replied to “${post.title}”`,
-    href: `/homeroom/post/${post.id}#c${id}`,
-  });
-  // Replying subscribes you to the thread, but never unsubscribes you.
-  if (!bf.isFollowing(ctx.user.id, 'post', post.id)) bf.toggleFollow(ctx.user.id, 'post', post.id);
-  seeOther(ctx, `/homeroom/post/${post.id}#c${id}`);
 }
 
 /* ------------------------------------------------------------- directory */
@@ -311,15 +161,11 @@ function memberHandler(ctx, { handle }) {
   if (!profile) return notFound(ctx);
   const isSelf = ctx.user.id.toLowerCase() === profile.user_id.toLowerCase();
   const outgoing = bf.introsFor(ctx.user.id).outgoing;
-  const posts = bf.feed({ author: profile.user_id, sort: 'new', limit: 8 }).posts.filter((p) => !p.anonymous);
   render(
     ctx,
     views.memberPage(ctx, {
       profile,
       orgs: bf.userOrgs(profile.user_id),
-      posts,
-      voted: bf.votedIds(ctx.user.id, 'post', posts.map((p) => p.id)),
-      comments: bf.userComments(profile.user_id, { limit: 6 }).filter((c) => !c.anonymous),
       slots: bf.listSlots({ upcoming: true, hostId: profile.user_id, limit: 5 }),
       isSelf,
       introSent: outgoing.some((i) => i.target_id === profile.user_id && i.status === 'pending'),
@@ -438,7 +284,6 @@ function labsHandler(ctx) {
 function labHandler(ctx, { slug }) {
   const org = bf.getOrg(slug);
   if (!org) return notFound(ctx);
-  const posts = bf.feed({ sort: 'new', orgId: org.id, limit: 6 }).posts;
   render(
     ctx,
     views.labPage(ctx, {
@@ -446,8 +291,6 @@ function labHandler(ctx, { slug }) {
       team: bf.orgTeam(org.id),
       updates: bf.orgUpdates(org.id, { limit: 10 }),
       jobs: bf.listJobs({ orgId: org.id, limit: 10 }).jobs,
-      posts,
-      voted: bf.votedIds(ctx.user.id, 'post', posts.map((p) => p.id)),
       isMember: bf.isOrgMember(org.id, ctx.user.id),
       isAdmin: bf.isOrgAdmin(org.id, ctx.user.id) || !!ctx.user.is_admin,
     }),
@@ -1032,19 +875,6 @@ async function messageCreate(ctx) {
 
 /* ------------------------------------------------------------- JSON API */
 
-const publicPost = (post) => ({
-  id: post.id,
-  kind: post.kind,
-  category: post.category,
-  title: post.title,
-  by: post.anonymous ? null : post.author_id,
-  points: post.points,
-  comments: post.comment_count,
-  tags: post.tags || [],
-  answered: !!post.answer_id,
-  created_at: post.created_at,
-  url: `/homeroom/post/${post.id}`,
-});
 
 const publicMember = (member) => ({
   handle: member.user_id,
@@ -1065,153 +895,7 @@ const publicMember = (member) => ({
   url: `/homeroom/p/${member.user_id}`,
 });
 
-function apiFeed(ctx) {
-  const limit = clampInt(ctx.query.get('limit'), 1, 100, PER_PAGE);
-  const page = pageParam(ctx);
-  const { posts, total } = bf.feed({
-    sort: ctx.query.get('sort') || 'hot',
-    category: ctx.query.get('category') || '',
-    kind: ctx.query.get('kind') || '',
-    tag: ctx.query.get('tag') || '',
-    limit,
-    offset: (page - 1) * limit,
-  });
-  sendJson(ctx.res, { ok: true, page, total, posts: posts.map(publicPost) });
-}
-
-function apiPost(ctx, { id }) {
-  const post = bf.getPost(id);
-  if (!post || post.deleted) return sendJson(ctx.res, { ok: false, error: 'not found' }, { status: 404 });
-  sendJson(ctx.res, {
-    ok: true,
-    post: { ...publicPost(post), body: post.body },
-    comments: bf.commentTree(post.id).map((c) => ({
-      id: c.id,
-      parent: c.parent_id,
-      by: c.anonymous ? null : c.author_id,
-      body: c.deleted ? null : c.body,
-      points: c.points,
-      depth: c.depth,
-      accepted: post.answer_id === c.id,
-      created_at: c.created_at,
-    })),
-  });
-}
-
-async function apiVote(ctx) {
-  const { fields } = await readBody(ctx.req);
-  if (!checkCsrf(ctx.token, fields.csrf ?? ctx.req.headers['x-csrf-token'])) {
-    return sendJson(ctx.res, { ok: false, error: 'bad csrf token' }, { status: 403 });
-  }
-  const kind = fields.kind === 'comment' ? 'comment' : 'post';
-  const id = Number(fields.id);
-  if (!Number.isInteger(id)) return sendJson(ctx.res, { ok: false, error: 'id is required' }, { status: 400 });
-  const result = fields.dir === 'down' ? bf.unvote(ctx.user.id, kind, id) : bf.vote(ctx.user.id, kind, id);
-  sendJson(ctx.res, result, { status: result.ok ? 200 : 400 });
-}
-
 /* ---------------------------------------------------------- route table */
-
-/* ---------------------------------------------------------------- chat */
-
-/**
- * A channel, or the channel list with nothing selected.
- *
- * Marking read happens after the render decision, not before, so the unread
- * count you see in the sidebar is the one that was true when you arrived.
- */
-function chatHandler(ctx, params = {}) {
-  const channels = bf.channelsFor(ctx.user.id);
-  const slug = params.slug || channels[0]?.slug;
-  const channel = slug ? bf.getChannel(slug) : null;
-  if (params.slug && !channel) return notFound(ctx);
-  if (!channel) {
-    return render(ctx, views.chatPage(ctx, { channels, channel: null, messages: [], reactions: {}, atTop: true }),
-      { title: 'Chat' });
-  }
-
-  const before = clampInt(ctx.query.get('before'), 0, Number.MAX_SAFE_INTEGER, 0);
-  const messages = bf.chatMessages(channel.id, { before });
-  const oldest = bf.chatMessages(channel.id, { limit: 1, before: 0 });
-  const current = channels.find((c) => c.id === channel.id);
-
-  render(
-    ctx,
-    views.chatPage(ctx, {
-      channels,
-      channel: { ...channel, muted: current?.muted },
-      messages,
-      reactions: bf.reactionsFor(messages.map((m) => m.id)),
-      atTop: !messages.length || messages[0].id <= (oldest[0]?.id ?? 0),
-    }),
-    { title: `#${channel.name}` },
-  );
-
-  if (!before) bf.markChannelRead(channel.id, ctx.user.id);
-}
-
-async function chatSubmit(ctx, { slug }) {
-  const { fields } = await readBody(ctx.req);
-  if (!csrfOk(ctx, fields)) return;
-  const channel = bf.getChannel(slug);
-  if (!channel) return notFound(ctx);
-  if (limited(ctx, 'chat', LIMITS.chat)) return;
-  const result = bf.postChat({
-    channelId: channel.id,
-    authorId: ctx.user.id,
-    body: trimmed(fields.body, 4000),
-  });
-  if (!result.ok) return oops(ctx, result.error);
-  seeOther(ctx, `/homeroom/chat/${channel.slug}#m${result.id}`);
-}
-
-/**
- * The poll endpoint.
- *
- * Returns only messages newer than `since`, which is almost always none — so
- * the common case is a tiny JSON body and no database work beyond one indexed
- * range scan. That is what makes a five-second poll acceptable in a function.
- */
-function chatPoll(ctx, { slug }) {
-  const channel = bf.getChannel(slug);
-  if (!channel) return sendJson(ctx.res, { ok: false, error: 'no such channel' }, { status: 404 });
-  const since = clampInt(ctx.query.get('since'), 0, Number.MAX_SAFE_INTEGER, 0);
-  const messages = bf.chatMessages(channel.id, { after: since });
-  if (messages.length) bf.markChannelRead(channel.id, ctx.user.id, messages[messages.length - 1].id);
-  sendJson(ctx.res, {
-    ok: true,
-    channel: channel.slug,
-    last: messages.length ? messages[messages.length - 1].id : since,
-    messages: messages.map((m) => ({
-      id: m.id,
-      author: m.author_id,
-      body: m.body,
-      created_at: m.created_at,
-      mine: m.author_id === ctx.user.id,
-    })),
-    unread: bf.unreadChatCount(ctx.user.id),
-  });
-}
-
-async function channelCreate(ctx) {
-  const { fields } = await readBody(ctx.req);
-  if (!csrfOk(ctx, fields)) return;
-  if (limited(ctx, 'create', LIMITS.create)) return;
-  const name = trimmed(fields.name, 60);
-  if (!name) {
-    return render(ctx, views.channelFormPage(ctx, { error: 'A channel needs a name.', values: fields }),
-      { title: 'New channel', status: 400 });
-  }
-  const id = bf.createChannel({
-    slug: bf.slugify(name, 'channel'),
-    name,
-    topic: trimmed(fields.topic, 200),
-    kind: ['open', 'cohort', 'house', 'project'].includes(fields.kind) ? fields.kind : 'open',
-    createdBy: ctx.user.id,
-  });
-  const channel = bf.getChannel(id) || bf.getChannel(bf.slugify(name, 'channel'));
-  seeOther(ctx, `/homeroom/chat/${channel?.slug || ''}`);
-}
 
 /* ------------------------------------------------------------ yearbook */
 
@@ -1616,131 +1300,6 @@ function action(fn) {
 
 const ROUTES = [
   ['GET', '/homeroom', homeHandler],
-  ['GET', '/homeroom/forum', forumHandler],
-  ['GET', '/homeroom/ask', askFormHandler],
-  ['POST', '/homeroom/ask', askSubmitHandler],
-
-  ['GET', '/homeroom/post/:id/edit', (ctx, p) => {
-    const post = bf.getPost(p.id);
-    if (!post || post.deleted) return notFound(ctx);
-    if (post.author_id !== ctx.user.id && !ctx.user.is_admin) return oops(ctx, 'Not yours to edit.', 403);
-    render(ctx, views.editPostPage(ctx, { post }), { title: 'Edit post' });
-  }],
-  ['POST', '/homeroom/post/:id/edit', editPostSubmit],
-  ['POST', '/homeroom/post/:id/delete', action((ctx, fields, p) => {
-    const post = bf.getPost(p.id);
-    if (!post) return notFound(ctx);
-    if (post.author_id !== ctx.user.id && !ctx.user.is_admin) return oops(ctx, 'Not yours to delete.', 403);
-    bf.deletePost(post.id);
-    seeOther(ctx, '/homeroom/forum');
-  })],
-  ['POST', '/homeroom/post/:id/pin', action((ctx, fields, p) => {
-    if (!ctx.user.is_admin) return oops(ctx, 'Stewards only.', 403);
-    const post = bf.getPost(p.id);
-    if (!post) return notFound(ctx);
-    bf.setPinned(post.id, !post.pinned);
-    seeOther(ctx, safeGoto(fields.goto, `/homeroom/post/${post.id}`));
-  })],
-  ['POST', '/homeroom/post/:id/lock', action((ctx, fields, p) => {
-    if (!ctx.user.is_admin) return oops(ctx, 'Stewards only.', 403);
-    const post = bf.getPost(p.id);
-    if (!post) return notFound(ctx);
-    bf.setLocked(post.id, !post.locked);
-    seeOther(ctx, safeGoto(fields.goto, `/homeroom/post/${post.id}`));
-  })],
-  ['GET', '/homeroom/post/:id', postHandler],
-
-  ['GET', '/homeroom/reply/:id', (ctx, p) => {
-    const parent = bf.getComment(p.id);
-    if (!parent || parent.deleted) return notFound(ctx);
-    const post = bf.getPost(parent.post_id);
-    if (!post || post.locked) return oops(ctx, 'That thread is closed.', 403);
-    render(ctx, views.replyPage(ctx, { parent, post }), { title: 'Reply' });
-  }],
-  ['POST', '/homeroom/comment', commentSubmit],
-  ['GET', '/homeroom/comment/:id/edit', (ctx, p) => {
-    const comment = bf.getComment(p.id);
-    if (!comment || comment.author_id !== ctx.user.id) return notFound(ctx);
-    render(ctx, views.editCommentPage(ctx, { comment }), { title: 'Edit reply' });
-  }],
-  ['POST', '/homeroom/comment/:id/edit', action((ctx, fields, p) => {
-    const comment = bf.getComment(p.id);
-    if (!comment || comment.author_id !== ctx.user.id) return notFound(ctx);
-    const text = trimmed(fields.text, 20_000);
-    if (text) bf.editComment(comment.id, text);
-    seeOther(ctx, `/homeroom/post/${comment.post_id}#c${comment.id}`);
-  })],
-  ['POST', '/homeroom/comment/:id/delete', action((ctx, fields, p) => {
-    const comment = bf.getComment(p.id);
-    if (!comment || (comment.author_id !== ctx.user.id && !ctx.user.is_admin)) return notFound(ctx);
-    bf.deleteComment(comment.id);
-    seeOther(ctx, `/homeroom/post/${comment.post_id}`);
-  })],
-
-  ['POST', '/homeroom/vote', action((ctx, fields) => {
-    const kind = fields.kind === 'comment' ? 'comment' : 'post';
-    const id = Number(fields.id);
-    if (fields.dir === 'down') bf.unvote(ctx.user.id, kind, id);
-    else bf.vote(ctx.user.id, kind, id);
-    seeOther(ctx, safeGoto(fields.goto));
-  })],
-  ['POST', '/homeroom/save', action((ctx, fields) => {
-    bf.toggleSave(ctx.user.id, fields.kind === 'post' ? 'post' : 'other', Number(fields.id));
-    seeOther(ctx, safeGoto(fields.goto));
-  })],
-  ['POST', '/homeroom/follow', action((ctx, fields) => {
-    bf.toggleFollow(ctx.user.id, fields.kind === 'post' ? 'post' : 'other', Number(fields.id));
-    seeOther(ctx, safeGoto(fields.goto));
-  })],
-  ['POST', '/homeroom/poll', action((ctx, fields) => {
-    const postId = Number(fields.post);
-    bf.castPollVote(postId, ctx.user.id, Number(fields.option));
-    seeOther(ctx, `/homeroom/post/${postId}`);
-  })],
-  ['POST', '/homeroom/answer', action((ctx, fields) => {
-    const post = bf.getPost(fields.post);
-    if (!post) return notFound(ctx);
-    if (post.author_id !== ctx.user.id) return oops(ctx, 'Only the person who asked can accept an answer.', 403);
-    const commentId = Number(fields.comment) || null;
-    bf.markAnswer(post.id, commentId);
-    if (commentId) {
-      const comment = bf.getComment(commentId);
-      if (comment) {
-        bf.notify({
-          userId: comment.author_id,
-          kind: 'answer',
-          actorId: ctx.user.id,
-          text: `${ctx.user.id} accepted your answer on “${post.title}”`,
-          href: `/homeroom/post/${post.id}#c${commentId}`,
-        });
-      }
-    }
-    seeOther(ctx, `/homeroom/post/${post.id}`);
-  })],
-
-  /* ---- chat: concrete paths before /chat/:slug ---- */
-  ['GET', '/homeroom/chat/new', (ctx) => render(ctx, views.channelFormPage(ctx, {}), { title: 'New channel' })],
-  ['POST', '/homeroom/chat/new', channelCreate],
-  ['POST', '/homeroom/chat/react', action((ctx, fields) => {
-    bf.toggleReaction(Number(fields.id), ctx.user.id, String(fields.emoji || ''));
-    seeOther(ctx, safeGoto(fields.goto, '/homeroom/chat'));
-  })],
-  ['GET', '/homeroom/chat', chatHandler],
-  ['POST', '/homeroom/chat/:id/delete', action((ctx, fields, p) => {
-    if (!bf.deleteChat(Number(p.id), ctx.user.id, { isAdmin: !!ctx.user.is_admin })) {
-      return oops(ctx, 'Not yours to delete.', 403);
-    }
-    seeOther(ctx, safeGoto(fields.goto, '/homeroom/chat'));
-  })],
-  ['POST', '/homeroom/chat/:slug/mute', action((ctx, fields, p) => {
-    const channel = bf.getChannel(p.slug);
-    if (!channel) return notFound(ctx);
-    bf.toggleMute(channel.id, ctx.user.id);
-    seeOther(ctx, `/homeroom/chat/${channel.slug}`);
-  })],
-  ['GET', '/homeroom/chat/:slug', chatHandler],
-  ['POST', '/homeroom/chat/:slug', chatSubmit],
-
   /* ---- yearbook ---- */
   ['GET', '/homeroom/yearbook/edit', (ctx) => render(ctx, views.yearbookFormPage(ctx, {
     entry: bf.getYearbook(ctx.user.id), member: bf.ensureMember(ctx.user.id),
@@ -2022,18 +1581,11 @@ const ROUTES = [
     render(ctx, views.notificationsPage(ctx, { items }), { title: 'Notifications' });
     bf.markNotificationsRead(ctx.user.id);
   }],
-  ['GET', '/homeroom/saved', (ctx) => {
-    const posts = bf.savedPosts(ctx.user.id);
-    render(ctx, views.savedPage(ctx, {
-      posts, voted: bf.votedIds(ctx.user.id, 'post', posts.map((p) => p.id)),
-    }), { title: 'Saved' });
-  }],
   ['GET', '/homeroom/search', (ctx) => {
     const query = (ctx.query.get('q') || '').trim().slice(0, 120);
     const results = bf.globalSearch(query);
-    render(ctx, views.searchPage(ctx, {
-      query, results, voted: bf.votedIds(ctx.user.id, 'post', results.posts.map((p) => p.id)),
-    }), { title: query ? `Search: ${query}` : 'Search' });
+    render(ctx, views.searchPage(ctx, { query, results }),
+      { title: query ? `Search: ${query}` : 'Search' });
   }],
   ['GET', '/homeroom/stewards/access', (ctx) => accessAdminHandler(ctx)],
   ['POST', '/homeroom/stewards/access/lookup', accessLookupHandler],
@@ -2051,7 +1603,6 @@ const ROUTES = [
 
   ['GET', '/homeroom/about', (ctx) => render(ctx, views.aboutPage(ctx, { stats: bf.networkStats() }), { title: 'About' })],
 
-  ['GET', '/homeroom/api/chat/:slug', chatPoll],
   ['GET', '/homeroom/api/mentors', (ctx) => {
     const { mentors, total } = bf.searchMentors({
       q: ctx.query.get('q') || '', track: ctx.query.get('track') || '',
@@ -2074,8 +1625,6 @@ const ROUTES = [
     ok: true, tracks: bf.tracks(),
     ...bf.listModules({ track: ctx.query.get('track') || '', q: ctx.query.get('q') || '', userId: ctx.user.id }),
   })],
-  ['GET', '/homeroom/api/feed', apiFeed],
-  ['GET', '/homeroom/api/post/:id', apiPost],
   ['GET', '/homeroom/api/members', (ctx) => {
     const { members, total } = bf.searchMembers({
       q: ctx.query.get('q') || '',
@@ -2099,10 +1648,9 @@ const ROUTES = [
   ['GET', '/homeroom/api/search', (ctx) => sendJson(ctx.res, {
     ok: true, results: bf.globalSearch(ctx.query.get('q') || ''),
   })],
-  ['POST', '/homeroom/api/vote', apiVote],
 ];
 
-/** Compile "/homeroom/post/:id/edit" into a matcher once, at module load. */
+/** Compile "/homeroom/lab/:slug/edit" into a matcher once, at module load. */
 const COMPILED = ROUTES.map(([method, pattern, handler]) => {
   const segments = pattern.split('/').filter(Boolean);
   return { method, segments, handler, isApi: pattern.startsWith('/homeroom/api/') };
