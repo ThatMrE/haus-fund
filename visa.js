@@ -437,31 +437,100 @@
     ta.remove();
   }
 
-  /* Word opens an HTML payload served with the msword type and keeps the
-     structure, which matters here: the particulars table is the part an
-     officer reads first, and a plain-text export would flatten it. */
+  /* ── Word export ─────────────────────────────────────────────────────────
+     Word's HTML importer is not a browser. It applies <style> blocks with
+     class selectors unreliably, and it ignores text-transform outright, so a
+     letter that looks right in the preview can arrive as near-plain text.
+     Everything below is therefore written onto each element as an inline
+     style, and the headings that relied on text-transform are uppercased in
+     the markup itself.
+
+     ONE MAP, ONE LOOK. This used to be a second, hand-written stylesheet
+     living next to the page's own, and it had already drifted: the date and
+     the addressee lost their spacing entirely, and the closing legal line grew
+     a second horizontal rule the preview never had. The <style> block below is
+     generated from these same maps, so the two cannot diverge again. Restyle
+     the letter here and in visa.html together.
+
+     Units are points, not pixels — Word lays out in points, and pixel values
+     are reinterpreted at whatever DPI the document happens to carry. */
+  var DOC_TAG_STYLE = {
+    H4: "font-family:Arial,Helvetica,sans-serif;font-size:10.5pt;font-weight:bold;color:#1C3B2D;margin:16pt 0 6pt 0;",
+    P:  "margin:0 0 10pt 0;",
+    UL: "margin:0 0 10pt 0;padding-left:18pt;",
+    LI: "margin:0 0 4pt 0;",
+    TD: "border:1pt solid #cccccc;padding:4pt 6pt;vertical-align:top;"
+  };
+  var DOC_CLASS_STYLE = {
+    "lh-name": "font-family:Arial,Helvetica,sans-serif;font-size:20pt;font-weight:bold;letter-spacing:1pt;",
+    "lh-meta": "font-family:Arial,Helvetica,sans-serif;font-size:7.5pt;color:#666666;letter-spacing:0.8pt;",
+    "lh-rule": "border-bottom:2pt solid #1C3B2D;font-size:1pt;line-height:1pt;margin:8pt 0 16pt 0;",
+    "l-date":  "margin:0 0 14pt 0;",
+    "l-addr":  "margin:0 0 14pt 0;",
+    "l-re":    "font-family:Arial,Helvetica,sans-serif;font-size:9.5pt;font-weight:bold;color:#1C3B2D;letter-spacing:0.5pt;margin:0 0 12pt 0;",
+    "kv":      "border-collapse:collapse;width:100%;font-size:10pt;margin:0 0 12pt 0;",
+    "ph":      "border-bottom:1pt solid #000000;",
+    "sig":     "margin-top:20pt;",
+    "rule":    "width:200pt;border-bottom:1pt solid #000000;height:30pt;font-size:1pt;line-height:1pt;",
+    "nm":      "font-weight:bold;",
+    "l-foot":  "font-family:Arial,Helvetica,sans-serif;font-size:7.5pt;color:#666666;border-top:1pt solid #cccccc;margin-top:20pt;padding-top:5pt;",
+    "l-legal": "font-family:Arial,Helvetica,sans-serif;font-size:7.5pt;color:#8a8a8a;margin-top:5pt;"
+  };
+  var DOC_BODY_STYLE = "font-family:Calibri,Arial,sans-serif;font-size:11pt;line-height:1.45;color:#1a1a1a;";
+  var DOC_TD_LABEL = "width:38%;background:#f7f7f4;color:#555555;";
+  /* Preview rules these render with text-transform; Word does not implement it. */
+  var DOC_UPPERCASE = ["h4", ".lh-name", ".l-re"];
+
+  function docBody() {
+    var clone = $("paper").cloneNode(true);
+    var each = function (sel, fn) {
+      Array.prototype.forEach.call(clone.querySelectorAll(sel), fn);
+    };
+
+    DOC_UPPERCASE.forEach(function (sel) {
+      each(sel, function (el) { el.textContent = el.textContent.toUpperCase(); });
+    });
+
+    each("*", function (el) {
+      var css = DOC_TAG_STYLE[el.tagName] || "";
+      Array.prototype.forEach.call(el.classList, function (c) {
+        if (DOC_CLASS_STYLE[c]) css += DOC_CLASS_STYLE[c];
+      });
+      /* The label column of the particulars table. cellIndex is unreliable on a
+         detached node, so compare against the row's first child instead. */
+      if (el.tagName === "TD" && el.parentNode && el.parentNode.firstElementChild === el) {
+        css += DOC_TD_LABEL;
+      }
+      if (css) el.setAttribute("style", css);
+    });
+
+    return clone.innerHTML;
+  }
+
+  /* Generated from the maps above so the fallback stylesheet cannot drift from
+     the inline styles that Word actually honours. */
+  function docStylesheet() {
+    var out = "body{" + DOC_BODY_STYLE + "}";
+    Object.keys(DOC_TAG_STYLE).forEach(function (t) {
+      out += t.toLowerCase() + "{" + DOC_TAG_STYLE[t] + "}";
+    });
+    Object.keys(DOC_CLASS_STYLE).forEach(function (c) {
+      out += "." + c + "{" + DOC_CLASS_STYLE[c] + "}";
+    });
+    out += "table.kv td:first-child{" + DOC_TD_LABEL + "}";
+    out += "h4,.lh-name,.l-re{text-transform:uppercase;}";
+    return out;
+  }
+
   $("bDoc").addEventListener("click", function () {
     if (this.disabled) return;
-    var paper = $("paper").innerHTML;
     var html =
       '<html xmlns:o="urn:schemas-microsoft-com:office:office" ' +
       'xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">' +
-      "<head><meta charset=\"utf-8\"><title>" + esc(tpl().name) + "</title><style>" +
-      "body{font-family:Calibri,Arial,sans-serif;font-size:11pt;line-height:1.5;color:#1a1a1a;}" +
-      ".lh-name{font-size:20pt;font-weight:bold;text-transform:uppercase;}" +
-      ".lh-meta{font-size:8pt;color:#666;letter-spacing:1px;}" +
-      ".lh-rule{border-bottom:2px solid #1C3B2D;margin:10px 0 20px;}" +
-      ".l-re{font-size:9pt;font-weight:bold;color:#1C3B2D;text-transform:uppercase;margin-bottom:14px;}" +
-      "h4{font-size:11pt;color:#1C3B2D;text-transform:uppercase;margin:16px 0 6px;}" +
-      "table.kv{border-collapse:collapse;width:100%;font-size:10pt;margin-bottom:14px;}" +
-      "table.kv td{border:1px solid #ccc;padding:5px 8px;}" +
-      "table.kv td:first-child{width:38%;background:#f7f7f4;color:#555;}" +
-      ".ph{border-bottom:1px solid #000;}" +
-      ".sig .rule{width:250px;border-bottom:1px solid #000;height:42px;}" +
-      ".sig .nm{font-weight:bold;}" +
-      ".l-foot,.l-legal{font-size:7.5pt;color:#666;border-top:1px solid #ccc;margin-top:24px;padding-top:6px;}" +
-      "</style></head><body>" + paper + "</body></html>";
-    download(new Blob(["﻿" + html], { type: "application/msword" }), fileStem() + ".doc");
+      '<head><meta charset="utf-8"><title>' + esc(tpl().name) + "</title>" +
+      "<style>" + docStylesheet() + "</style></head>" +
+      '<body style="' + DOC_BODY_STYLE + '">' + docBody() + "</body></html>";
+    download(new Blob(["\ufeff" + html], { type: "application/msword" }), fileStem() + ".doc");
     toast("Downloaded — open it in Word and sign it");
   });
 
