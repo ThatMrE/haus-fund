@@ -7,8 +7,6 @@ const STATIC = process.env.HOMEROOM_STATIC_BASE || '/homeroom-assets';
 
 const TABS = [
   { href: '/homeroom', label: 'Home', match: (p) => p === '/homeroom' },
-  { href: '/homeroom/chat', label: 'Chat', match: (p) => p.startsWith('/homeroom/chat') },
-  { href: '/homeroom/forum', label: 'Forum', match: (p) => /^\/homeroom\/(forum|post|ask|reply|comment)/.test(p) },
   { href: '/homeroom/yearbook', label: 'Yearbook', match: (p) => /^\/homeroom\/(yearbook|people|p\/)/.test(p) },
   { href: '/homeroom/labs', label: 'Labs', match: (p) => /^\/homeroom\/lab/.test(p) },
   { href: '/homeroom/perks', label: 'Perks', match: (p) => /^\/homeroom\/(perks?|deals?|deal\/)/.test(p) },
@@ -33,7 +31,7 @@ const TABS = [
 export function homeroomLayout(ctx, { title, description, content, flash, error, subnav = '', wide = false }) {
   const fullTitle = title ? `${title} — Homeroom · Haus` : `Homeroom — ${HOMEROOM_TAGLINE}`;
   const desc = description
-    || 'Homeroom — the members-only side of Haus: chat, forum, the yearbook, the biolab atlas, perks, funder reviews, mentors and office hours, events, the founder manual and jobs.';
+    || 'Homeroom — the members-only side of Haus: the yearbook, the biolab atlas, perks, funder reviews, mentors and office hours, events, the founder manual and jobs.';
 
   return raw(`<!DOCTYPE html>
 <html lang="en">
@@ -62,7 +60,6 @@ ${masthead(ctx)}
   </div>
 </main>
 ${footer(ctx)}
-<script src="${STATIC}/app.js" defer></script>
 </body>
 </html>`);
 }
@@ -111,8 +108,7 @@ function masthead(ctx) {
 
   const alerts = Number(badges.notifications || 0);
   const me = ctx.user
-    ? `<a class="count" href="/homeroom/chat">Chat${badges.chat ? `<b>${badges.chat}</b>` : ''}</a>
-       <a class="count" href="/homeroom/messages">Messages${
+    ? `<a class="count" href="/homeroom/messages">Messages${
         badges.messages ? `<b>${badges.messages}</b>` : ''
       }</a>
        <a class="count" href="/homeroom/notifications">Alerts${alerts ? `<b>${alerts}</b>` : ''}</a>

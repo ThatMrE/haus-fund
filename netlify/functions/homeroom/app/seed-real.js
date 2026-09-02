@@ -22,7 +22,6 @@
  *   atlas.js       46 real community and open-science labs
  *   curriculum.js  the six tracks and 39 modules from the programme design doc
  *   network.js     the five real people from the Haus network, unvetted
- *   channels.js    the six chat channels a room opens with
  *
  * It creates no members, no posts, no jobs, no events, no reviews and no
  * yearbook entries. Those are for actual people to write.
@@ -46,13 +45,12 @@ import { FUNDERS as CAPITAL_MAP } from './data/funders.js';
 import { ATLAS_LABS } from './data/atlas.js';
 import { NETWORK_MENTORS } from './data/network.js';
 import { TRACKS, LIBRARY_MODULES } from './data/curriculum.js';
-import { CHANNELS } from './data/channels.js';
 
 /**
  * The account real data is attributed to.
  *
- * Several tables require an owner — a perk has a `posted_by`, a channel has a
- * `created_by` — and on a fresh install there are no people yet. So the house
+ * Several tables require an owner — a perk has a `posted_by`, a lab has a
+ * `source` — and on a fresh install there are no people yet. So the house
  * owns them. It is a real row with an unknowable password: nobody can sign in
  * as it, and the byline on a perk links somewhere that exists rather than 404ing.
  */
@@ -85,13 +83,7 @@ function ensureSystemAccount(handle = SYSTEM_HANDLE) {
 export function seedReal({ as = null, prune = false, quiet = true } = {}) {
   const db = getDb();
   const owner = as && hr.getUser(as) ? as : ensureSystemAccount();
-  const stats = { owner, channels: 0, perks: 0, funders: 0, labs: 0, mentors: 0, tracks: 0, modules: 0, pruned: 0 };
-
-  /* ---- chat channels ---- */
-  for (const [index, [slug, name, topic, kind]] of CHANNELS.entries()) {
-    hr.createChannel({ slug, name, topic, kind, position: index, createdBy: owner });
-    stats.channels++;
-  }
+  const stats = { owner, perks: 0, funders: 0, labs: 0, mentors: 0, tracks: 0, modules: 0, pruned: 0 };
 
   /* ---- perks ---- */
   const perkSlugs = [];
@@ -159,8 +151,7 @@ export function seedReal({ as = null, prune = false, quiet = true } = {}) {
   if (!quiet) {
     console.log(`Attributed to "${owner}".`);
     console.log(`  ${stats.perks} perks, ${stats.funders} funders, ${stats.labs} atlas labs,`);
-    console.log(`  ${stats.mentors} network mentors, ${stats.tracks} tracks, ${stats.modules} modules,`);
-    console.log(`  ${stats.channels} chat channels.`);
+    console.log(`  ${stats.mentors} network mentors, ${stats.tracks} tracks, ${stats.modules} modules.`);
     if (stats.pruned) console.log(`  ${stats.pruned} stale rows removed.`);
     console.log('No accounts, posts, jobs, events, reviews or yearbook entries were created.');
   }

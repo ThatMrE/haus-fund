@@ -88,7 +88,7 @@ test('logged out members cannot read the directory or the API', async () => {
   const directory = await fetch(`${base}/homeroom/people`);
   assert.match(await directory.text(), /Create an account/);
 
-  const api = await fetch(`${base}/homeroom/api/feed`);
+  const api = await fetch(`${base}/homeroom/api/members`);
   assert.equal(api.status, 401);
   assert.equal((await api.json()).error, 'members only');
 });
@@ -104,8 +104,7 @@ test('an unknown /homeroom path 404s in Bioface chrome, not the news layout', as
 test('every members-only surface renders for a signed-in member', async () => {
   const { call } = await member('gatecheck');
   const paths = [
-    '/homeroom', '/homeroom/forum', '/homeroom/ask', '/homeroom/settings',
-    '/homeroom/chat', '/homeroom/chat/new',
+    '/homeroom', '/homeroom/settings',
     '/homeroom/yearbook', '/homeroom/yearbook/edit', '/homeroom/people',
     '/homeroom/labs', '/homeroom/labs/new', '/homeroom/labs/cores', '/homeroom/labs/member',
     '/homeroom/labs/member/new',
@@ -116,7 +115,7 @@ test('every members-only surface renders for a signed-in member', async () => {
     '/homeroom/library', '/homeroom/library/new', '/homeroom/library/notes',
     '/homeroom/publish',
     '/homeroom/intros', '/homeroom/messages',
-    '/homeroom/messages/new', '/homeroom/notifications', '/homeroom/saved', '/homeroom/search',
+    '/homeroom/messages/new', '/homeroom/notifications', '/homeroom/search',
     '/homeroom/about',
   ];
   for (const path of paths) {
@@ -126,112 +125,23 @@ test('every members-only surface renders for a signed-in member', async () => {
   }
 });
 
+test('the chat and forum surfaces are gone, not merely unlinked', async () => {
+  const { call } = await member('goneseeker');
+  // A removed feature that still answers on its old URL is a removed feature
+  // people keep finding by bookmark.
+  for (const path of ['/homeroom/forum', '/homeroom/ask', '/homeroom/post/1', '/homeroom/saved',
+    '/homeroom/chat', '/homeroom/chat/general', '/homeroom/chat/new',
+    '/homeroom/api/feed', '/homeroom/api/chat/general']) {
+    assert.equal((await call(path)).status, 404, `${path} should be gone`);
+  }
+});
+
 /* ------------------------------------------------------------------ forum */
 
-test('posting, replying, accepting an answer and voting', async () => {
-  const asker = await member('asker1');
-  const answerer = await member('answerer1');
 
-  const created = await asker.call('/homeroom/ask', form({
-    csrf: asker.csrf,
-    title: 'What does a -80 actually cost to run per month?',
-    body: 'Electricity, service contract, the lot. Numbers please.',
-    kind: 'question',
-    category: 'space',
-    tags: 'freezer, ops',
-  }));
-  assert.equal(created.status, 303);
-  const postUrl = created.headers.get('location');
-  assert.match(postUrl, /^\/homeroom\/post\/\d+$/);
-  const postId = Number(postUrl.split('/').pop());
 
-  const page = await (await asker.call(postUrl)).text();
-  assert.match(page, /What does a -80 actually cost/);
-  assert.match(page, /#freezer/);
 
-  const replied = await answerer.call('/homeroom/comment', form({
-    csrf: answerer.csrf, post: String(postId), text: 'Ours is €41/month in electricity plus a €600/yr contract.',
-  }));
-  assert.equal(replied.status, 303);
-  assert.equal(hr.getPost(postId).comment_count, 1);
 
-  const [comment] = hr.commentTree(postId);
-  const accepted = await asker.call('/homeroom/answer', form({
-    csrf: asker.csrf, post: String(postId), comment: String(comment.id),
-  }));
-  assert.equal(accepted.status, 303);
-  assert.equal(hr.getPost(postId).answer_id, comment.id);
-
-  // The answerer is notified, and the asker cannot upvote their own post.
-  assert.ok(hr.notifications(answerer.id).some((n) => n.kind === 'answer'));
-  assert.equal(hr.vote(asker.id, 'post', postId).ok, false);
-
-  const before = hr.getPost(postId).points;
-  await answerer.call('/homeroom/vote', form({
-    csrf: answerer.csrf, kind: 'post', id: String(postId), dir: 'up', goto: postUrl,
-  }));
-  assert.equal(hr.getPost(postId).points, before + 1);
-  await answerer.call('/homeroom/vote', form({
-    csrf: answerer.csrf, kind: 'post', id: String(postId), dir: 'down', goto: postUrl,
-  }));
-  assert.equal(hr.getPost(postId).points, before);
-});
-
-test('only the person who asked can accept an answer', async () => {
-  const asker = await member('asker2');
-  const other = await member('other2');
-  const postId = hr.createPost({ authorId: asker.id, title: 'Who can accept an answer here?', kind: 'question' });
-  const commentId = hr.createComment({ postId, authorId: other.id, body: 'Not me, I hope.' });
-
-  const res = await other.call('/homeroom/answer', form({
-    csrf: other.csrf, post: String(postId), comment: String(commentId),
-  }));
-  assert.equal(res.status, 403);
-  assert.equal(hr.getPost(postId).answer_id, null);
-});
-
-test('anonymous posts hide the handle everywhere it is rendered', async () => {
-  const { call, csrf, id } = await member('ghostwriter');
-  const res = await call('/homeroom/ask', form({
-    csrf, title: 'What are freelancers really charging this year?', body: 'Anonymous because of who I work for.',
-    kind: 'question', category: 'hiring', anonymous: '1',
-  }));
-  const postUrl = res.headers.get('location');
-  const html = await (await call(postUrl)).text();
-  assert.match(html, /anonymous member/);
-  assert.doesNotMatch(body(html), />ghostwriter</);
-
-  const feed = await (await call('/homeroom/api/feed?sort=new')).json();
-  const entry = feed.posts.find((p) => p.title.startsWith('What are freelancers'));
-  assert.equal(entry.by, null);
-});
-
-test('a locked thread refuses new replies', async () => {
-  const { call, csrf, id } = await member('locksmith');
-  const postId = hr.createPost({ authorId: id, title: 'This thread is closed for business', kind: 'discussion' });
-  hr.setLocked(postId, true);
-  const res = await call('/homeroom/comment', form({ csrf, post: String(postId), text: 'Let me in' }));
-  assert.equal(res.status, 403);
-  assert.equal(hr.getPost(postId).comment_count, 0);
-});
-
-test('polls count one vote per member and let you change it', async () => {
-  const { call, csrf, id } = await member('pollster');
-  const voter = await member('pollvoter');
-  const postId = hr.createPost({
-    authorId: id, title: 'How long did your last raise take?', kind: 'poll',
-    options: ['Under 6 weeks', '3-5 months', 'Still going'],
-  });
-  const [first, second] = hr.pollOptions(postId);
-
-  await voter.call('/homeroom/poll', form({ csrf: voter.csrf, post: String(postId), option: String(first.id) }));
-  assert.equal(hr.pollOptions(postId).find((o) => o.id === first.id).votes, 1);
-
-  await voter.call('/homeroom/poll', form({ csrf: voter.csrf, post: String(postId), option: String(second.id) }));
-  const options = hr.pollOptions(postId);
-  assert.equal(options.find((o) => o.id === first.id).votes, 0);
-  assert.equal(options.find((o) => o.id === second.id).votes, 1);
-});
 
 /* ------------------------------------------------------------- directory */
 
@@ -519,14 +429,10 @@ test('direct threads are reused, and unread counts clear on read', async () => {
 
 test('search covers every surface at once', async () => {
   const { call, csrf, id } = await member('searcher');
-  await call('/homeroom/ask', form({
-    csrf, title: 'Chromatophore sourcing in the EU', body: 'Where does anyone buy these?', category: 'wetlab',
-  }));
   await call('/homeroom/labs/member/new', form({ csrf, name: 'Chromatophore Works', tagline: 'We make them' }));
   await call('/homeroom/settings', form({ csrf, headline: 'Chromatophore obsessive' }));
 
   const results = await (await call('/homeroom/api/search?q=chromatophore')).json();
-  assert.ok(results.results.posts.length, 'posts should match');
   assert.ok(results.results.orgs.length, 'labs should match');
   assert.ok(results.results.members.some((m) => m.user_id === id), 'members should match');
 
@@ -539,7 +445,6 @@ test('search covers every surface at once', async () => {
 test('writes without a CSRF token are refused', async () => {
   const { call } = await member('csrfvictim');
   for (const [path, fields] of [
-    ['/homeroom/ask', { title: 'A title long enough to pass', body: 'x' }],
     ['/homeroom/settings', { headline: 'hijacked' }],
     ['/homeroom/labs/new', { name: 'Hijacked Lab' }],
   ]) {
@@ -549,27 +454,6 @@ test('writes without a CSRF token are refused', async () => {
   assert.equal(hr.getMember('csrfvictim').headline, '');
 });
 
-test('the JSON vote endpoint checks CSRF too', async () => {
-  const { call, csrf, id } = await member('apivoter');
-  const author = await member('apiauthor');
-  const postId = hr.createPost({ authorId: author.id, title: 'A post to vote on from the API' });
-
-  const bad = await call('/homeroom/api/vote', {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ kind: 'post', id: postId, dir: 'up' }),
-  });
-  assert.equal(bad.status, 403);
-
-  const good = await call('/homeroom/api/vote', {
-    method: 'POST',
-    headers: { 'content-type': 'application/json', 'x-csrf-token': csrf },
-    body: JSON.stringify({ kind: 'post', id: postId, dir: 'up' }),
-  });
-  assert.equal(good.status, 200);
-  assert.equal((await good.json()).voted, true);
-  assert.ok(hr.hasVoted(id, 'post', postId));
-});
 
 /* ------------------------------------------------------------- unit bits */
 
@@ -585,19 +469,6 @@ test('tags are normalised, deduplicated and capped', () => {
   assert.equal(hr.parseTags('a,b,c,d,e,f,g,h', 3).length, 3);
 });
 
-test('the forum ranking floats unanswered questions and decays with age', () => {
-  const now = Math.floor(Date.now() / 1000);
-  const fresh = { points: 10, comment_count: 0, created_at: now - 3600, kind: 'question', answer_id: null };
-  const stale = { points: 10, comment_count: 0, created_at: now - 40 * 3600, kind: 'question', answer_id: null };
-  assert.ok(hr.postScore(fresh, now) > hr.postScore(stale, now), 'older posts sink');
-
-  const asked = { points: 5, comment_count: 0, created_at: now - 3600, kind: 'question', answer_id: null };
-  const chatted = { points: 5, comment_count: 0, created_at: now - 3600, kind: 'discussion', answer_id: null };
-  assert.ok(hr.postScore(asked, now) > hr.postScore(chatted, now), 'unanswered questions get a lift');
-
-  const discussed = { points: 5, comment_count: 8, created_at: now - 3600, kind: 'discussion', answer_id: null };
-  assert.ok(hr.postScore(discussed, now) > hr.postScore(chatted, now), 'replies count for something');
-});
 
 test('time helpers read forwards and backwards, and round-trip through the form', () => {
   const now = Math.floor(Date.now() / 1000);
@@ -611,24 +482,6 @@ test('time helpers read forwards and backwards, and round-trip through the form'
   assert.equal(parseWhen('not a date'), null);
 });
 
-test('voting is idempotent and unvoting gives the karma back', () => {
-  getDb().prepare("INSERT OR IGNORE INTO users (id, password_hash, created_at) VALUES ('karmaauthor', 'x', 0)").run();
-  getDb().prepare("INSERT OR IGNORE INTO users (id, password_hash, created_at) VALUES ('karmavoter', 'x', 0)").run();
-  hr.ensureMember('karmaauthor');
-  hr.ensureMember('karmavoter');
-
-  const postId = hr.createPost({ authorId: 'karmaauthor', title: 'A post about karma accounting' });
-  const before = getDb().prepare('SELECT karma FROM users WHERE id = ?').get('karmaauthor').karma;
-
-  hr.vote('karmavoter', 'post', postId);
-  hr.vote('karmavoter', 'post', postId);
-  assert.equal(hr.getPost(postId).points, 2, 'a second vote from the same member changes nothing');
-  assert.equal(getDb().prepare('SELECT karma FROM users WHERE id = ?').get('karmaauthor').karma, before + 1);
-
-  hr.unvote('karmavoter', 'post', postId);
-  assert.equal(hr.getPost(postId).points, 1);
-  assert.equal(getDb().prepare('SELECT karma FROM users WHERE id = ?').get('karmaauthor').karma, before);
-});
 
 /* ------------------------------------------------------------- accounts */
 

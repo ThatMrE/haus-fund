@@ -2,12 +2,12 @@
 
 import { html, raw, timeAgo, formatText, nowSeconds } from '../util.js';
 import {
-  CATEGORIES, POST_KINDS, ORG_KINDS, ORG_STAGES, FUNDER_KINDS, DEAL_CATEGORIES,
+  ORG_KINDS, ORG_STAGES, FUNDER_KINDS, DEAL_CATEGORIES,
   JOB_DISCIPLINES, EVENT_KINDS, LIBRARY_KINDS, PIPELINE_STATUSES, labelFor,
 } from '../models.js';
 
 export const LISTS = {
-  category: CATEGORIES, kind: POST_KINDS, orgKind: ORG_KINDS, stage: ORG_STAGES,
+  orgKind: ORG_KINDS, stage: ORG_STAGES,
   funderKind: FUNDER_KINDS, dealCategory: DEAL_CATEGORIES, discipline: JOB_DISCIPLINES,
   eventKind: EVENT_KINDS, libraryKind: LIBRARY_KINDS, pipelineStatus: PIPELINE_STATUSES,
 };
@@ -109,55 +109,8 @@ export function memberCard(member) {
 
 /* ----------------------------------------------------------------- forum */
 
-export function voteButton(ctx, { kind, id, points, authorId, voted = false }) {
-  if (!ctx.user) {
-    return html`<a class="voter" href="/login?next=${encodeURIComponent(ctx.fullPath || '/homeroom')}"
-      title="log in to upvote">&#9650;<b>${points}</b></a>`;
-  }
-  if (authorId === ctx.user.id) {
-    return html`<span class="voter own" title="your own post">&#9650;<b>${points}</b></span>`;
-  }
-  return html`<form class="voteform" method="post" action="/homeroom/vote" data-target="${kind}:${id}">
-    <input type="hidden" name="csrf" value="${ctx.csrf}" />
-    <input type="hidden" name="kind" value="${kind}" />
-    <input type="hidden" name="id" value="${id}" />
-    <input type="hidden" name="dir" value="${voted ? 'down' : 'up'}" />
-    <input type="hidden" name="goto" value="${ctx.fullPath || '/homeroom'}" />
-    <button class="voter" type="submit" aria-pressed="${voted ? 'true' : 'false'}"
-      title="${voted ? 'undo upvote' : 'upvote'}">&#9650;<b>${points}</b></button>
-  </form>`;
-}
 
-export function kindTag(kind) {
-  const label = labelFor(POST_KINDS, kind, kind);
-  return html`<a class="tag k-${kind}" href="/homeroom/forum?kind=${kind}">${label}</a>`;
-}
 
-export function postRow(ctx, post, { voted = false } = {}) {
-  return html`<li class="card post ${post.pinned ? 'pinned' : ''}">
-    <div class="votecol">${voteButton(ctx, {
-      kind: 'post', id: post.id, points: post.points, authorId: post.author_id, voted,
-    })}</div>
-    <div class="grow">
-      <div class="title-line">
-        ${post.pinned ? html`<span class="pin mono" title="pinned">PIN</span>` : ''}
-        <a class="title" href="/homeroom/post/${post.id}">${post.title}</a>
-        ${post.answer_id ? html`<span class="pill answered" title="an answer was accepted">answered</span>` : ''}
-        ${post.locked ? html`<span class="pill locked">locked</span>` : ''}
-      </div>
-      <div class="subline mono">
-        ${kindTag(post.kind)}
-        <a class="tag" href="/homeroom/forum?category=${post.category}">${labelFor(CATEGORIES, post.category, post.category)}</a>
-        ${(post.tags || []).map((t) => html`<a class="tag ghost" href="/homeroom/forum?tag=${t}">#${t}</a>`)}
-        <span class="sep">/</span>
-        ${post.anonymous ? html`<span class="anon">anonymous</span>` : memberLink(post.author_id)}
-        ${post.org_slug ? html` <span class="sep">/</span> <a href="/homeroom/lab/${post.org_slug}">${post.org_name}</a>` : ''}
-        <span class="sep">/</span> ${when(post.created_at)}
-        <span class="sep">/</span> <a href="/homeroom/post/${post.id}">${post.comment_count} ${post.comment_count === 1 ? 'reply' : 'replies'}</a>
-      </div>
-    </div>
-  </li>`;
-}
 
 /* ------------------------------------------------------------------- bits */
 
