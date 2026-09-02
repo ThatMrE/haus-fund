@@ -136,6 +136,41 @@ enclosure list. Wrap every operator-supplied value in `V(value, "placeholder")`
 A check must never throw; the renderer catches it, but a throwing check surfaces
 as a useless warning to the operator.
 
+## Restyling the letter
+
+The letter's look lives in **two** places, and they must be changed together:
+
+| Where | Governs |
+|---|---|
+| `visa.html` `<style>` | the on-screen preview **and** Print / Save as PDF |
+| `visa.js` `DOC_TAG_STYLE` / `DOC_CLASS_STYLE` | the `.doc` export |
+
+They are separate because Word is not a browser. Its HTML importer applies
+`<style>` blocks with class selectors unreliably and ignores `text-transform`
+outright, so the export writes every rule onto the element as an inline style
+and uppercases the headings in the markup. The `<style>` block in the export is
+generated from those same maps, so the fallback and the inline copy cannot
+diverge from each other.
+
+This has bitten before. The export used to carry a second hand-written
+stylesheet, and it had drifted: the date and addressee lost their spacing
+entirely, and the closing legal line grew a horizontal rule the preview never
+had. If you restyle, change both and re-check the `.doc`, not just the preview.
+
+Use **points, not pixels**, in the export maps. Word lays out in points and
+reinterprets pixel values at whatever DPI the document carries.
+
+### Printing is an allowlist
+
+The print stylesheet hides every sibling along the letter's ancestor chain
+(`body > .wrap > .split > .letter-col > .paper-wrap > .paper`) rather than
+naming the panels to hide. It was a denylist once, and the operator disclaimer
+— "not legal advice", "nothing you type leaves your browser" — printed at the
+top of page one of every letter, because nobody added it to the list.
+
+If you add a panel to this page, the allowlist already excludes it. If you move
+the letter, update the chain.
+
 ## Adding a jurisdiction
 
 Write a jurisdiction object — `id`, `name`, `city`, `flag`, `node`, `blurb`,

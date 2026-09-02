@@ -177,7 +177,18 @@ footer{background:#0D0D0D;border-top:1px solid rgba(255,255,255,0.06);padding:32
    Everything the operator uses to build the letter is chrome. What reaches a
    consular officer is one clean document on white. */
 @media print{
-  nav,.hero,.console,.checks,.guide,.toast,footer,.no-print{display:none !important;}
+  /* An ALLOWLIST, not a denylist. Hide every sibling along the letter's
+     ancestor chain, so anything added to this page later cannot ride along
+     onto a document bound for a government office. A denylist failed exactly
+     that way: the operator disclaimer — "not legal advice", "nothing you type
+     leaves your browser" — printed at the top of page one of every letter,
+     because nobody remembered to add it to the list. Chain: body > .wrap >
+     .split > .letter-col > .paper-wrap > .paper. */
+  body > *:not(.wrap){display:none !important;}
+  .wrap > *:not(.split){display:none !important;}
+  .split > *:not(.letter-col){display:none !important;}
+  .letter-col > *:not(.paper-wrap){display:none !important;}
+  .no-print{display:none !important;}
   body{background:#fff;}
   .wrap{padding:0;max-width:none;}
   .split{display:block;}
@@ -276,7 +287,7 @@ footer{background:#0D0D0D;border-top:1px solid rgba(255,255,255,0.06);padding:32
     </aside>
 
     <!-- ── right: compliance, guidance, letter ── -->
-    <div>
+    <div class="letter-col">
       <section class="checks no-print" id="checks">
         <div class="checks-head">
           <div class="checks-title">Compliance</div>
