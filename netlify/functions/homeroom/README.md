@@ -5,8 +5,6 @@ shares the domain, the design system and the sign-in.
 
 | Surface | What it is |
 | --- | --- |
-| **Chat** | Channels, polled not socketed. Unranked and unarchived on purpose. |
-| **Forum** | The question whose answer should still be findable in a year. |
 | **Yearbook** | The founder wall: every cohort, what they build, and signatures. |
 | **Labs** | The Global Biolab Atlas plus the Core Facility Finder. |
 | **Perks** | Every category of startup support, researched, with how to redeem it. |
@@ -145,6 +143,19 @@ deliberately not one of them**. A roster of 200 where 60 answer is worse than a
 roster of 60, and counting the first is how you get it. The honest version of
 that question is the dormant share.
 
+### Before pointing this at real mentors
+
+Supabase Auth made *accounts* durable. The mentor desk's own state is not:
+`hr_mentor_requests`, `hr_mentor_grants` and `hr_mentor_tokens` are SQLite
+tables in `/tmp` like everything else under `hr_`. A cold container means a
+mentor clicks accept into a 500, or a member's 14-day booking link stops
+existing three days in.
+
+Everything here is correct and tested; it is just not yet safe to send a real
+volunteer an email that depends on a container staying alive. The desk should
+wait for the `hr_*` tables to follow the accounts somewhere durable — the seam
+is `db.js`, and the storage section below names the options.
+
 It started as a reskin of Bookface, Y Combinator's internal network. The idea it
 copies is that the value comes from the room being closed: people say what a
 thing actually cost, and which funder wasted three months of their life, only
@@ -172,29 +183,38 @@ netlify/functions/homeroom/
 ├── index.mjs          Netlify entry point — claims /homeroom and /homeroom/*
 ├── server.js          local dev server, also serves the site root like Netlify does
 ├── app/
-│   ├── app.js         sessions, the four pre-login pages, the dispatcher
-│   ├── routes.js      every members-only surface
-│   ├── models.js      data layer for all of it
-│   ├── schema.js      the hr_ tables
-│   ├── db.js          accounts, sessions, reset tokens, migrations, transactions
-│   ├── auth.js        scrypt hashing, sessions, CSRF, password resets
-│   ├── mail.js        the one message this app sends
-│   ├── supabase.js    durable storage for publishing to /news (no SDK)
-│   ├── luma.js        the luma.com/biopunk calendar sync
-│   ├── seed.js        the sample network, plus the researched data sets
-│   ├── http.js        send/redirect/body/rate-limit helpers
-│   ├── util.js        escaping, html`` templating, time, URL handling
-│   ├── data/          the researched data: perks, the capital map, the atlas,
-│   │                  the mentor roster, the Founder Manual curriculum
-│   └── views/         layout, components, pages, surfaces
+│   ├── app.js            sessions, the four pre-login pages, the dispatcher
+│   ├── routes.js         every members-only surface
+│   ├── models.js         data layer for all of it
+│   ├── schema.js         the hr_ tables
+│   ├── db.js             accounts, sessions, reset tokens, migrations, transactions
+│   ├── auth.js           scrypt hashing, sessions, CSRF, password resets
+│   ├── mail.js           the one message this app sends
+│   ├── supabase.js       durable storage for publishing to /news (no SDK)
+│   ├── supabase-auth.js  Supabase Auth as the credential store (no SDK)
+│   ├── steward.js        the admin account, rebuilt from the environment
+│   ├── luma.js           the luma.com/biopunk calendar sync
+│   ├── seed.js           the sample network, for reviewing the design
+│   ├── seed-real.js      the researched data only — no accounts, no invented content
+│   ├── http.js           send/redirect/body/rate-limit helpers
+│   ├── util.js           escaping, html`` templating, time, URL handling
+│   ├── data/             the researched data: perks, the capital map, the atlas,
+│   │                     the mentor roster, the Founder Manual curriculum
+│   └── views/            layout, components, pages, surfaces
 ├── scripts/
-│   └── import-mentors.js   replace the sample roster from Airtable or a CSV
+│   ├── import-mentors.js     replace the sample roster from Airtable or a CSV
+│   ├── check-roster.js       what the front door would do, before switching it on
+│   ├── make-steward.js       mint the steward environment variables
+│   └── make-supabase-user.js create an account and prove it can sign in
 └── test/              unit and HTTP integration tests
 ```
 
 Static assets live at the repo root in `homeroom-assets/` so the CDN serves
 them; the stylesheet imports the site's own `tokens/*.css`, so Homeroom
-inherits any change to the design system automatically.
+inherits any change to the design system automatically. There is no client-side
+JavaScript bundle: every surface is a server-rendered page and a plain form, and
+the one script left in the app is a dozen lines inline on the password-reset
+page.
 
 ## Accounts
 
@@ -270,7 +290,7 @@ This is the part to keep if any of it is ever rewritten:
   which is true — rather than "you are not a resident", which might not be.
 - **Login fails open.** They already have an account; the roster said yes at
   least once. An Airtable outage must never lock the whole house out of its own
-  forum. Only a definite, freshly-confirmed "no longer eligible" revokes access,
+  room. Only a definite, freshly-confirmed "no longer eligible" revokes access,
   and stewards are exempt entirely — the people who fix the roster have to be
   able to reach it.
 
@@ -357,6 +377,110 @@ outranks it, so the next weekly re-check does not quietly undo their work.
 | `HOMEROOM_STATIC_BASE` | `/homeroom-assets` | Where the stylesheet and client script are served from. |
 | `HOMEROOM_SEED` | — | What a cold container fills itself with. Unset: the full sample network, including ten invented accounts sharing a documented password — for reviewing the design, never for production. `real`: only the researched reference data (perks, capital map, atlas, manual, channels) and no accounts. `off`: nothing, in which case pair it with `HOMEROOM_ACCESS=closed` or a roster token, because with no accounts the first signup is made a steward. |
 
+### The steward account
+
+Homeroom's database lives on the function container's `/tmp`. Every cold
+container starts empty, seeds itself and is thrown away again — so an admin
+account created by hand through a form or a one-off script exists on exactly one
+container and is gone by the next request. **The only account that survives a
+redeploy is one rebuilt from configuration**, which is what these three do. They
+are read on every boot, whatever `HOMEROOM_SEED` is set to.
+
+| Variable | Notes |
+| --- | --- |
+| `HOMEROOM_STEWARD` | Handle of the admin account. Unset: no account is created, and nobody is an admin. |
+| `HOMEROOM_STEWARD_EMAIL` | The sign-in address. Defaults to `<handle>@haus.fund`. |
+| `HOMEROOM_STEWARD_PASSWORD_HASH` | A scrypt hash from `npm run steward`. Preferred: a hash in the dashboard is useless to anyone who reads it, a plaintext password is a working key. |
+| `HOMEROOM_STEWARD_PASSWORD` | Plaintext fallback, honoured only when no hash is set. Subject to the same 10-character floor as the signup form. |
+
+Generate a set:
+
+```bash
+npm run steward -- --handle <handle> --email you@example.org
+```
+
+It prints the three variables and shows the password once. Paste the variables
+into Netlify and the password into a password manager; nothing else stores it.
+
+If `HOMEROOM_STEWARD` is set but neither secret is, the boot logs an error and
+creates nothing — an admin account nobody holds the key to is worse than none.
+The same is true of a hash in the wrong format, a handle or address the signup
+form would reject, and an address already belonging to a different account. None
+of these are fatal: a misconfigured steward must not take the site down.
+
+Two consequences of the storage worth knowing before you rely on it:
+
+- **Changing the password inside Homeroom does not stick.** That change lives on
+  one container. To rotate for real, re-run `npm run steward` and update
+  `HOMEROOM_STEWARD_PASSWORD_HASH`.
+- **Sessions do not survive a container either**, unless `HOMEROOM_SECRET` is
+  set, and not across containers regardless — expect to sign in again.
+
+An existing ordinary account named by `HOMEROOM_STEWARD` is promoted rather than
+replaced, and its password is left alone. `npm run steward -- --apply --force`
+resets a local account's password and ends its open sessions.
+
+### Accounts (Supabase Auth)
+
+By default Homeroom holds its own passwords, in the SQLite database on the
+container's `/tmp` — which means an account lasts until the next cold start.
+Setting `HOMEROOM_AUTH=supabase` moves the credential to Supabase, which is
+durable, and brings the one piece of account management this app has never had:
+a password-reset email that is actually sent.
+
+| Variable | Notes |
+| --- | --- |
+| `HOMEROOM_AUTH` | `local` (default) or `supabase`. |
+| `SUPABASE_URL` | `https://<project-ref>.supabase.co`. Shared with the publishing integration below. |
+| `SUPABASE_PUBLISHABLE_KEY` | The publishable (anon) key. This is the key a browser would use; it is not a privileged one. |
+
+`HOMEROOM_AUTH=supabase` with no project configured falls back to local accounts
+rather than taking the front door off its hinges, and `/homeroom/health` says so
+under `auth`.
+
+**What moves and what does not.** Supabase owns the password, its hashing, the
+reset tokens and the recovery email. It owns nothing else. Homeroom keeps its
+own `users` row and its own session cookie, because every table in the schema
+hangs off `users.id` by foreign key — profiles, reviews, progress, bookings.
+`users.supabase_id` links the two. A Supabase access token is never stored or
+put in a cookie: nothing here acts on a member's behalf at Supabase, so keeping
+one would be liability without use.
+
+Create a test account and prove it can sign in:
+
+```bash
+SUPABASE_URL=... SUPABASE_PUBLISHABLE_KEY=... \
+  npm run supabase:user -- you@example.org --handle you
+```
+
+It reports whether signups are enabled and whether email confirmation is on,
+creates the account with the handle in `user_metadata`, then immediately signs
+in with the password it just set — so a misconfigured project fails there rather
+than on the login page.
+
+Two settings in the Supabase dashboard decide whether this works:
+
+- **Authentication → URL Configuration → Redirect URLs** must include
+  `https://your-site/homeroom/reset`, or the reset email sends people to the
+  site root instead of the form.
+- **Authentication → Sign In / Providers → Email → Confirm email.** With it on,
+  a new account cannot sign in until the link is clicked; signup says so rather
+  than failing a login mysteriously. Turn it off while testing.
+
+**Password resets accept both link shapes.** Supabase's default template uses
+the implicit flow and returns the token in the URL *fragment*, which a server
+never sees — so `/homeroom/reset` carries a few lines of script that move it
+into the form and wipe it from the address bar. A template that emits
+`{{ .TokenHash }}` instead produces a `?token_hash=` the server verifies
+directly, with no token ever touching client-side JavaScript. That one is
+better; both work.
+
+`POST /homeroom/password` changes a password from the settings page, in either
+mode. It requires the current one — which is not ceremony: without it, a session
+cookie left open on a shared laptop is enough to lock its owner out of their own
+account. Every other session for that account ends; the one making the change
+does not.
+
 ### Publishing to /news (Supabase)
 
 | Variable | Notes |
@@ -383,19 +507,13 @@ repeated run updates rather than duplicating.
 
 Every surface requires an account, and the pages carry `noindex`. Beyond that:
 
-- **Anonymous posts** hide the handle in the page and in the JSON API. Stewards
-  can still look it up — anonymity is for candour, not cover.
 - **Deal codes** are only rendered to a member who has claimed the deal, and
   claims are counted so the community can renegotiate on real numbers.
 - **Pipeline notes** are read back only for the member who wrote them.
 - **Message threads** are readable only by their members; an intro request opens
   one with both people in it when it is accepted.
 - **Applicant lists** are visible to the poster and lab admins, not to everyone.
-
 - **Module notes** in the library are read back only for the member who wrote them.
-- **Chat** is not searchable from the public API, not ranked, and not surfaced
-  on any other page. Deleting your own message works; deleting someone else's
-  does not, unless you are a steward.
 - **Review replies** can be anonymous independently of the review itself.
 - **The ICS feed** carries title, time and place — never the description or the
   attendee list, because a calendar file gets forwarded far more casually than
@@ -406,18 +524,6 @@ Every surface requires an account, and the pages carry `noindex`. Beyond that:
 claims most likely to quietly stop being true.
 
 ## The surfaces, and why they are shaped that way
-
-**Chat and the forum are separate on purpose.** The forum ranks, scores and
-archives; that is what makes it useful in a year and what makes people hesitate
-before posting. Chat does none of those things, which is what makes people type
-in it. Keeping them in one table would have meant one set of expectations, and
-the room would have lost whichever half it compromised.
-
-Chat delivery is polling, not sockets: a Netlify function cannot hold a
-connection open. The client polls every five seconds, stops entirely while the
-tab is hidden, and backs off to thirty seconds after five empty polls. `since`
-is the last message id the client holds, so the usual response is an empty array
-and one indexed range scan.
 
 **The atlas leads with whether a lab is open.** Every DIYbio directory on the
 internet mixes live spaces with ones that closed in 2017 and renders them
@@ -477,19 +583,6 @@ time, or a cold container puts them back.
 `network.js` (`source = 'calendar'`) survive it. To promote one of them to
 bookable, set `vetted` and a `scheduler` — which should happen only after the
 person has actually said yes.
-
-## Ranking
-
-```
-score = (points - 1 + 0.75 × replies + 1) / (age_hours + 2) ^ 1.5
-        × 1.6 if it is a question with no replies and under 48 hours old
-        × 1.15 if an answer has been accepted
-
-pinned threads sort above everything
-```
-
-A reply is worth much more than a vote, because an answered question is the
-product. The lift on an unanswered question is what stops one dying unseen.
 
 ## Storage: read this before inviting anyone
 

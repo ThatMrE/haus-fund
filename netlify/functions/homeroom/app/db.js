@@ -117,6 +117,9 @@ const ADDED_COLUMNS = [
   // dormancy rather than a listing nobody ever checks again.
   ['hr_mentors', 'reconfirm_sent_at', 'INTEGER'],
   ['hr_mentors', 'reconfirm_nudges', 'INTEGER NOT NULL DEFAULT 0'],
+  // Which Supabase credential this account signs in with, when HOMEROOM_AUTH
+  // is supabase. Empty for a local account, so the two can coexist.
+  ['users', 'supabase_id', "TEXT NOT NULL DEFAULT ''"],
 ];
 
 function addColumns(instance) {

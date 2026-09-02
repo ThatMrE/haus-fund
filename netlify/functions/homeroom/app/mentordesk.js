@@ -134,7 +134,7 @@ export function capacityFor(mentor, now = nowSeconds()) {
  * Can this member ask this mentor right now, and if not, why not?
  *
  * Every reason is a sentence a member can act on. "No" with no explanation is
- * how a member concludes the feature is broken and asks in chat instead.
+ * how a member concludes the feature is broken and stops using it.
  */
 export function canRequest({ mentor, memberId, now = nowSeconds() }) {
   if (!mentor) return { ok: false, reason: 'unknown', message: 'No such mentor.' };

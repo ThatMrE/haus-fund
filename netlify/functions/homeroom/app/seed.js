@@ -18,7 +18,6 @@ import { FUNDERS as CAPITAL_MAP } from './data/funders.js';
 import { ATLAS_LABS } from './data/atlas.js';
 import { MENTORS as MENTOR_ROSTER } from './data/mentors.js';
 import { NETWORK_MENTORS } from './data/network.js';
-import { CHANNELS } from './data/channels.js';
 import { TRACKS, LIBRARY_MODULES } from './data/curriculum.js';
 
 const HOUR = 3600;
@@ -28,13 +27,11 @@ const DAY = 86400;
 export const SAMPLE_PASSWORD = 'homeroom-sample-pass';
 
 const SAMPLE_TABLES = [
-  'hr_poll_votes', 'hr_poll_options', 'hr_votes', 'hr_saves', 'hr_follows', 'hr_post_tags',
-  'hr_comments', 'hr_posts', 'hr_updates', 'hr_org_members', 'hr_orgs', 'hr_deal_claims',
+  'hr_updates', 'hr_org_members', 'hr_orgs', 'hr_deal_claims',
   'hr_deals', 'hr_review_votes', 'hr_review_comments', 'hr_funder_reviews', 'hr_pipeline',
   'hr_funders', 'hr_bookings', 'hr_slots', 'hr_mentors',
   'hr_applications', 'hr_jobs', 'hr_rsvps', 'hr_event_sources', 'hr_events', 'hr_library',
   'hr_progress', 'hr_modules', 'hr_tracks', 'hr_intros',
-  'hr_chat_reactions', 'hr_chat', 'hr_channel_reads', 'hr_channels',
   'hr_signatures', 'hr_yearbook', 'hr_atlas_reports', 'hr_atlas', 'hr_news_submissions',
   'hr_messages', 'hr_thread_members', 'hr_threads', 'hr_notifications', 'hr_expertise', 'hr_members',
 ];
@@ -485,70 +482,6 @@ function seedHomeroom({ reset = false } = {}) {
     setCreatedAt('hr_updates', id, now - Math.floor(random() * 6 * DAY));
   }
 
-  /* ---- forum ---- */
-  const postIds = [];
-  for (const [author, kind, category, title, body, tags, targetPoints, age, anonymous] of POSTS) {
-    if (!handles.includes(author)) continue;
-    const orgId = kind === 'announce' ? orgIds.get('Cultura Aberta') ?? null : null;
-    const id = bf.createPost({
-      authorId: author, kind, category, title, body, orgId, anonymous, tags,
-      options: kind === 'poll' ? POLL_OPTIONS : [],
-    });
-    instance.prepare('UPDATE hr_posts SET created_at = ?, last_active_at = ?, view_count = ? WHERE id = ?')
-      .run(now - age, now - age, Math.floor(targetPoints * (3 + random() * 6)), id);
-    postIds.push({ id, author, targetPoints, createdAt: now - age, kind });
-  }
-
-  // Votes are real rows, so unvoting and karma behave. There are only a
-  // handful of sample accounts, though, so every post would otherwise land on
-  // the same score; the displayed total is set to the intended one afterwards
-  // to make the sample read like a network rather than a fixture.
-  for (const post of postIds) {
-    const pool = handles.filter((h) => h !== post.author);
-    const wanted = Math.min(pool.length, Math.max(1, Math.round(post.targetPoints / 3)));
-    const chosen = new Set();
-    while (chosen.size < wanted) chosen.add(pick(pool));
-    for (const voter of chosen) bf.vote(voter, 'post', post.id);
-    instance.prepare('UPDATE hr_posts SET points = ? WHERE id = ?').run(post.targetPoints, post.id);
-  }
-
-  let replyCursor = 0;
-  for (const post of postIds) {
-    const wanted = 1 + Math.floor(random() * 3);
-    const posted = [];
-    for (let i = 0; i < wanted; i++) {
-      const [author, text] = REPLIES[replyCursor++ % REPLIES.length];
-      if (!handles.includes(author) || author === post.author) continue;
-      const parentId = posted.length && random() < 0.4 ? pick(posted) : null;
-      const anonymous = /Anonymous because/.test(text);
-      const id = bf.createComment({
-        postId: post.id, parentId, authorId: author, body: text, anonymous,
-      });
-      posted.push(id);
-      // Spread the replies across the window between the post and now, rather
-      // than running off the end of it and all landing on "just now".
-      const window = Math.max(HOUR, now - post.createdAt);
-      const at = post.createdAt + Math.floor(((i + 1) / (wanted + 1)) * window);
-      instance.prepare('UPDATE hr_comments SET created_at = ? WHERE id = ?').run(Math.min(at, now), id);
-      for (const voter of handles.filter((h) => h !== author).slice(0, 2 + Math.floor(random() * 6))) {
-        bf.vote(voter, 'comment', id);
-      }
-      instance.prepare('UPDATE hr_comments SET points = ? WHERE id = ?')
-        .run(3 + Math.floor(random() * 18), id);
-    }
-    // The question-shaped threads get an accepted answer, which is the point of them.
-    if (post.kind === 'question' && posted.length && random() < 0.6) bf.markAnswer(post.id, posted[0]);
-  }
-
-  // Poll votes.
-  const pollPost = postIds.find((p) => p.kind === 'poll');
-  if (pollPost) {
-    const options = bf.pollOptions(pollPost.id);
-    for (const handle of handles.slice(0, 34)) {
-      bf.castPollVote(pollPost.id, handle, pick(options).id);
-    }
-  }
-
   /* ---- perks ----
      The catalogue is researched rather than invented, so it goes in as-is and
      the fictional DEALS list below it only adds the community-negotiated ones
@@ -751,34 +684,6 @@ function seedHomeroom({ reset = false } = {}) {
     }
   }
 
-  /* ---- chat ---- */
-  for (const [index, [slug, name, topic, kind]] of CHANNELS.entries()) {
-    bf.createChannel({ slug, name, topic, kind, position: index, createdBy: steward });
-  }
-  const CHAT_SAMPLE = [
-    ['general', 'helix_witch', 'Morning. Waste contractor finally signed — we are legal as of today.'],
-    ['general', 'pipette_punk', 'Congratulations. How long did that take in the end?'],
-    ['general', 'helix_witch', 'Eleven weeks and four site visits. Happy to write it up if anyone is about to do the same.'],
-    ['wetlab', 'crispr_kid', 'Anyone got a GUIDE-seq alternative that does not need a core? Sample message — fictional demo data.'],
-    ['wetlab', 'open_assay', 'Depends how much sensitivity you can give up. Book me in office hours and bring the construct.'],
-    ['fundraising', 'ferment_or_die', 'Second partner meeting done. They want twelve months of pilot data before they move.'],
-    ['fundraising', 'mycelium_max', 'That is the standard ask now. Did they say twelve months of data, or twelve months of the same customer?'],
-    ['perks', 'plasmid_mule', 'Reminder that the Twist first-order rate is negotiated, not the web promo. Ask before you order.'],
-    ['mentors', 'biosafety_bee', 'I have four slots next week. Bring an actual risk assessment, not a description of one.'],
-    ['showcase', 'garage_genome', 'First external run finished on the kitchen setup. Sample message — fictional demo data.'],
-  ];
-  for (const [slug, author, text] of CHAT_SAMPLE) {
-    const channel = bf.getChannel(slug);
-    if (!channel || !handles.includes(author)) continue;
-    bf.postChat({ channelId: channel.id, authorId: author, body: text });
-  }
-  for (const message of instance.prepare('SELECT id FROM hr_chat ORDER BY id').all()) {
-    if (random() < 0.4) {
-      const who = pick(handles);
-      if (who) bf.toggleReaction(message.id, who, pick(['👍', '🧪', '🔥']));
-    }
-  }
-
   /* ---- the founder manual ---- */
   for (const [index, track] of TRACKS.entries()) bf.upsertTrack(track, index);
   for (const [index, module] of LIBRARY_MODULES.entries()) bf.upsertModule(module, index);
@@ -838,11 +743,10 @@ if (isMain) {
   else {
     const s = result.stats;
     console.log(
-      `Seeded ${s.members} members, ${s.orgs} labs, ${s.posts} threads, ${s.comments} replies, `
+      `Seeded ${s.members} members, ${s.orgs} labs, `
       + `${s.deals} perks, ${s.funders} funders (${s.reviews} reviews), ${s.jobs} roles, `
       + `${s.slots} office-hour slots, ${s.events} events, ${s.library} library entries, `
-      + `${s.mentors} mentors, ${s.atlas} atlas labs, ${s.modules} manual modules, `
-      + `${s.channels} chat channels (${s.chat} messages).`,
+      + `${s.mentors} mentors, ${s.atlas} atlas labs, ${s.modules} manual modules.`,
     );
     console.log(`Sample logins: any handle above, password "${SAMPLE_PASSWORD}".`);
     console.log('All sample content is fictional.');

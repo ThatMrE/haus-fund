@@ -151,7 +151,7 @@ export function declineMessage({ mentor, request, alternatives = [] }) {
       alternatives.length
         ? ['Others in the network who cover similar ground:',
           ...alternatives.map((m) => `  ${m.name} — ${BASE()}/homeroom/mentor/${m.slug}`)].join('\n')
-        : 'A steward can help you find someone else: /homeroom/chat/mentors',
+        : `Other mentors, by what they help with: ${BASE()}/homeroom/mentors`,
     ].filter((l) => l !== null).join('\n'),
   };
 }
