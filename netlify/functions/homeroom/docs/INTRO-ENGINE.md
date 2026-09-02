@@ -20,11 +20,13 @@ A member states an ask in Homeroom — "I need someone who has taken a
 fermentation-derived ingredient through FDA GRAS self-affirmation." The engine
 turns that into a Happenstance query against the connector's network, brings
 back candidates, drafts a forwardable blurb from the member's own profile and
-ask, and puts the whole thing in front of a steward. The steward picks one
-person and clicks once. That click sends a short permission-ask to the target —
-not to the member — and the member never learns the name unless the target says
-yes. On yes, the engine sends the actual introduction with both people on it and
-opens a Homeroom thread. Every state change is logged, every target can opt out
+ask, and puts the whole thing in front of a steward. The steward shortlists a
+few and shows the member, once, so they can strike anyone they are already
+talking to. Then the steward picks one and clicks. That click sends a short
+permission-ask to the target — not to the member — and the member is never told
+who was approached or who declined, which is what keeps a "no" free. On yes, the
+engine sends the actual introduction with both people on it and opens a Homeroom
+thread. Every state change is logged, every target can opt out
 of ever being asked again, and no message is ever sent without a human clicking
 a button.
 
@@ -76,6 +78,12 @@ three usually left implicit are the ones that decide whether the thing works.
 | 3 | **The target is asked privately** | The target | The target being put on the spot in front of the requester. This is the gate everyone means by "double opt-in". |
 | 4 | **The connector sends the intro** | A steward | An automated system emailing a real person on a human's behalf without that human in the loop. |
 | 5 | **The outcome is recorded** | The member | The connector never learning that the last six intros went nowhere. |
+
+Under the `shortlist` setting (§5, decided) there is a member veto step between
+gates 2 and 3: the member strikes anyone they are already in conversation with,
+before anyone is approached. It is not a sixth gate — it removes candidates, it
+never approves one — and it is designed so that using it does not let the member
+observe what happens to the rest.
 
 Gate 3 has one non-negotiable property, and if any part of this is ever
 rewritten it is the part to keep:
@@ -132,34 +140,96 @@ liability. §9 caps what is stored and for how long.
 
 ## 5. Who can see a name, and when
 
-This is the central product decision and the one most likely to be argued with.
+This is the central product decision. **Decided: `shortlist`** — the member sees
+the steward's shortlist before anyone is asked. §18 records the decision; this
+section specifies what it costs and the four mechanisms that keep gate 3 alive
+under it.
 
-**Default: members never see candidate names before that candidate has said
-yes.** The member sees "3 candidates found, with a steward" and, on a yes, a
-name and a thread. Not before.
+### 5.1 The cost, stated plainly
 
-The reasoning is that gate 3 is only meaningful if the target's "no" is
-invisible. If the member has already seen the shortlist, a no is legible: they
-watched the name go in and no intro came out. Some fraction of targets will
-sense that and say yes to avoid the awkwardness, and the whole mechanism
-degrades into a warm-looking cold email.
+Gate 3 is only meaningful if the target's "no" is invisible. The obvious
+implementation of `shortlist` breaks that: the member watches a name go onto the
+list, no intro comes back, and the decline is legible. Some fraction of targets
+will sense that and say yes to avoid the awkwardness, and the mechanism degrades
+into a warm-looking cold email.
 
-There is a real cost to this. The member cannot tell the steward "not that one,
-we already spoke." That is handled by letting the member state exclusions in the
-ask itself ("already talking to: …") and by the steward's judgement, which is
-worse than the member's own knowledge. It is a genuine tradeoff and it is
-recorded as **Open Question O-1**.
+So `shortlist` is not implemented as "show the member the list and narrate what
+happens to it." It is implemented as **veto-then-blind**: the member sees the
+shortlist exactly once, to remove people, and learns nothing about it
+afterwards.
 
-`HOMEROOM_INTRO_DISCLOSURE` makes it configurable, with three settings:
+### 5.2 Veto-then-blind
+
+```
+steward shortlists 5  →  member sees 5, vetoes 2  →  steward asks 1 of the
+                         remaining 3  →  member is told only "asked, waiting"
+```
+
+The member knows *someone* was asked. They do not know **who**, and that is the
+whole trick: a decline cannot be attributed to a person the member never learned
+was approached. The member gets what `on-accept` denied them — the ability to
+say "not that one, we already spoke" — and the target keeps a decline that
+points at nobody in particular.
+
+Four mechanisms make that hold. All four are requirements, not preferences; the
+first one dropped takes the invisible decline with it.
+
+**M-1. Selection is never disclosed.** After the veto window closes the ask page
+shows aggregate state only: `asked · waiting`, then `introduced` or `still
+open`. No per-candidate status is rendered to a member in HTML or JSON, ever,
+including for candidates they saw on the shortlist. This is the load-bearing
+one.
+
+**M-2. The shortlist is shown once and then withdrawn.** Once the veto window
+closes, the names are gone from the member's view of the ask. A member can of
+course screenshot a page, and this does not pretend otherwise — it removes the
+casual correlation, which is most of it.
+
+**M-3. Order carries no signal.** The member-visible shortlist is shuffled per
+render, with no affinity score, no ranking, no "top match" badge. A ranked list
+tells the member which one was probably asked first, which re-attaches the
+decline to a name.
+
+**M-4. A shortlist of one or two is not shown at all.** Below
+`HOMEROOM_INTRO_SHORTLIST_MIN` (default 3) there is nothing to hide behind:
+showing a member two names and then asking one of them makes a decline a coin
+flip, and showing one makes it a certainty. Under the minimum the ask silently
+falls back to `on-accept` behaviour for that ask, and the steward is told why.
+
+The veto screen says all of this to the member in plain words, because a
+mechanism that works by managing what someone knows should not also be a
+surprise:
+
+> These people have not been asked yet, and some of them will say no. Tell us
+> who to leave out. After that we will not tell you who we approached or who
+> declined — that is what makes it safe for them to decline.
+
+### 5.3 The settings
+
+`HOMEROOM_INTRO_DISCLOSURE` stays configurable. The two alternatives are kept
+because Phase 4 changes the calculus (§14) and because a connector may want to
+tighten it after seeing real behaviour.
 
 | Setting | Member sees | Notes |
 | --- | --- | --- |
-| `on-accept` | Nothing until a target says yes | **Default.** The strict reading of double opt-in. |
-| `shortlist` | Names on the steward's shortlist, before permission is asked | Faster, more collaborative, weaker gate 3. Requires the shortlist screen to warn the member explicitly that these people have not been asked. |
-| `none` | Never a list — only the accepted intro | For a connector who does not want members to know the shape of their network at all. |
+| `shortlist` | The shortlist once, to veto, under M-1 to M-4 | **Default.** |
+| `on-accept` | Nothing until a target says yes | The strict reading. The automatic fallback whenever a shortlist is under the minimum. |
+| `none` | Never a list — only the accepted intro | For a connector who does not want members learning the shape of their network at all. Makes the member a passenger in their own intro. |
 
 Stewards always see everything. The audit log is steward-visible and never
 member-visible.
+
+### 5.4 The residual risk, unresolved
+
+A determined member who screenshots every shortlist and correlates across
+several asks can eventually infer who declines. Nothing in M-1 to M-4 stops
+that, and no software mechanism will.
+
+That is a **norm**, not a control, and it belongs in the same written policy as
+P-4: a member who tries to work out who turned them down is misusing the room,
+and it is a stewarding matter rather than an engineering one. Worth saying out
+loud in the member-facing copy at least once, because the people who would do
+it mostly have not thought about it.
 
 ---
 
@@ -200,12 +270,13 @@ An **ask** is the member's request. A **candidate** is one person, considered fo
 one ask. The lifecycle belongs to the candidate.
 
 ```
-ask:        draft → open → sourcing → shortlisted → closed
+ask:        draft → open → sourcing → vetting → shortlisted → closed
                                  ↘ abandoned (member withdrew / aged out)
 
 candidate:  suggested                       ← returned by Happenstance
               ├→ screened_out               ← steward rejects, with a reason
-              └→ shortlisted
+              └→ shortlisted                ← shown to the member (§5.2)
+                   ├→ vetoed                ← MEMBER removed it. Terminal.
                    ├→ withdrawn             ← steward changes their mind
                    └→ permission_sent       ← GATE 4: a steward clicked
                         ├→ declined         ← target said no. Member never told.
@@ -215,11 +286,29 @@ candidate:  suggested                       ← returned by Happenstance
                                   └→ outcome_logged   ← GATE 5
 ```
 
+`vetting` is the window the `shortlist` disclosure setting creates: the
+shortlist is visible to the member, and no permission may be sent out of it.
+It closes on the member's submission or after `HOMEROOM_INTRO_VETO_HOURS`
+(default 48), whichever comes first, and an ask does not stall on a member who
+never looks — silence is "no vetoes", not a hold.
+
 Rules the machine enforces, not the UI:
 
 - `permission_sent` is reachable **only** from a route that carried a valid CSRF
   token and a steward session. No background job, no agent, no API token can
   reach it. This is gate 4 expressed as code.
+- `permission_sent` is unreachable while the ask is `vetting`. A member who is
+  still deciding who to exclude has not finished, and a permission sent in that
+  window could land on someone they were about to veto.
+- **No member-facing response ever renders a candidate's status.** Not on the
+  ask page, not in the JSON API, not in a notification. Once `vetting` closes,
+  members get aggregate state only (§5.2, M-1). This is the one rule in the
+  whole engine that is asserted against rendered output rather than against the
+  model, because it is a claim about bytes leaving the server.
+- `vetoed` is terminal for that (ask, person) pair, and unlike a decline it is
+  *not* a cooldown: the member excluded them, usually because a conversation
+  is already happening, which says nothing about whether the target would have
+  agreed. A veto never suppresses that person for anyone else.
 - `introduced` is reachable **only** from `agreed`. There is no override, not
   even for a steward. A steward who wants to introduce someone who never
   answered can send their own email from their own client; the engine will not
@@ -250,13 +339,23 @@ CREATE TABLE IF NOT EXISTS hr_intro_asks (
   exclusions    TEXT NOT NULL DEFAULT '',  -- people/orgs already in conversation
   keywords      TEXT NOT NULL DEFAULT '',  -- steward-editable search terms
   status        TEXT NOT NULL DEFAULT 'draft'
-                CHECK (status IN ('draft','open','sourcing','shortlisted','closed','abandoned')),
+                CHECK (status IN ('draft','open','sourcing','vetting','shortlisted','closed','abandoned')),
+  veto_opened   INTEGER,                   -- when the member was shown the shortlist
+  veto_closes   INTEGER,                   -- +HOMEROOM_INTRO_VETO_HOURS; no permission before this
+  veto_done     INTEGER NOT NULL DEFAULT 0,-- member submitted, so close early
+  disclosure    TEXT NOT NULL DEFAULT 'shortlist'
+                CHECK (disclosure IN ('shortlist','on-accept','none')),
   created_at    INTEGER NOT NULL,
   updated_at    INTEGER NOT NULL,
   closed_at     INTEGER
 );
 
 CREATE INDEX IF NOT EXISTS idx_hr_intro_asks_status ON hr_intro_asks(status, updated_at DESC);
+
+/* `disclosure` is stamped per ask at creation from HOMEROOM_INTRO_DISCLOSURE,
+   not read live. Changing the setting must not retroactively expose names on
+   asks whose members were told something different — and, in the other
+   direction, must not hide a shortlist a member has already seen. */
 
 /* --------------------------------------------------------- search cache */
 
@@ -296,10 +395,12 @@ CREATE TABLE IF NOT EXISTS hr_intro_candidates (
   connector     TEXT NOT NULL DEFAULT '',  -- the mutual who should actually send it
   profile_url   TEXT NOT NULL DEFAULT '',
   status        TEXT NOT NULL DEFAULT 'suggested'
-                CHECK (status IN ('suggested','screened_out','shortlisted','withdrawn',
-                                  'permission_sent','declined','no_reply','agreed',
-                                  'introduced','outcome_logged')),
+                CHECK (status IN ('suggested','screened_out','shortlisted','vetoed',
+                                  'withdrawn','permission_sent','declined','no_reply',
+                                  'agreed','introduced','outcome_logged')),
   screen_reason TEXT NOT NULL DEFAULT '',  -- steward's note, member never sees it
+  veto_reason   TEXT NOT NULL DEFAULT '',  -- member's, from a fixed vocabulary (§7.1)
+  shown_at      INTEGER,                   -- when the member saw this name, if ever
   created_at    INTEGER NOT NULL,
   updated_at    INTEGER NOT NULL,
   expires_at    INTEGER NOT NULL           -- purged unless promoted; see §9
@@ -460,9 +561,19 @@ whole point of writing it down.
 | `GET /homeroom/intros/asks/new` | The ask form: headline, need, why now, what you want from them, exclusions. Minimum lengths enforced — gate 1 is a real gate. |
 | `POST /homeroom/intros/asks/new` | Creates the ask in `draft`, drafts a blurb, shows it for editing. |
 | `POST /homeroom/intros/asks/:id/submit` | `draft → open`. This is the member's opt-in, and the form says so: *"A steward will read this and may forward it, with your name, to someone outside Homeroom."* |
-| `GET /homeroom/intros/asks/:id` | Status. Under `on-accept` disclosure this reads: open · with a steward · waiting on a reply · introduced. No names, no counts of declines. |
+| `GET /homeroom/intros/asks/:id/veto` | **The veto screen.** Live only while the ask is `vetting`. Shuffled names, no scores, no ranking, and the §5.2 copy above the list. 404s before and after the window — a member cannot re-open it to check. |
+| `POST /homeroom/intros/asks/:id/veto` | Records vetoes and closes the window early. Each veto takes a reason from a fixed list: *already talking · previous bad experience · conflict of interest · not relevant · rather not say*. Free text is not offered; a steward should not be reading a member's private opinion of a third party. |
+| `GET /homeroom/intros/asks/:id` | Status. **Aggregate only**, in every disclosure mode: open · with a steward · your turn to review · asked, waiting · introduced · still open. Never a per-person status, never a count of declines, never the name of anyone asked. |
 | `POST /homeroom/intros/asks/:id/withdraw` | `→ abandoned`. Cancels anything not yet sent. Cannot recall a sent permission ask. |
 | `POST /homeroom/intros/candidates/:id/outcome` | Gate 5. Did you meet, was it useful, one line. Nagged once at 14 days, then never again. |
+
+The status vocabulary on the ask page is deliberately short and deliberately
+vague after the veto window. **"Asked, waiting" covers one target and three**,
+and it is the same string whether two people have already declined or nobody
+has answered yet. A progress bar, a count, or a "2 of 4 responded" is the same
+leak as a name — it lets a member watch declines accumulate. `still open` is
+what a member sees when everyone said no, and it is honest: the ask is still
+open, and a steward is still on it.
 
 The existing member-to-member flow at `/homeroom/intros` is untouched. The new
 work lives under `/homeroom/intros/asks`, and the index page grows a second
@@ -479,10 +590,18 @@ distinction members care about.
 | `GET /homeroom/stewards/intros` | The queue: open asks, running searches, shortlists awaiting a click, permissions awaiting a reply, and anything aged out. Plus the credit balance, because the steward is the one spending it. |
 | `POST /homeroom/stewards/intros/:ask/source` | Spends 2 credits. Confirmation shows the exact query and the current balance. Refuses at zero rather than failing mid-flight. |
 | `POST /homeroom/stewards/intros/candidates/:id/screen` | `suggested → screened_out` with a required reason. Reasons are the training data for better queries later. |
-| `POST /homeroom/stewards/intros/candidates/:id/shortlist` | `suggested → shortlisted`. |
-| `POST /homeroom/stewards/intros/candidates/:id/permission` | **Gate 4.** Shows the exact outgoing text, editable, then sends. |
+| `POST /homeroom/stewards/intros/candidates/:id/shortlist` | `suggested → shortlisted`. Not yet visible to the member. |
+| `POST /homeroom/stewards/intros/:ask/release` | Opens the veto window: `sourcing → vetting`, stamps `veto_closes`, notifies the member. Refuses below `HOMEROOM_INTRO_SHORTLIST_MIN` and says why, offering the `on-accept` fallback for that ask instead. |
+| `POST /homeroom/stewards/intros/candidates/:id/permission` | **Gate 4.** Disabled while the ask is `vetting`, and on any candidate the member vetoed. Shows the exact outgoing text, editable, then sends. |
 | `POST /homeroom/stewards/intros/candidates/:id/introduce` | **The one-click introduction.** Only enabled on `agreed`. |
 | `GET /homeroom/stewards/intros/audit/:candidate` | The `hr_intro_events` trail for one candidate, in English. |
+
+The steward's own view of an ask shows each candidate's real status, including
+who declined — stewards are the connector, and a connector who cannot see who
+said no cannot do their job. The member-facing renderer is a **separate view
+function** that takes the ask and returns aggregate state, rather than the
+steward view with fields hidden. Hiding fields in a shared template is how a
+field comes back six months later in a JSON endpoint nobody re-checked.
 
 The permission and introduce screens both render the **complete outgoing
 message** before sending, not a preview of a template. A steward who cannot read
@@ -575,22 +694,64 @@ passed to Claude for a rewrite in the member's voice, using their profile bio
 and recent forum posts as a voice sample. `source = 'model'` and the model id
 are recorded on the version.
 
-Proposed call:
+**The call is raw `fetch`, not the SDK.** Decided in §18; the reasoning is that
+this repository has no root `package.json`, no lockfile, an empty Netlify build
+command, and `"dependencies": {}` in both function packages. Adding
+`@anthropic-ai/sdk` is not a line in a manifest here — it is the repo's first
+install step, first lockfile and first supply-chain surface, and that is a
+change to make deliberately and on its own, not folded into a feature. One POST
+is the smaller thing to own, and `supabase.js`, `roster.js` and `mail.js` are
+already exactly this shape.
 
-- Model `claude-opus-5`.
-- `max_tokens: 1500`, non-streaming — the output is 120 words.
-- `output_config: { effort: "low" }`. This is short-form rewriting against a
-  supplied skeleton, not a reasoning task; `low` is the right default and the
-  cost lever if volume grows.
-- Structured output (`output_config.format`) so the response is
-  `{ blurb, subject, why_this_person }` and not prose that has to be parsed.
-- The ask, the member profile and the candidate evidence go in the user turn.
-  The style rules go in a cached system prompt — it is identical across every
-  call, which is the ideal prefix-cache shape.
+```
+POST https://api.anthropic.com/v1/messages
+  x-api-key: $HOMEROOM_ANTHROPIC_KEY
+  anthropic-version: 2023-06-01
+  content-type: application/json
+
+  model:        claude-opus-5
+  max_tokens:   1500                     non-streaming; the output is 120 words
+  system:       [the style rules, byte-identical every call]
+  messages:     [the ask, the member profile, the candidate evidence]
+  output_config:
+    effort:     low                      short-form rewriting against a supplied
+                                         skeleton, not a reasoning task
+    format:     { blurb, subject, why_this_person }
+```
+
+Notes on the parameters, since a hand-rolled client has to get them right
+without a type checker:
+
+- **`anthropic-version` is required** on raw HTTP and is the one header the SDK
+  would have supplied silently. Omitting it is a 400 that reads like an auth
+  problem.
+- **Structured output** via `output_config.format` so the response is a fixed
+  object rather than prose to be parsed. Worth more here than usual: the
+  fact-checks in the next subsection run against named fields.
+- **Effort `low`, thinking left alone.** Thinking is on by default on this
+  model; explicitly disabling it is a known way to get reasoning leaking into
+  the visible text, which for a 120-word blurb is the whole output. Lower effort
+  is the correct cost lever.
+- **The system prompt is frozen and identical across calls**, which is the ideal
+  shape for prompt caching if volume ever justifies turning it on. Nothing
+  per-request goes in it.
+
+What the SDK would have given us and `blurbs.js` therefore has to write, in
+about thirty lines:
+
+| Lost | Replacement |
+| --- | --- |
+| Typed exception classes | Branch on `res.status`: 401 → unconfigured, 400 → terminal and logged loudly (it means we built a bad request, and retrying will not fix it), 429/5xx → retry. |
+| Automatic retries | One retry, on 429 and 5xx only, after the `retry-after` header or 2s. Not more: this is a convenience feature and the template is already on screen. |
+| Request timeout | `AbortController` at 15s, the same pattern `roster.js` uses. |
+| Version pinning | `anthropic-version` is pinned in one constant with a comment saying what to check when it moves. |
 
 At $5/$25 per MTok and roughly 2K in / 400 out per draft, a draft costs about
 **$0.02**. A hundred drafts a month is $2. This is not a cost centre; the
 Happenstance credits are.
+
+If the repo ever grows real dependency infrastructure for another reason, this
+is the first thing that should move onto the SDK, and the seam is one function.
 
 **Three things the model is never allowed to do**, enforced in `blurbs.js`
 rather than the prompt:
@@ -620,6 +781,7 @@ Candidates are people who never asked to be in this database.
 | --- | --- | --- |
 | Search results not shortlisted | **30 days**, then purged | They exist to let a steward pick. After a month the ask is stale and the rows are a liability with no use. |
 | Screened-out candidates | Hash + reason retained, name purged at 30 days | The reason improves future queries; the name is not needed for that. |
+| Vetoed candidates | Hash + veto reason retained, name purged at 30 days | Same as screened-out. The hash is what stops the same person being shortlisted for that member again; the veto reason is a signal about the query, not about the person. |
 | Shortlisted but never contacted | **90 days** | Long enough for a slow ask, short enough to matter. |
 | Contacted (permission sent onward) | Retained while the ask is live, then 2 years | This is the record of who was emailed and why. Deleting it would delete the accountability. |
 | Suppression rows | **Forever** | A "never ask me again" that expires is not a never. |
@@ -740,6 +902,9 @@ format, because the same discipline applies.
 | Credit balance is zero | **Closed, loudly** | Sourcing is refused with the balance shown and a top-up link. Never a silent empty result. |
 | Target clicks a token twice | **Idempotent** | First answer wins, second shows what they already said. |
 | Two stewards click introduce at once | **Idempotent** | Guarded by candidate status inside a transaction. One email. |
+| A member never opens the veto screen | **Proceeds** | The window closes at `veto_closes` and the steward continues. Silence is "no vetoes", not a hold — an ask must not stall on a member who is busy. |
+| Shortlist is under the minimum | **Falls back, and says so** | That ask runs `on-accept` and the steward is told why (§5.2, M-4). It never shows a member a list of two. |
+| Disclosure setting changes mid-ask | **No effect on live asks** | `disclosure` is stamped per ask at creation. Neither tightening nor loosening the setting rewrites what a member was already told. |
 | A member deletes their account mid-ask | **Cascade, then stop** | Ask and candidates cascade. If a permission was already sent and a yes comes back, the target gets one short "no longer needed" note, not silence. |
 
 ---
@@ -756,6 +921,7 @@ so it is worth being explicit that **intro volume is not one of them.**
 | No-reply rate | The polite version of no. Counts against the same budget. |
 | Introduced → met rate | Whether an accepted intro turned into anything. |
 | Outcome-logged rate | Gate 5 compliance. Below 60% and every other number is guesswork. |
+| Veto rate | New with the `shortlist` default. A high rate means the queries are wrong, and it is the *cheap* place to find that out — a veto costs nothing, a permission ask costs reputation. Rising veto rate is a prompt to fix sourcing, not a problem in itself. |
 | Never-ask-again count | The only one that should be zero. Any non-zero value is a review. |
 
 ---
@@ -851,9 +1017,12 @@ the schema above:
   agreed to have mail sent in their name.
 - Group members are a materially different population from a private contact
   graph: they joined a Biopunk group, which is a weak but real opt-in to being
-  found. The disclosure default in §5 can reasonably relax to `shortlist` for
-  in-group candidates while staying `on-accept` for everyone else. That is one
-  conditional, because the setting was designed to be per-source.
+  found. With `shortlist` now the default everywhere (§18, O-1), the Phase 4
+  question inverts — it is no longer whether to relax for the group, but whether
+  the **private-graph** side should tighten to `on-accept` once there is a
+  looser-feeling group path sitting next to it in the same UI. Worth deciding
+  with Phase 0 data in hand rather than now. The setting is per ask, so either
+  answer is a conditional at ask creation, not a migration.
 - `research-person` (1 credit) becomes worth offering as an explicit steward
   action on a single shortlisted candidate. Never automatic, never batched.
 
@@ -880,10 +1049,26 @@ directly:
 which already asserts each privacy claim separately because those are the claims
 most likely to quietly stop being true):
 
-- Under `on-accept`, no candidate name appears in any member-facing HTML or JSON
-  response before `agreed` — asserted against the rendered body, not the model.
+- **The M-1 assertion.** No candidate *status* appears in any member-facing HTML
+  or JSON response, in any disclosure mode, in any state — asserted by rendering
+  the ask page against a fixture where the same shortlist contains one
+  `declined`, one `permission_sent` and one `no_reply`, and checking the three
+  are indistinguishable in the output. This is the single most important test in
+  the suite and it should be the first one written.
 - A decline is invisible: the member's ask page is byte-identical before and
   after a `declined` transition, apart from timestamps.
+- Under `shortlist`, names appear on the veto screen **only** while the ask is
+  `vetting`, and the same route 404s for that member before and after.
+- The member-visible shortlist is shuffled and carries no affinity score
+  (M-3): two renders of the same fixture differ in order, and no rendered body
+  contains the affinity value.
+- A shortlist below the minimum never reaches a member (M-4): the ask runs
+  `on-accept` and the veto route 404s throughout.
+- `disclosure` is read from the ask row, not the environment: changing
+  `HOMEROOM_INTRO_DISCLOSURE` mid-test does not change what an existing ask
+  renders.
+- No permission can be sent while an ask is `vetting`, and none to a `vetoed`
+  candidate — asserted through the route, not just the model.
 - No plaintext address in any table after a full run.
 - The audit trail distinguishes `steward` from `agent` for the same token.
 
@@ -901,10 +1086,12 @@ the check rejects it and the template version stands.
 | --- | --- | --- |
 | `HOMEROOM_HAPPENSTANCE_KEY` | — | Without it, sourcing is unavailable and the steward page says so. The rest of the engine still works. |
 | `HOMEROOM_INTRO_ENABLED` | `0` | Master switch. Off means the surfaces do not exist. |
-| `HOMEROOM_INTRO_DISCLOSURE` | `on-accept` | `on-accept` · `shortlist` · `none`. See §5. |
+| `HOMEROOM_INTRO_DISCLOSURE` | `shortlist` | `shortlist` · `on-accept` · `none`. Stamped per ask at creation, never read live. See §5. |
+| `HOMEROOM_INTRO_VETO_HOURS` | `48` | How long the member has to exclude people before the steward proceeds. |
+| `HOMEROOM_INTRO_SHORTLIST_MIN` | `3` | Below this, the shortlist is never shown and the ask falls back to `on-accept`. See §5.2, M-4. |
 | `HOMEROOM_INTRO_TOKEN` | — | Bearer token for `/homeroom/api/intros/*`. Unset means the surface 404s. |
 | `HOMEROOM_ANTHROPIC_KEY` | — | Blurb drafting. Without it, template blurbs only. |
-| `HOMEROOM_INTRO_MODEL` | `claude-opus-5` | |
+| `HOMEROOM_INTRO_MODEL` | `claude-opus-5` | Called over raw HTTP; `anthropic-version` is pinned in code, not configurable. |
 | `HOMEROOM_INTRO_MAIL_FROM` | falls back to `HOMEROOM_MAIL_FROM` | Should be its own identity — see P-3. |
 | `HOMEROOM_INTRO_CONNECTOR` | first steward | Whose name is on the messages. |
 | `HOMEROOM_INTRO_WINDOW_DAYS` | `10` | |
@@ -926,6 +1113,8 @@ stuck after a yes. The last one is the alarm.
 ## 17. What this deliberately does not do
 
 - **It does not let members search.** §4 and §5.
+- **It does not tell a member who was asked, or who said no.** Members see a
+  shortlist once, to veto; after that, aggregate state only. §5.2.
 - **It does not send anything without a human click.** §7.3.
 - **It does not chase.** One reminder, then the ask ages out.
 - **It does not track opens or clicks on the permission message.** §10.
@@ -941,38 +1130,78 @@ stuck after a yes. The last one is the alarm.
 
 ---
 
-## 18. Open questions
+## 18. Decisions, and what is still open
 
-These need a decision before Phase 0 ships, and they are decisions for the
-connector, not for the implementation.
+### Decided
 
-- **O-1. Disclosure default.** §5 argues for `on-accept` and admits the cost:
-  members cannot say "not that one, we already spoke." Is the invisible decline
-  worth that friction? Exclusions in the ask form are the mitigation; they are
-  not a full answer.
+**O-1. Disclosure default → `shortlist`.** Members see the steward's shortlist
+once, to veto, before anyone is asked.
+
+The trade taken: a member's own knowledge of who they are already talking to is
+better than a steward's guess, and finding that out *before* a permission goes
+out saves both a credit and a piece of the connector's reputation. The
+exclusions field on the ask form was never going to cover it — a member cannot
+list everyone they have not yet been offered.
+
+What it costs, and what pays for it: the naive form of `shortlist` makes a
+decline legible, which would quietly break gate 3. §5.2 is the answer —
+veto-then-blind, with four mechanisms (selection never disclosed, list withdrawn
+after the window, order carries no signal, no list under three names). M-1 is
+load-bearing: **no member-facing response ever renders a candidate's status.**
+If a later change makes per-candidate state visible to members, this decision
+has been silently reversed and gate 3 is gone.
+
+§5.4 records what none of that fixes: a member who screenshots shortlists across
+several asks can correlate. That is a norm for P-4's written policy, not a
+control.
+
+**O-5. Blurb drafting → raw `fetch`.** One POST to `/v1/messages`, in the shape
+`supabase.js`, `roster.js` and `mail.js` already use.
+
+The deciding fact is not aesthetic. This repository has **no root
+`package.json`, no lockfile, and an empty Netlify build command**; both function
+packages declare `"dependencies": {}`. Taking `@anthropic-ai/sdk` here would be
+the repo's first install step and first supply-chain surface, introduced as a
+side effect of a blurb feature. That is a change worth making deliberately and
+on its own — and if it is ever made, §8.2 says this is the first thing that
+should move onto the SDK, and the seam is one function.
+
+What it costs: typed errors, retries, and a maintained client against an API
+whose surface does move. §8.2 specifies the replacements — status branching, one
+retry on 429/5xx, an `AbortController` timeout, and a pinned
+`anthropic-version` constant with a comment saying what to check when it moves.
+This is the deviation from the usual guidance, taken with the reason written
+down.
+
+### Still open
+
+These are decisions for the connector, not for the implementation. None blocks
+Phase 0.
+
 - **O-2. Who signs the messages** once there is more than one connector. The
   person who knows the target is the right answer and requires their consent to
   have mail sent in their name.
 - **O-3. Should the member ever learn a decline happened**, in aggregate — "two
-  people were asked and it did not work out"? It is more honest and it partly
-  reintroduces the visibility gate 3 exists to remove.
+  people were asked and it did not work out"? Now sharper than when it was
+  written: under `shortlist` the member already knows roughly who *might* have
+  been asked, so an aggregate count is a much bigger hint than it was under
+  `on-accept`. **Current answer, and the one §7.1 specifies: no.** "Asked,
+  waiting" means one target or three, and "still open" is what a member sees
+  when everyone said no. Revisit only with evidence that members find it
+  dishonest rather than merely opaque.
 - **O-4. Mentors already in Homeroom.** A `vetted` mentor with a scheduler has
   already opted in and does not need gate 3 at all; the engine should route
   those straight to the existing booking link. Where exactly is the line — does
   a `network.js` row with `source = 'calendar'` count? (Current answer: no. It
   goes through the full flow, per that file's own rules.)
-- **O-5. The SDK question.** This function has `"dependencies": {}` as a stated
-  architectural position, and `mail.js`, `supabase.js` and `roster.js` all call
-  their services with bare `fetch`. Blurb drafting could follow that pattern, or
-  could take `@anthropic-ai/sdk` — which is the better-supported path, bundles
-  fine under the `esbuild` bundler already configured in `netlify.toml`, and
-  gets typed errors and retries for free. **Recommendation: take the SDK**, and
-  note the deviation in the README rather than hand-rolling a client for an API
-  whose surface changes. The zero-dependency rule earned its place for services
-  with a two-field REST call; this is not that.
 - **O-6. Retention on contacted candidates.** Two years is proposed in §9. It is
   the accountability record and also the largest store of other people's data
   this repository would hold. Shorter is defensible.
+- **O-7. Whether `shortlist` survives contact with real members.** New, and the
+  one to watch. The veto step adds a round trip and up to 48 hours to every ask,
+  and Phase 0 will show whether members actually use it or let the window lapse.
+  A high lapse rate means the friction bought nothing and `on-accept` was right
+  after all — which is cheap to switch back to, because the setting is per ask.
 
 ---
 
