@@ -755,7 +755,9 @@ export function mentorsPage(ctx, { mentors, total, filters, tags, basePath, page
     <div>
       <h1>Mentors</h1>
       <p class="lede">${total} in the network, ${vettedCount} vetted and taking bookings. Filter by
-        what you are actually stuck on, then book directly on their calendar.</p>
+        what you are actually stuck on, then book directly on their calendar. Anyone marked
+        <em>from the network</em> is a real contact who has not confirmed bookings yet — ask a
+        steward for an intro.</p>
     </div>
     <a class="btn ghost" href="/homeroom/hours/new">Offer office hours</a>
   </div>
@@ -780,7 +782,8 @@ export function mentorsPage(ctx, { mentors, total, filters, tags, basePath, page
     <a class="cardlink" href="/homeroom/mentor/${m.slug}">
       ${avatar(m.name, { size: 42 })}
       <div class="grow">
-        <div class="name">${m.name} ${m.vetted ? pill('vetted', 'ok') : ''}</div>
+        <div class="name">${m.name} ${m.vetted ? pill('vetted', 'ok')
+          : (m.source === 'calendar' ? pill('from the network') : '')}</div>
         <div class="headline">${m.role}${m.org ? html` · ${m.org}` : ''}</div>
         <div class="meta mono">${labelFor(MENTOR_TRACKS, m.track, m.track)}
           ${m.location ? html`<span class="sep">/</span> ${m.location}` : ''}
@@ -797,7 +800,8 @@ export function mentorPage(ctx, { mentor, slots, member }) {
   return html`<div class="profilehead">
     ${avatar(mentor.name, { size: 72 })}
     <div class="grow">
-      <h1>${mentor.name} ${mentor.vetted ? pill('vetted', 'ok') : pill('not yet vetted')}</h1>
+      <h1>${mentor.name} ${mentor.vetted ? pill('vetted', 'ok')
+        : (mentor.source === 'calendar' ? pill('from the network') : pill('not yet vetted'))}</h1>
       <p class="headline">${mentor.role}${mentor.org ? html` · ${mentor.org}` : ''}</p>
       <div class="mono dim">${labelFor(MENTOR_TRACKS, mentor.track, mentor.track)}
         ${mentor.location ? html` <span class="sep">/</span> ${mentor.location}` : ''}
@@ -811,6 +815,12 @@ export function mentorPage(ctx, { mentor, slots, member }) {
 
   <div class="cols">
     <div class="main">
+      ${mentor.source === 'calendar' && !mentor.vetted
+        ? html`<div class="notice">Added from the Haus network. They have <b>not</b> confirmed they
+            take bookings, and there is no scheduling link on file — ask a steward for an intro
+            rather than reaching out cold.</div>`
+        : ''}
+
       ${section('Book time', html`
         ${mentor.scheduler
           ? html`<p>Pick a time straight on their calendar.</p>

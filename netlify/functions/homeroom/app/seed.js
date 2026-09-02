@@ -17,6 +17,7 @@ import { PERKS } from './data/perks.js';
 import { FUNDERS as CAPITAL_MAP } from './data/funders.js';
 import { ATLAS_LABS } from './data/atlas.js';
 import { MENTORS as MENTOR_ROSTER } from './data/mentors.js';
+import { NETWORK_MENTORS } from './data/network.js';
 import { TRACKS, LIBRARY_MODULES } from './data/curriculum.js';
 
 const HOUR = 3600;
@@ -717,8 +718,13 @@ function seedHomeroom({ reset = false } = {}) {
     });
   }
 
-  /* ---- mentors ---- */
+  /* ---- mentors ----
+     The sample roster first, then the real people from the network on top of
+     it. Real rows carry source 'calendar' and are never marked vetted — see
+     data/network.js for why — so `npm run mentors:import -- --replace-seed`
+     drops the sample rows and leaves these standing. */
   for (const mentor of MENTOR_ROSTER) bf.upsertMentor(mentor);
+  for (const mentor of NETWORK_MENTORS) bf.upsertMentor(mentor);
   // A handful of the vetted ones publish Homeroom slots as well as their own
   // scheduler, so the booking flow has something to book.
   const vetted = instance

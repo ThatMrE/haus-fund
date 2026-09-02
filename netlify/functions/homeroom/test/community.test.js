@@ -26,6 +26,7 @@ import { PERKS, PERK_CATEGORIES } from '../app/data/perks.js';
 import { FUNDERS as CAPITAL_MAP } from '../app/data/funders.js';
 import { ATLAS_LABS } from '../app/data/atlas.js';
 import { MENTORS } from '../app/data/mentors.js';
+import { NETWORK_MENTORS } from '../app/data/network.js';
 import { seedHomeroom } from '../app/seed.js';
 
 getDb();
@@ -411,6 +412,35 @@ test('the mentor roster is searchable and puts vetted mentors first', async () =
   const tagged = await (await call('/homeroom/api/mentors?tag=patents')).json();
   assert.ok(tagged.total > 0, 'expertise tags should be searchable');
   assert.ok(tagged.mentors.every((m) => m.tags.includes('patents')));
+});
+
+test('real people from the network are never presented as bookable', async () => {
+  // The claim most likely to quietly stop being true: these are real people who
+  // appeared in a calendar, not people who agreed to take bookings from members.
+  assert.ok(NETWORK_MENTORS.length, 'the network roster should not be empty');
+  for (const mentor of NETWORK_MENTORS) {
+    assert.equal(mentor.vetted, false, `${mentor.name}: a calendar row is never vetted`);
+    assert.equal(mentor.scheduler, '', `${mentor.name}: no invented scheduling link`);
+    assert.equal(mentor.source, 'calendar');
+    // Contact details live in the calendar, not in the repository.
+    const blob = JSON.stringify(mentor);
+    assert.doesNotMatch(blob, /@[a-z0-9-]+\.[a-z]{2,}/i, `${mentor.name}: no email addresses`);
+    assert.doesNotMatch(blob, /\+?\d[\d\s().-]{8,}/, `${mentor.name}: no phone numbers`);
+  }
+
+  const { call } = await member('networkreader');
+  const stored = hr.getMentor(NETWORK_MENTORS[0].name.toLowerCase().replace(/[^a-z0-9]+/g, '-'));
+  assert.ok(stored, 'the network roster should be seeded');
+  assert.equal(stored.vetted, 0);
+
+  const page = await (await call(`/homeroom/mentor/${stored.slug}`)).text();
+  assert.match(page, /not<\/b> confirmed they/, 'the page says plainly that they have not opted in');
+  assert.doesNotMatch(page, /booking page/, 'and offers no booking button');
+
+  // Vetted mentors still sort above them.
+  const api = await (await call('/homeroom/api/mentors?limit=200')).json();
+  const index = api.mentors.findIndex((m) => m.slug === stored.slug);
+  assert.ok(index > 0, 'an unvetted network row sorts below the vetted roster');
 });
 
 test('a mentor page offers a way to book, whether or not they publish a link', async () => {

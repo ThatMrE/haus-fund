@@ -206,7 +206,8 @@ and "done" means the artefact exists, with a link to it.
 | `funders.js` | The capital map: grants, accelerators, pre-seed, seed, studios, fellowships, angels, prizes | Real, publicly listed programmes. Deliberately carries **no** seeded ratings — a fabricated review of a real organisation is the one thing a review site cannot survive. |
 | `atlas.js` | Community, DIYbio and open-science labs worldwide | Real labs, sourced from HTGAA nodes, DIYbio.org, DIYbiosphere and member submissions; `source` and `status` are per row. |
 | `curriculum.js` | The six tracks, their modules and the S26 sequence | Straight from the Fall 2026 program design document. |
-| `mentors.js` | The mentor roster | **Fictional**, like the rest of the sample network. Publishing a hundred real names with booking links nobody agreed to would send founders to book time with people who never opted in. |
+| `mentors.js` | The sample mentor roster | **Fictional**, like the rest of the sample network. Publishing a hundred real names with booking links nobody agreed to would send founders to book time with people who never opted in. |
+| `network.js` | Real people from the Haus network | Real, from the calendar. Never `vetted`, never given a scheduling link, and no contact details — appearing in a calendar is evidence someone was met, not that they agreed to take bookings. The profile page says so in as many words. |
 
 Replace the mentor roster with the real one before launch:
 
@@ -219,6 +220,11 @@ Rows match on a slug of the name, so re-running updates in place.
 `--replace-seed` drops the sample rows, and only after a clean import — a failed
 fetch must not leave an empty directory. Set `HOMEROOM_SEED=off` at the same
 time, or a cold container puts them back.
+
+`--replace-seed` deletes only `source = 'seed'`, so the real rows from
+`network.js` (`source = 'calendar'`) survive it. To promote one of them to
+bookable, set `vetted` and a `scheduler` — which should happen only after the
+person has actually said yes.
 
 ## Ranking
 
