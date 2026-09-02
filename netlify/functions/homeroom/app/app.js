@@ -20,6 +20,8 @@ import * as views from './views/pages.js';
 import { parseCookies, nowSeconds } from './util.js';
 import { sendResetEmail, showsResetLink } from './mail.js';
 import { homeroomRoute, homeroomNotFound, render } from './routes.js';
+import * as access from './access.js';
+import * as roster from './roster.js';
 
 /**
  * Whether to mark the session cookie Secure.
@@ -71,7 +73,18 @@ export async function handle(req, res) {
     if (authHandler) return await authHandler(ctx);
 
     if (pathname === '/homeroom/health') {
-      return sendJson(res, { ok: true, ...hr.networkStats(), now: nowSeconds() });
+      // Reports the integrations too, so "is publishing wired up" is one curl
+      // rather than a deploy and a guess.
+      const { health: supabaseHealth } = await import('./supabase.js');
+      const { configured: lumaConfigured, calendarUrl } = await import('./luma.js');
+      return sendJson(res, {
+        ok: true,
+        ...hr.networkStats(),
+        supabase: await supabaseHealth(),
+        roster: { ...(await roster.health()), ...hr.rosterCounts() },
+        luma: { configured: lumaConfigured(), calendar: calendarUrl() },
+        now: nowSeconds(),
+      });
     }
 
     const handler = homeroomRoute(req.method, pathname);
@@ -149,12 +162,32 @@ const AUTH_ROUTES = {
       return auth(ctx, views.loginPage(ctx, { values: { email }, next, error: 'That account is suspended.' }),
         { title: 'Sign in', status: 403 });
     }
+
+    // Re-check against the roster, so someone whose place was rescinded stops
+    // having a key. Stewards are exempt: an Airtable edit should never be able
+    // to lock out the people who administer the room.
+    if (!account.is_admin && roster.accessMode() === 'roster') {
+      const stale = account.roster_checked_at < nowSeconds() - roster.verdictTtl();
+      if (stale) {
+        const assessment = await access.assess(account.email);
+        if (!access.loginAllowed(assessment)) {
+          destroySession(ctx.token);
+          return auth(ctx, views.accessRevokedPage(), { title: 'Access ended', status: 403 });
+        }
+        hr.setUserRoster(account.id, `${assessment.verdict}:${assessment.reason}`.slice(0, 120));
+      }
+    }
+
     finishLogin(ctx, account.id, next);
   },
 
   'GET /homeroom/signup': (ctx) => {
     if (ctx.user) return seeOther(ctx, '/homeroom');
-    auth(ctx, views.signupPage(ctx, {}), { title: 'Create an account' });
+    const mode = roster.accessMode();
+    if (mode === 'closed') {
+      return auth(ctx, views.signupClosedPage(), { title: 'Accounts are closed', status: 403 });
+    }
+    auth(ctx, views.signupPage(ctx, { mode }), { title: 'Create an account' });
   },
 
   'POST /homeroom/signup': async (ctx) => {
@@ -181,6 +214,27 @@ const AUTH_ROUTES = {
       return fail('That handle or email cannot be used. Try signing in instead.');
     }
 
+    // ---- the roster gate ----
+    // Everything above this line is form validation. This is the part that
+    // decides whether the room stays closed.
+    const assessment = await access.assess(values.email);
+
+    if (assessment.verdict === 'closed') {
+      return auth(ctx, views.signupClosedPage(), { title: 'Accounts are closed', status: 403 });
+    }
+    if (assessment.verdict === 'error') {
+      // Fails closed, but says so honestly: this is our problem, not theirs.
+      return auth(ctx, views.rosterUnavailablePage(ctx, { values }),
+        { title: 'Try again shortly', status: 503 });
+    }
+    if (!access.signupAllowed(assessment)) {
+      // One page for denied and for under-review, and the same page whether or
+      // not the address was found: a precise message here turns signup into a
+      // way to test whether any given person is a resident.
+      return auth(ctx, views.notOnRosterPage(ctx, { email: values.email }),
+        { title: 'Residents only', status: 403 });
+    }
+
     // The first person through the door is the first steward; somebody has to be.
     const first = hr.userCount() === 0;
     hr.createUser({
@@ -189,6 +243,8 @@ const AUTH_ROUTES = {
       passwordHash: hashPassword(fields.password),
       isAdmin: first,
     });
+    access.bindAccount({ email: values.email, userId: values.handle, assessment });
+    access.seedProfile(values.handle, assessment.person);
     finishLogin(ctx, values.handle, '/homeroom/settings?welcome=1');
   },
 

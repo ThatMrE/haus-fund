@@ -11,9 +11,14 @@ import { sendHtml, sendJson, readBody, rateLimit } from './http.js';
 import { checkCsrf } from './auth.js';
 import { clampInt, nowSeconds, normalizeUrl } from './util.js';
 import * as bf from './models.js';
+import * as supabase from './supabase.js';
+import * as roster from './roster.js';
+import * as access from './access.js';
+import * as luma from './luma.js';
 import { homeroomLayout } from './views/layout.js';
 import * as views from './views/pages.js';
 import { parseWhen, toLocalInput } from './views/components.js';
+import { S26_SEQUENCE } from './data/curriculum.js';
 
 const PER_PAGE = bf.PAGE_SIZE;
 
@@ -22,6 +27,11 @@ const LIMITS = {
   comment: { limit: 40, windowMs: 10 * 60_000 },
   message: { limit: 60, windowMs: 10 * 60_000 },
   create: { limit: 20, windowMs: 60 * 60_000 },
+  // Chat is meant to be fast, so this is deliberately loose — it exists to stop
+  // a script, not to make anyone think before typing.
+  chat: { limit: 120, windowMs: 5 * 60_000 },
+  // Publishing reaches the public feed. Five an hour is more than anyone needs.
+  publish: { limit: 5, windowMs: 60 * 60_000 },
 };
 
 /* ------------------------------------------------------------- plumbing */
@@ -29,6 +39,7 @@ const LIMITS = {
 export function render(ctx, content, { title, description, status = 200, flash, error, subnav } = {}) {
   ctx.badges = ctx.user
     ? {
+        chat: bf.unreadChatCount(ctx.user.id),
         messages: bf.unreadMessageCount(ctx.user.id),
         notifications: bf.unreadNotificationCount(ctx.user.id) + bf.pendingIntroCount(ctx.user.id),
       }
@@ -287,7 +298,7 @@ function peopleHandler(ctx) {
       cohortList: bf.cohorts(),
       basePath: `/homeroom/people${qs ? `?${qs}` : ''}`,
     }),
-    { title: 'People' },
+    { title: 'Directory', subnav: views.subnav(views.YEARBOOK_TABS, 'directory') },
   );
 }
 
@@ -441,25 +452,32 @@ async function labUpdatePost(ctx, { slug }) {
 
 /* ----------------------------------------------------------------- deals */
 
-function dealsHandler(ctx) {
+function perksHandler(ctx) {
   const category = ctx.query.get('category') || '';
   const q = ctx.query.get('q') || '';
-  const { deals, total } = bf.listDeals({ category, q });
+  const { deals, total } = bf.listDeals({ category, q, limit: 300 });
   const claimed = new Set(bf.myClaims(ctx.user.id).map((d) => d.id));
-  render(ctx, views.dealsPage(ctx, { deals, total, category, q, claimed }), { title: 'Deals' });
+  // Category counts come from the unfiltered set, so the filter bar does not
+  // collapse to one option as soon as you use it.
+  const counts = {};
+  for (const perk of bf.listDeals({ limit: 500 }).deals) {
+    counts[perk.category] = (counts[perk.category] || 0) + 1;
+  }
+  render(ctx, views.perksPage(ctx, { perks: deals, total, category, q, claimed, counts }),
+    { title: 'Perks' });
 }
 
-function dealHandler(ctx, { slug }) {
-  const deal = bf.getDeal(slug);
-  if (!deal) return notFound(ctx);
+function perkHandler(ctx, { slug }) {
+  const perk = bf.getDeal(slug);
+  if (!perk) return notFound(ctx);
   render(
     ctx,
-    views.dealPage(ctx, {
-      deal,
-      claimed: bf.hasClaimed(deal.id, ctx.user.id),
-      claimCount: bf.dealClaimCount(deal.id),
+    views.perkPage(ctx, {
+      perk,
+      claimed: bf.hasClaimed(perk.id, ctx.user.id),
+      claimCount: bf.dealClaimCount(perk.id),
     }),
-    { title: `${deal.vendor} — deal` },
+    { title: `${perk.vendor} — perk` },
   );
 }
 
@@ -509,11 +527,16 @@ function fundersHandler(ctx) {
 function funderHandler(ctx, { slug }) {
   const funder = bf.getFunder(slug);
   if (!funder) return notFound(ctx);
+  const reviews = bf.funderReviews(funder.id, { sort: ctx.query.get('sort') === 'recent' ? 'recent' : 'helpful' });
+  const ids = reviews.map((r) => r.id);
   render(
     ctx,
     views.funderPage(ctx, {
       funder,
-      reviews: bf.funderReviews(funder.id),
+      reviews,
+      comments: bf.reviewComments(ids),
+      myHelpful: bf.helpfulIds(ctx.user.id, ids),
+      tags: bf.funderTagCloud(funder.id),
       myReview: bf.myReview(funder.id, ctx.user.id),
       entry: bf.pipelineEntry(ctx.user.id, funder.id),
       orgs: bf.userOrgs(ctx.user.id),
@@ -592,7 +615,7 @@ function hoursHandler(ctx) {
       mine: bf.myBookings(ctx.user.id),
       hosting: slots.filter((s) => s.host_id === ctx.user.id),
     }),
-    { title: 'Office hours' },
+    { title: 'Office hours', subnav: views.subnav(views.MENTOR_TABS, 'hours') },
   );
 }
 
@@ -725,7 +748,7 @@ function eventsHandler(ctx) {
       past: bf.listEvents({ upcoming: false, kind, limit: 6 }),
       kind,
     }),
-    { title: 'Events' },
+    { title: 'Events', subnav: views.subnav(views.EVENT_TABS, 'list') },
   );
 }
 
@@ -773,9 +796,22 @@ async function eventCreate(ctx) {
 /* --------------------------------------------------------------- library */
 
 function libraryHandler(ctx) {
-  const kind = ctx.query.get('kind') || '';
-  const q = ctx.query.get('q') || '';
-  render(ctx, views.libraryPage(ctx, { entries: bf.listLibrary({ kind, q }).entries, kind, q }), { title: 'Library' });
+  const filters = { q: ctx.query.get('q') || '', track: ctx.query.get('track') || '' };
+  const { modules } = filters.q || filters.track
+    ? bf.listModules({ ...filters, userId: ctx.user.id })
+    : { modules: [] };
+  render(
+    ctx,
+    views.libraryPage(ctx, {
+      tracks: bf.tracks(),
+      progress: bf.progressSummary(ctx.user.id),
+      modules,
+      filters,
+      entries: bf.listLibrary({ limit: 12 }).entries,
+      sequence: S26_SEQUENCE,
+    }),
+    { title: 'Library' },
+  );
 }
 
 function libraryEntryHandler(ctx, { slug }) {
@@ -1008,6 +1044,495 @@ async function apiVote(ctx) {
 
 /* ---------------------------------------------------------- route table */
 
+/* ---------------------------------------------------------------- chat */
+
+/**
+ * A channel, or the channel list with nothing selected.
+ *
+ * Marking read happens after the render decision, not before, so the unread
+ * count you see in the sidebar is the one that was true when you arrived.
+ */
+function chatHandler(ctx, params = {}) {
+  const channels = bf.channelsFor(ctx.user.id);
+  const slug = params.slug || channels[0]?.slug;
+  const channel = slug ? bf.getChannel(slug) : null;
+  if (params.slug && !channel) return notFound(ctx);
+  if (!channel) {
+    return render(ctx, views.chatPage(ctx, { channels, channel: null, messages: [], reactions: {}, atTop: true }),
+      { title: 'Chat' });
+  }
+
+  const before = clampInt(ctx.query.get('before'), 0, Number.MAX_SAFE_INTEGER, 0);
+  const messages = bf.chatMessages(channel.id, { before });
+  const oldest = bf.chatMessages(channel.id, { limit: 1, before: 0 });
+  const current = channels.find((c) => c.id === channel.id);
+
+  render(
+    ctx,
+    views.chatPage(ctx, {
+      channels,
+      channel: { ...channel, muted: current?.muted },
+      messages,
+      reactions: bf.reactionsFor(messages.map((m) => m.id)),
+      atTop: !messages.length || messages[0].id <= (oldest[0]?.id ?? 0),
+    }),
+    { title: `#${channel.name}` },
+  );
+
+  if (!before) bf.markChannelRead(channel.id, ctx.user.id);
+}
+
+async function chatSubmit(ctx, { slug }) {
+  const { fields } = await readBody(ctx.req);
+  if (!csrfOk(ctx, fields)) return;
+  const channel = bf.getChannel(slug);
+  if (!channel) return notFound(ctx);
+  if (limited(ctx, 'chat', LIMITS.chat)) return;
+  const result = bf.postChat({
+    channelId: channel.id,
+    authorId: ctx.user.id,
+    body: trimmed(fields.body, 4000),
+  });
+  if (!result.ok) return oops(ctx, result.error);
+  seeOther(ctx, `/homeroom/chat/${channel.slug}#m${result.id}`);
+}
+
+/**
+ * The poll endpoint.
+ *
+ * Returns only messages newer than `since`, which is almost always none — so
+ * the common case is a tiny JSON body and no database work beyond one indexed
+ * range scan. That is what makes a five-second poll acceptable in a function.
+ */
+function chatPoll(ctx, { slug }) {
+  const channel = bf.getChannel(slug);
+  if (!channel) return sendJson(ctx.res, { ok: false, error: 'no such channel' }, { status: 404 });
+  const since = clampInt(ctx.query.get('since'), 0, Number.MAX_SAFE_INTEGER, 0);
+  const messages = bf.chatMessages(channel.id, { after: since });
+  if (messages.length) bf.markChannelRead(channel.id, ctx.user.id, messages[messages.length - 1].id);
+  sendJson(ctx.res, {
+    ok: true,
+    channel: channel.slug,
+    last: messages.length ? messages[messages.length - 1].id : since,
+    messages: messages.map((m) => ({
+      id: m.id,
+      author: m.author_id,
+      body: m.body,
+      created_at: m.created_at,
+      mine: m.author_id === ctx.user.id,
+    })),
+    unread: bf.unreadChatCount(ctx.user.id),
+  });
+}
+
+async function channelCreate(ctx) {
+  const { fields } = await readBody(ctx.req);
+  if (!csrfOk(ctx, fields)) return;
+  if (limited(ctx, 'create', LIMITS.create)) return;
+  const name = trimmed(fields.name, 60);
+  if (!name) {
+    return render(ctx, views.channelFormPage(ctx, { error: 'A channel needs a name.', values: fields }),
+      { title: 'New channel', status: 400 });
+  }
+  const id = bf.createChannel({
+    slug: bf.slugify(name, 'channel'),
+    name,
+    topic: trimmed(fields.topic, 200),
+    kind: ['open', 'cohort', 'house', 'project'].includes(fields.kind) ? fields.kind : 'open',
+    createdBy: ctx.user.id,
+  });
+  const channel = bf.getChannel(id) || bf.getChannel(bf.slugify(name, 'channel'));
+  seeOther(ctx, `/homeroom/chat/${channel?.slug || ''}`);
+}
+
+/* ------------------------------------------------------------ yearbook */
+
+function yearbookHandler(ctx) {
+  const page = pageParam(ctx);
+  const filters = {
+    q: ctx.query.get('q') || '',
+    cohort: ctx.query.get('cohort') || '',
+    house: ctx.query.get('house') || '',
+    tag: ctx.query.get('tag') || '',
+  };
+  const { members, total } = bf.yearbookWall({ ...filters, limit: 60, offset: (page - 1) * 60 });
+  const qs = new URLSearchParams(Object.entries(filters).filter(([, v]) => v)).toString();
+  render(
+    ctx,
+    views.yearbookPage(ctx, {
+      members, total, page, filters,
+      cohorts: bf.wallCohorts(),
+      houseList: bf.houses(),
+      mine: bf.getYearbook(ctx.user.id),
+      basePath: `/homeroom/yearbook${qs ? `?${qs}` : ''}`,
+    }),
+    { title: 'Yearbook', subnav: views.subnav(views.YEARBOOK_TABS, 'wall') },
+  );
+}
+
+function yearbookEntryHandler(ctx, { handle }) {
+  const member = bf.getMember(handle);
+  if (!member) return notFound(ctx);
+  const signs = bf.signatures(member.user_id);
+  render(
+    ctx,
+    views.yearbookEntryPage(ctx, {
+      member,
+      entry: bf.getYearbook(member.user_id),
+      signs,
+      mySign: signs.find((s) => s.author_id === ctx.user.id) || null,
+      canSign: member.user_id !== ctx.user.id,
+    }),
+    { title: member.name || member.user_id },
+  );
+}
+
+async function yearbookSubmit(ctx) {
+  const { fields } = await readBody(ctx.req);
+  if (!csrfOk(ctx, fields)) return;
+  bf.upsertYearbook(ctx.user.id, {
+    cohort: trimmed(fields.cohort, 20),
+    house: trimmed(fields.house, 40),
+    venture: trimmed(fields.venture, 80),
+    one_liner: trimmed(fields.one_liner, 160),
+    quote: trimmed(fields.quote, 300),
+    building: trimmed(fields.building, 4000),
+    before_haus: trimmed(fields.before_haus, 2000),
+    photo_url: normalizeUrl(fields.photo_url) || '',
+    site_url: normalizeUrl(fields.site_url) || '',
+  });
+  // Keep the profile's cohort in step, so the directory and the wall agree.
+  if (trimmed(fields.cohort, 20)) bf.updateMember(ctx.user.id, { cohort: trimmed(fields.cohort, 20) });
+  seeOther(ctx, `/homeroom/yearbook/${encodeURIComponent(ctx.user.id)}`);
+}
+
+/* --------------------------------------------------------------- atlas */
+
+function atlasHandler(ctx) {
+  const page = pageParam(ctx);
+  const filters = {
+    q: ctx.query.get('q') || '',
+    region: ctx.query.get('region') || '',
+    country: ctx.query.get('country') || '',
+    status: ctx.query.get('status') || '',
+    kind: ctx.query.get('kind') || '',
+    capability: ctx.query.get('capability') || '',
+  };
+  const { labs, total } = bf.searchLabs({ ...filters, limit: 60, offset: (page - 1) * 60 });
+  const qs = new URLSearchParams(Object.entries(filters).filter(([, v]) => v)).toString();
+  render(
+    ctx,
+    views.atlasPage(ctx, {
+      labs, total, filters, page,
+      facets: bf.atlasFacets(),
+      basePath: `/homeroom/labs${qs ? `?${qs}` : ''}`,
+    }),
+    { title: 'Biolab Atlas', subnav: views.subnav(views.LAB_TABS, 'atlas') },
+  );
+}
+
+function atlasLabHandler(ctx, { slug }) {
+  const lab = bf.getLab(slug);
+  if (!lab) return notFound(ctx);
+  render(ctx, views.atlasLabPage(ctx, { lab, reports: bf.labReports(lab.id) }), { title: lab.name });
+}
+
+async function atlasLabCreate(ctx) {
+  const { fields } = await readBody(ctx.req);
+  if (!csrfOk(ctx, fields)) return;
+  if (limited(ctx, 'create', LIMITS.create)) return;
+  const name = trimmed(fields.name, 120);
+  if (!name) {
+    return render(ctx, views.labFormAtlasPage(ctx, { error: 'A lab needs a name.', values: fields }),
+      { title: 'Add a lab', status: 400 });
+  }
+  const id = bf.upsertLab({
+    name,
+    city: trimmed(fields.city, 80),
+    country: trimmed(fields.country, 80),
+    region: trimmed(fields.region, 40),
+    kind: trimmed(fields.kind, 20) || 'community',
+    status: ['active', 'limited', 'dormant', 'unknown'].includes(fields.status) ? fields.status : 'unknown',
+    bsl: trimmed(fields.bsl, 20),
+    website: normalizeUrl(fields.website),
+    capabilities: trimmed(fields.capabilities, 300),
+    note: trimmed(fields.note, 2000),
+    source: `member: ${ctx.user.id}`,
+  });
+  const lab = bf.getLab(id);
+  seeOther(ctx, `/homeroom/labs/at/${lab.slug}`);
+}
+
+/* ------------------------------------------------------------- mentors */
+
+function mentorsHandler(ctx) {
+  const page = pageParam(ctx);
+  const filters = {
+    q: ctx.query.get('q') || '',
+    track: ctx.query.get('track') || '',
+    tag: ctx.query.get('tag') || '',
+    format: ctx.query.get('format') || '',
+    vetted: ctx.query.get('vetted') === '1',
+  };
+  const { mentors, total } = bf.searchMentors({ ...filters, limit: 60, offset: (page - 1) * 60 });
+  const qs = new URLSearchParams(
+    Object.entries(filters).filter(([, v]) => v).map(([k, v]) => [k, v === true ? '1' : v]),
+  ).toString();
+  render(
+    ctx,
+    views.mentorsPage(ctx, {
+      mentors, total, filters, page,
+      tags: bf.mentorTagCloud(40),
+      vettedCount: bf.searchMentors({ vetted: true, limit: 1 }).total,
+      basePath: `/homeroom/mentors${qs ? `?${qs}` : ''}`,
+    }),
+    { title: 'Mentors', subnav: views.subnav(views.MENTOR_TABS, 'mentors') },
+  );
+}
+
+function mentorHandler(ctx, { slug }) {
+  const mentor = bf.getMentor(slug);
+  if (!mentor) return notFound(ctx);
+  render(
+    ctx,
+    views.mentorPage(ctx, {
+      mentor,
+      slots: bf.mentorSlots(mentor.id),
+      member: mentor.user_id ? bf.getMember(mentor.user_id) : null,
+    }),
+    { title: mentor.name },
+  );
+}
+
+/* ------------------------------------------------------------ calendar */
+
+function calendarHandler(ctx) {
+  const now = new Date();
+  const year = clampInt(ctx.query.get('y'), 2000, 2100, now.getUTCFullYear());
+  const month = clampInt(ctx.query.get('m'), 0, 11, now.getUTCMonth());
+  const start = Math.floor(Date.UTC(year, month, 1) / 1000);
+  const end = Math.floor(Date.UTC(year, month + 1, 1) / 1000);
+  const sync = bf.lastSync('luma');
+  render(
+    ctx,
+    views.calendarPage(ctx, {
+      year, month,
+      events: bf.eventsBetween(start, end),
+      kind: ctx.query.get('kind') || '',
+      luma: {
+        configured: luma.configured(),
+        calendarUrl: luma.calendarUrl(),
+        count: sync?.n || 0,
+        at: sync?.at || 0,
+      },
+    }),
+    { title: 'Calendar', subnav: views.subnav(views.EVENT_TABS, 'calendar'), wide: true },
+  );
+}
+
+/**
+ * An iCalendar feed of everything upcoming.
+ *
+ * Members-only like every other surface, so it works in a signed-in browser and
+ * in any calendar client that can carry the session cookie. Even then it
+ * publishes only title, time and place — never the description or the attendee
+ * list, because a calendar file gets forwarded far more casually than a page.
+ */
+function icsHandler(ctx) {
+  const events = bf.listEvents({ upcoming: true, limit: 200 });
+  const stamp = (seconds) => new Date(seconds * 1000).toISOString().replace(/[-:]|\.\d{3}/g, '');
+  const escape = (text) => String(text || '').replace(/([,;\\])/g, '\\$1').replace(/\n/g, '\\n');
+  const lines = [
+    'BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Haus//Homeroom//EN',
+    'CALSCALE:GREGORIAN', 'X-WR-CALNAME:Haus Homeroom',
+  ];
+  for (const event of events) {
+    if (event.canceled) continue;
+    lines.push(
+      'BEGIN:VEVENT',
+      `UID:homeroom-${event.id}@haus.fund`,
+      `DTSTAMP:${stamp(event.created_at)}`,
+      `DTSTART:${stamp(event.starts_at)}`,
+      `DTEND:${stamp(event.starts_at + event.minutes * 60)}`,
+      `SUMMARY:${escape(event.title)}`,
+      `LOCATION:${escape(event.place)}`,
+      'END:VEVENT',
+    );
+  }
+  lines.push('END:VCALENDAR');
+  ctx.res.writeHead(200, {
+    'content-type': 'text/calendar; charset=utf-8',
+    'cache-control': 'no-store, private',
+  });
+  ctx.res.end(lines.join('\r\n'));
+}
+
+async function lumaSyncHandler(ctx) {
+  const { fields } = await readBody(ctx.req);
+  if (!csrfOk(ctx, fields)) return;
+  if (!ctx.user.is_admin) return oops(ctx, 'Stewards only.', 403);
+  const result = await luma.sync({ hostId: ctx.user.id });
+  const message = result.ok
+    ? `Luma sync: ${result.created} added, ${result.updated} updated.`
+    : `Luma sync failed: ${result.error}`;
+  seeOther(ctx, `/homeroom/events?flash=${encodeURIComponent(message)}`);
+}
+
+/* -------------------------------------------------------------- library */
+
+function trackHandler(ctx, { slug }) {
+  const track = bf.getTrack(slug);
+  if (!track) return notFound(ctx);
+  const { modules } = bf.listModules({ track: slug, userId: ctx.user.id });
+  const stat = bf.progressSummary(ctx.user.id).byTrack.find((row) => row.track === slug)
+    || { total: modules.length, done: 0 };
+  render(ctx, views.trackPage(ctx, { track, modules, stat }), { title: track.title });
+}
+
+function moduleHandler(ctx, { slug }) {
+  const module = bf.getModule(slug);
+  if (!module) return notFound(ctx);
+  const track = bf.getTrack(module.track);
+  const { modules } = bf.listModules({ track: module.track, userId: ctx.user.id });
+  bf.bumpModuleReads(module.id);
+  render(
+    ctx,
+    views.modulePage(ctx, {
+      module, track,
+      progress: bf.getProgress(ctx.user.id, module.id),
+      neighbours: modules,
+    }),
+    { title: module.title },
+  );
+}
+
+async function progressSubmit(ctx, { slug }) {
+  const { fields } = await readBody(ctx.req);
+  if (!csrfOk(ctx, fields)) return;
+  const module = bf.getModule(slug);
+  if (!module) return notFound(ctx);
+  const state = ['started', 'done', 'none'].includes(fields.state) ? fields.state : 'started';
+  bf.setProgress({
+    userId: ctx.user.id,
+    moduleId: module.id,
+    state,
+    note: trimmed(fields.note, 4000),
+    link: normalizeUrl(fields.link) || '',
+  });
+  seeOther(ctx, `/homeroom/library/module/${module.slug}`);
+}
+
+/* ------------------------------------------------------- the front door */
+
+function stewardsOnly(ctx) {
+  if (ctx.user.is_admin) return true;
+  oops(ctx, 'Stewards only.', 403);
+  return false;
+}
+
+async function accessAdminHandler(ctx, lookup = null) {
+  if (!stewardsOnly(ctx)) return;
+  render(
+    ctx,
+    views.accessAdminPage(ctx, {
+      counts: bf.rosterCounts(),
+      mode: roster.accessMode(),
+      // Actually probe it. A steward opening this page is usually here because
+      // somebody cannot get in, and "is the door wired up" is the first thing
+      // they need — a banner that assumes it is fine would be worse than none.
+      health: await roster.health(),
+      pending: bf.pendingRoster(),
+      recent: bf.recentRoster({ limit: 40 }),
+      lookup,
+    }),
+    { title: 'Front door' },
+  );
+}
+
+/**
+ * Live lookup for a steward chasing "why can't they sign in".
+ *
+ * Deliberately does NOT write to the cache: a steward checking somebody should
+ * not change what happens the next time that person tries the door, or the
+ * queue above would quietly empty itself as it was read.
+ */
+async function accessLookupHandler(ctx) {
+  const { fields } = await readBody(ctx.req);
+  if (!csrfOk(ctx, fields)) return;
+  if (!stewardsOnly(ctx)) return;
+  const email = trimmed(fields.email, 200);
+  const result = await roster.lookup(email);
+  await accessAdminHandler(ctx, result.ok
+    ? { email, verdict: result.verdict, reason: result.reason, person: result.person }
+    : { email, verdict: 'error', reason: 'roster-unreachable', error: result.error });
+}
+
+/* -------------------------------------------------------------- publish */
+
+async function publishHandler(ctx) {
+  render(
+    ctx,
+    views.publishPage(ctx, {
+      submissions: bf.newsSubmissions(ctx.user.id),
+      supabase: await supabase.health(),
+    }),
+    { title: 'Publish to news' },
+  );
+}
+
+/**
+ * Send a member's post to the public feed.
+ *
+ * The local receipt is written first and updated with the outcome, so a
+ * Supabase failure leaves a row the member can see and a steward can retry —
+ * rather than an error page and no record that they ever tried.
+ */
+async function publishSubmit(ctx) {
+  const { fields } = await readBody(ctx.req);
+  if (!csrfOk(ctx, fields)) return;
+  if (limited(ctx, 'publish', LIMITS.publish)) return;
+
+  const values = {
+    title: trimmed(fields.title, 300),
+    url: normalizeUrl(fields.url) || '',
+    body: trimmed(fields.body, 20_000),
+    topic: trimmed(fields.topic, 40) || 'general',
+  };
+  const fail = (message) => render(
+    ctx,
+    views.publishPage(ctx, {
+      submissions: bf.newsSubmissions(ctx.user.id), supabase: { configured: supabase.configured(), reachable: true },
+      error: message, values,
+    }),
+    { title: 'Publish to news', status: 400 },
+  );
+
+  if (!values.title) return fail('It needs a headline.');
+  if (!values.url && !values.body) return fail('Give it a link or some context — ideally both.');
+
+  const id = bf.recordNewsSubmission({ userId: ctx.user.id, ...values });
+  const result = await supabase.submitToNews({ handle: ctx.user.id, ...values });
+
+  if (!result.ok) {
+    bf.updateNewsSubmission(id, { status: 'failed', error: result.error });
+    return fail(result.unconfigured
+      ? 'Publishing is not configured yet — your submission was saved here and can be sent once it is.'
+      : `Could not reach the feed: ${result.error}`);
+  }
+
+  const remoteId = Array.isArray(result.data) ? result.data[0]?.id : result.data?.id;
+  bf.updateNewsSubmission(id, { status: 'queued', remoteId: remoteId ? String(remoteId) : null });
+  render(
+    ctx,
+    views.publishPage(ctx, {
+      submissions: bf.newsSubmissions(ctx.user.id),
+      supabase: { configured: true, reachable: true },
+      sent: true,
+    }),
+    { title: 'Publish to news' },
+  );
+}
+
 function defaultStart() {
   return toLocalInput(nowSeconds() + 3 * 86400);
 }
@@ -1125,6 +1650,53 @@ const ROUTES = [
     seeOther(ctx, `/homeroom/post/${post.id}`);
   })],
 
+  /* ---- chat: concrete paths before /chat/:slug ---- */
+  ['GET', '/homeroom/chat/new', (ctx) => render(ctx, views.channelFormPage(ctx, {}), { title: 'New channel' })],
+  ['POST', '/homeroom/chat/new', channelCreate],
+  ['POST', '/homeroom/chat/react', action((ctx, fields) => {
+    bf.toggleReaction(Number(fields.id), ctx.user.id, String(fields.emoji || ''));
+    seeOther(ctx, safeGoto(fields.goto, '/homeroom/chat'));
+  })],
+  ['GET', '/homeroom/chat', chatHandler],
+  ['POST', '/homeroom/chat/:id/delete', action((ctx, fields, p) => {
+    if (!bf.deleteChat(Number(p.id), ctx.user.id, { isAdmin: !!ctx.user.is_admin })) {
+      return oops(ctx, 'Not yours to delete.', 403);
+    }
+    seeOther(ctx, safeGoto(fields.goto, '/homeroom/chat'));
+  })],
+  ['POST', '/homeroom/chat/:slug/mute', action((ctx, fields, p) => {
+    const channel = bf.getChannel(p.slug);
+    if (!channel) return notFound(ctx);
+    bf.toggleMute(channel.id, ctx.user.id);
+    seeOther(ctx, `/homeroom/chat/${channel.slug}`);
+  })],
+  ['GET', '/homeroom/chat/:slug', chatHandler],
+  ['POST', '/homeroom/chat/:slug', chatSubmit],
+
+  /* ---- yearbook ---- */
+  ['GET', '/homeroom/yearbook/edit', (ctx) => render(ctx, views.yearbookFormPage(ctx, {
+    entry: bf.getYearbook(ctx.user.id), member: bf.ensureMember(ctx.user.id),
+  }), { title: 'Your yearbook entry', subnav: views.subnav(views.YEARBOOK_TABS, 'mine') })],
+  ['POST', '/homeroom/yearbook/edit', yearbookSubmit],
+  ['GET', '/homeroom/yearbook', yearbookHandler],
+  ['POST', '/homeroom/yearbook/:handle/sign', action((ctx, fields, p) => {
+    const target = bf.getMember(p.handle);
+    if (!target) return notFound(ctx);
+    const result = bf.signYearbook({
+      userId: target.user_id, authorId: ctx.user.id, body: trimmed(fields.body, 600),
+    });
+    if (!result.ok) return oops(ctx, result.error);
+    bf.notify({
+      userId: target.user_id,
+      kind: 'signature',
+      actorId: ctx.user.id,
+      text: `${ctx.user.id} signed your yearbook`,
+      href: `/homeroom/yearbook/${encodeURIComponent(target.user_id)}`,
+    });
+    seeOther(ctx, `/homeroom/yearbook/${encodeURIComponent(target.user_id)}`);
+  })],
+  ['GET', '/homeroom/yearbook/:handle', yearbookEntryHandler],
+
   ['GET', '/homeroom/people', peopleHandler],
   ['GET', '/homeroom/p/:handle', memberHandler],
   ['GET', '/homeroom/settings', (ctx) => render(ctx, views.settingsPage(ctx, {
@@ -1132,9 +1704,27 @@ const ROUTES = [
   }), { title: 'Your profile' })],
   ['POST', '/homeroom/settings', settingsSubmit],
 
-  ['GET', '/homeroom/labs/new', (ctx) => render(ctx, views.labFormPage(ctx, {}), { title: 'Add a lab' })],
-  ['POST', '/homeroom/labs/new', labCreate],
-  ['GET', '/homeroom/labs', labsHandler],
+  ['GET', '/homeroom/labs/new', (ctx) => render(ctx, views.labFormAtlasPage(ctx, {}),
+    { title: 'Add a lab', subnav: views.subnav(views.LAB_TABS, 'atlas') })],
+  ['POST', '/homeroom/labs/new', atlasLabCreate],
+  ['GET', '/homeroom/labs/cores', (ctx) => render(ctx, views.coresPage(ctx),
+    { title: 'Core Facility Finder', subnav: views.subnav(views.LAB_TABS, 'cores'), wide: true })],
+  ['GET', '/homeroom/labs/member', labsHandler],
+  ['GET', '/homeroom/labs/member/new', (ctx) => render(ctx, views.labFormPage(ctx, {}),
+    { title: 'Add your lab' })],
+  ['POST', '/homeroom/labs/member/new', labCreate],
+  ['POST', '/homeroom/labs/at/:slug/report', action((ctx, fields, p) => {
+    const lab = bf.getLab(p.slug);
+    if (!lab) return notFound(ctx);
+    const result = bf.reportLab({
+      labId: lab.id, userId: ctx.user.id,
+      status: String(fields.status || ''), body: trimmed(fields.body, 2000),
+    });
+    if (!result.ok) return oops(ctx, result.error);
+    seeOther(ctx, `/homeroom/labs/at/${lab.slug}`);
+  })],
+  ['GET', '/homeroom/labs/at/:slug', atlasLabHandler],
+  ['GET', '/homeroom/labs', atlasHandler],
   ['GET', '/homeroom/lab/:slug/edit', (ctx, p) => {
     const org = bf.getOrg(p.slug);
     if (!org) return notFound(ctx);
@@ -1163,16 +1753,28 @@ const ROUTES = [
   })],
   ['GET', '/homeroom/lab/:slug', labHandler],
 
-  ['GET', '/homeroom/deals/new', (ctx) => render(ctx, views.dealFormPage(ctx, {}), { title: 'Add a deal' })],
-  ['POST', '/homeroom/deals/new', dealCreate],
-  ['GET', '/homeroom/deals', dealsHandler],
-  ['POST', '/homeroom/deal/:slug/claim', action((ctx, fields, p) => {
-    const deal = bf.getDeal(p.slug);
-    if (!deal) return notFound(ctx);
-    bf.claimDeal(deal.id, ctx.user.id);
-    seeOther(ctx, `/homeroom/deal/${deal.slug}`);
+  ['GET', '/homeroom/perks/new', (ctx) => render(ctx, views.dealFormPage(ctx, {}), { title: 'Add a perk' })],
+  ['POST', '/homeroom/perks/new', dealCreate],
+  ['GET', '/homeroom/perks', perksHandler],
+  ['POST', '/homeroom/perk/:slug/claim', action((ctx, fields, p) => {
+    const perk = bf.getDeal(p.slug);
+    if (!perk) return notFound(ctx);
+    bf.claimDeal(perk.id, ctx.user.id);
+    seeOther(ctx, `/homeroom/perk/${perk.slug}`);
   })],
-  ['GET', '/homeroom/deal/:slug', dealHandler],
+  ['POST', '/homeroom/perk/:slug/code', action((ctx, fields, p) => {
+    if (!ctx.user.is_admin) return oops(ctx, 'Stewards only.', 403);
+    const perk = bf.getDeal(p.slug);
+    if (!perk) return notFound(ctx);
+    bf.setDealCode(perk.id, trimmed(fields.code, 120));
+    seeOther(ctx, `/homeroom/perk/${perk.slug}`);
+  })],
+  ['GET', '/homeroom/perk/:slug', perkHandler],
+
+  /* Deals became Perks. Old links, and anything bookmarked, still land. */
+  ['GET', '/homeroom/deals', (ctx) => seeOther(ctx, `/homeroom/perks${ctx.url.search || ''}`)],
+  ['GET', '/homeroom/deals/new', (ctx) => seeOther(ctx, '/homeroom/perks/new')],
+  ['GET', '/homeroom/deal/:slug', (ctx, p) => seeOther(ctx, `/homeroom/perk/${encodeURIComponent(p.slug)}`)],
 
   ['GET', '/homeroom/funders/new', (ctx) => render(ctx, views.funderFormPage(ctx, {}), { title: 'Add a funder' })],
   ['POST', '/homeroom/funders/new', funderCreate],
@@ -1180,6 +1782,30 @@ const ROUTES = [
   ['GET', '/homeroom/pipeline', (ctx) => render(ctx, views.pipelinePage(ctx, { rows: bf.pipeline(ctx.user.id) }),
     { title: 'Pipeline' })],
   ['POST', '/homeroom/funder/:slug/review', reviewSubmit],
+  ['POST', '/homeroom/review/:id/helpful', action((ctx, fields, p) => {
+    const review = bf.getReview(Number(p.id));
+    if (!review) return notFound(ctx);
+    if (review.user_id === ctx.user.id) return oops(ctx, 'You cannot vouch for your own review.', 403);
+    bf.toggleReviewHelpful(review.id, ctx.user.id);
+    seeOther(ctx, safeGoto(fields.goto, '/homeroom/funders'));
+  })],
+  ['POST', '/homeroom/review/:id/comment', action((ctx, fields, p) => {
+    const review = bf.getReview(Number(p.id));
+    if (!review) return notFound(ctx);
+    if (limited(ctx, 'comment', LIMITS.comment)) return;
+    const result = bf.addReviewComment({
+      reviewId: review.id, authorId: ctx.user.id,
+      body: trimmed(fields.body, 4000), anonymous: checkbox(fields.anonymous),
+    });
+    if (!result.ok) return oops(ctx, result.error);
+    seeOther(ctx, safeGoto(fields.goto, '/homeroom/funders'));
+  })],
+  ['POST', '/homeroom/review/comment/:id/delete', action((ctx, fields, p) => {
+    if (!bf.deleteReviewComment(Number(p.id), ctx.user.id, { isAdmin: !!ctx.user.is_admin })) {
+      return oops(ctx, 'Not yours to delete.', 403);
+    }
+    seeOther(ctx, safeGoto(fields.goto, '/homeroom/funders'));
+  })],
   ['POST', '/homeroom/funder/:slug/track', trackSubmit],
   ['POST', '/homeroom/funder/:slug/untrack', action((ctx, fields, p) => {
     const funder = bf.getFunder(p.slug);
@@ -1189,8 +1815,11 @@ const ROUTES = [
   })],
   ['GET', '/homeroom/funder/:slug', funderHandler],
 
+  ['GET', '/homeroom/mentors', mentorsHandler],
+  ['GET', '/homeroom/mentor/:slug', mentorHandler],
+
   ['GET', '/homeroom/hours/new', (ctx) => render(ctx, views.slotFormPage(ctx, { defaultStart: defaultStart() }),
-    { title: 'Offer office hours' })],
+    { title: 'Offer office hours', subnav: views.subnav(views.MENTOR_TABS, 'hours') })],
   ['POST', '/homeroom/hours/new', slotCreate],
   ['GET', '/homeroom/hours', hoursHandler],
   ['POST', '/homeroom/hours/:id/book', action((ctx, fields, p) => {
@@ -1263,7 +1892,10 @@ const ROUTES = [
   ['GET', '/homeroom/events/new', (ctx) => render(ctx, views.eventFormPage(ctx, { defaultStart: defaultStart() }),
     { title: 'Add an event' })],
   ['POST', '/homeroom/events/new', eventCreate],
-  ['GET', '/homeroom/events', eventsHandler],
+  ['GET', '/homeroom/events/list', eventsHandler],
+  ['POST', '/homeroom/events/sync', lumaSyncHandler],
+  ['GET', '/homeroom/events.ics', icsHandler],
+  ['GET', '/homeroom/events', calendarHandler],
   ['POST', '/homeroom/event/:id/rsvp', action((ctx, fields, p) => {
     const event = bf.getEvent(p.id);
     if (!event) return notFound(ctx);
@@ -1285,7 +1917,15 @@ const ROUTES = [
 
   ['GET', '/homeroom/library/new', (ctx) => render(ctx, views.libraryFormPage(ctx, {}), { title: 'Write for the library' })],
   ['POST', '/homeroom/library/new', libraryCreate],
+  ['GET', '/homeroom/library/notes', (ctx) => render(ctx, views.deliverablesPage(ctx, {
+    rows: bf.deliverables(ctx.user.id), progress: bf.progressSummary(ctx.user.id),
+  }), { title: 'Your deliverables' })],
+  ['GET', '/homeroom/library/track/:slug', trackHandler],
+  ['GET', '/homeroom/library/module/:slug', moduleHandler],
+  ['POST', '/homeroom/library/module/:slug/progress', progressSubmit],
+  ['GET', '/homeroom/library/entry/:slug', libraryEntryHandler],
   ['GET', '/homeroom/library', libraryHandler],
+  /* Member-written entries used to live at /library/:slug. Keep those links. */
   ['GET', '/homeroom/library/:slug', libraryEntryHandler],
 
   ['GET', '/homeroom/intros/new', (ctx) => {
@@ -1323,8 +1963,45 @@ const ROUTES = [
       query, results, voted: bf.votedIds(ctx.user.id, 'post', results.posts.map((p) => p.id)),
     }), { title: query ? `Search: ${query}` : 'Search' });
   }],
+  ['GET', '/homeroom/stewards/access', (ctx) => accessAdminHandler(ctx)],
+  ['POST', '/homeroom/stewards/access/lookup', accessLookupHandler],
+  ['POST', '/homeroom/stewards/access/:hash/decide', action((ctx, fields, p) => {
+    if (!stewardsOnly(ctx)) return;
+    const decision = fields.decision === 'allow' ? 'allow' : 'deny';
+    const row = bf.rosterRow(p.hash);
+    if (!row) return notFound(ctx);
+    bf.decideRoster({ hash: p.hash, userId: ctx.user.id, decision, note: trimmed(fields.note, 500) });
+    seeOther(ctx, '/homeroom/stewards/access');
+  })],
+
+  ['GET', '/homeroom/publish', publishHandler],
+  ['POST', '/homeroom/publish', publishSubmit],
+
   ['GET', '/homeroom/about', (ctx) => render(ctx, views.aboutPage(ctx, { stats: bf.networkStats() }), { title: 'About' })],
 
+  ['GET', '/homeroom/api/chat/:slug', chatPoll],
+  ['GET', '/homeroom/api/mentors', (ctx) => {
+    const { mentors, total } = bf.searchMentors({
+      q: ctx.query.get('q') || '', track: ctx.query.get('track') || '',
+      tag: ctx.query.get('tag') || '', vetted: ctx.query.get('vetted') === '1',
+      limit: clampInt(ctx.query.get('limit'), 1, 200, 60),
+    });
+    sendJson(ctx.res, { ok: true, total, mentors });
+  }],
+  ['GET', '/homeroom/api/atlas', (ctx) => sendJson(ctx.res, {
+    ok: true,
+    ...bf.searchLabs({
+      q: ctx.query.get('q') || '', region: ctx.query.get('region') || '',
+      status: ctx.query.get('status') || '', limit: clampInt(ctx.query.get('limit'), 1, 500, 200),
+    }),
+  })],
+  ['GET', '/homeroom/api/perks', (ctx) => sendJson(ctx.res, {
+    ok: true, ...bf.listDeals({ category: ctx.query.get('category') || '', limit: 300 }),
+  })],
+  ['GET', '/homeroom/api/library', (ctx) => sendJson(ctx.res, {
+    ok: true, tracks: bf.tracks(),
+    ...bf.listModules({ track: ctx.query.get('track') || '', q: ctx.query.get('q') || '', userId: ctx.user.id }),
+  })],
   ['GET', '/homeroom/api/feed', apiFeed],
   ['GET', '/homeroom/api/post/:id', apiPost],
   ['GET', '/homeroom/api/members', (ctx) => {

@@ -60,15 +60,12 @@ export const ORG_STAGES = [
   { slug: 'scaling', label: 'Scaling' },
 ];
 
-export const FUNDER_KINDS = [
-  { slug: 'vc', label: 'Venture fund' },
-  { slug: 'angel', label: 'Angel' },
-  { slug: 'grant', label: 'Grant programme' },
-  { slug: 'foundation', label: 'Foundation' },
-  { slug: 'prize', label: 'Prize' },
-  { slug: 'accelerator', label: 'Accelerator' },
-  { slug: 'dao', label: 'DAO / collective' },
-];
+/*
+ * The capital map's own categories, not a generic investor-type list: a founder
+ * looking for the first money asks "what kind of money is this", and a grant, a
+ * fellowship and a studio are three different answers.
+ */
+export { CAPITAL_KINDS as FUNDER_KINDS } from './data/funders.js';
 
 export const PIPELINE_STATUSES = [
   { slug: 'researching', label: 'Researching' },
@@ -80,16 +77,47 @@ export const PIPELINE_STATUSES = [
   { slug: 'closed', label: 'Closed' },
 ];
 
-export const DEAL_CATEGORIES = [
-  { slug: 'reagents', label: 'Reagents' },
-  { slug: 'sequencing', label: 'Sequencing' },
-  { slug: 'synthesis', label: 'DNA synthesis' },
-  { slug: 'cloudlab', label: 'Cloud lab' },
-  { slug: 'compute', label: 'Compute' },
-  { slug: 'equipment', label: 'Equipment' },
-  { slug: 'software', label: 'Software' },
-  { slug: 'services', label: 'Legal & services' },
-  { slug: 'other', label: 'Other' },
+/* Perks span every category of startup support, not just the lab bench. */
+export { PERK_CATEGORIES as DEAL_CATEGORIES } from './data/perks.js';
+export { MENTOR_TRACKS } from './data/mentors.js';
+export { LAB_STATUSES, LAB_KINDS } from './data/atlas.js';
+
+/** How a perk is actually redeemed, which is the field founders need first. */
+export const PERK_ACCESS = [
+  { slug: 'open', label: 'Free to all' },
+  { slug: 'code', label: 'Discount code' },
+  { slug: 'apply', label: 'Apply direct' },
+  { slug: 'partner', label: 'Via a partner' },
+];
+
+/**
+ * The tags a reviewer can put on a funder review.
+ *
+ * A fixed vocabulary rather than free text, because the value of the tag is
+ * that three reviews carrying it become a countable pattern — which free text
+ * never does.
+ */
+export const REVIEW_TAGS = [
+  { slug: 'fast-decision', label: 'Fast decision' },
+  { slug: 'slow-process', label: 'Slow process' },
+  { slug: 'ghosted', label: 'Ghosted me' },
+  { slug: 'deeply-technical', label: 'Deeply technical' },
+  { slug: 'great-intros', label: 'Great intros' },
+  { slug: 'hands-off', label: 'Hands off' },
+  { slug: 'hands-on', label: 'Hands on' },
+  { slug: 'clean-terms', label: 'Clean terms' },
+  { slug: 'heavy-terms', label: 'Heavy terms' },
+  { slug: 'free-consulting', label: 'Mined me for free consulting' },
+  { slug: 'helpful-pass', label: 'Passed, and told me why' },
+  { slug: 'kept-word', label: 'Kept their word' },
+];
+
+export const REVIEW_OUTCOMES = [
+  { slug: 'invested', label: 'They invested' },
+  { slug: 'passed', label: 'They passed' },
+  { slug: 'no-answer', label: 'Never answered' },
+  { slug: 'in-progress', label: 'Still in process' },
+  { slug: 'i-passed', label: 'I passed on them' },
 ];
 
 export const JOB_DISCIPLINES = [
@@ -905,15 +933,24 @@ export function myPollVote(postId, userId) {
 /* ------------------------------------------------------------------ deals */
 
 export function createDeal({ vendor, title, category = 'other', summary = '', details = '',
-  worth = '', code = '', url = null, expiresAt = null, postedBy }) {
+  worth = '', code = '', url = null, expiresAt = null, postedBy,
+  access = 'code', requirement = '', checked = '' }) {
   const slug = uniqueSlug('hr_deals', `${vendor}-${title}`, 'deal');
   const info = getDb()
     .prepare(
-      `INSERT INTO hr_deals (slug, vendor, title, category, summary, details, worth, code, url, expires_at, posted_by, created_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO hr_deals (slug, vendor, title, category, summary, details, worth, code, url,
+                             expires_at, posted_by, created_at, access, requirement, checked)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     )
-    .run(slug, vendor, title, category, summary, details, worth, code, url, expiresAt, postedBy, nowSeconds());
+    .run(slug, vendor, title, category, summary, details, worth, code, url,
+      expiresAt, postedBy, nowSeconds(), access, requirement, checked);
   return Number(info.lastInsertRowid);
+}
+
+/** Steward-only: fill in the code once the partner agreement lands. */
+export function setDealCode(dealId, code) {
+  getDb().prepare('UPDATE hr_deals SET code = ? WHERE id = ?').run(String(code || ''), dealId);
+  return getDeal(dealId);
 }
 
 export function getDeal(idOrSlug) {
@@ -990,19 +1027,39 @@ export function getFunder(idOrSlug) {
   return { ...row, ...funderRatings(row.id) };
 }
 
+/**
+ * The five axes a founder actually compares funders on, plus the one number
+ * that predicts the others: would you raise from them again.
+ *
+ * A single overall star is what Rate My Professor got wrong and then spent a
+ * decade adding fields to fix. A fund can be a delight to talk to and take four
+ * months to say no; those are different complaints and they deserve different
+ * columns.
+ */
 export function funderRatings(funderId) {
   const row = getDb()
     .prepare(
       `SELECT COUNT(*) AS review_count, AVG(rating) AS avg_rating,
-              AVG(speed) AS avg_speed, AVG(value_add) AS avg_value
+              AVG(speed) AS avg_speed, AVG(value_add) AS avg_value,
+              AVG(founder_friendly) AS avg_friendly, AVG(terms) AS avg_terms,
+              SUM(would_again) AS again_count, SUM(invested) AS invested_count
        FROM hr_funder_reviews WHERE funder_id = ?`,
     )
     .get(funderId);
+  const round = (value) => (value ? Math.round(value * 10) / 10 : null);
   return {
     review_count: row.review_count,
-    avg_rating: row.avg_rating ? Math.round(row.avg_rating * 10) / 10 : null,
-    avg_speed: row.avg_speed ? Math.round(row.avg_speed * 10) / 10 : null,
-    avg_value: row.avg_value ? Math.round(row.avg_value * 10) / 10 : null,
+    avg_rating: round(row.avg_rating),
+    avg_speed: round(row.avg_speed),
+    avg_value: round(row.avg_value),
+    avg_friendly: round(row.avg_friendly),
+    avg_terms: round(row.avg_terms),
+    invested_count: row.invested_count || 0,
+    // Withheld under three reviews: at one or two, the percentage identifies
+    // the reviewer to anyone who knows who was in the room.
+    would_again_pct: row.review_count >= 3
+      ? Math.round((row.again_count / row.review_count) * 100)
+      : null,
   };
 }
 
@@ -1038,22 +1095,44 @@ export function listFunders({ q = '', kind = '', stage = '', minRating = 0, sort
 }
 
 export function upsertReview({ funderId, userId, rating, speed = null, valueAdd = null,
+  founderFriendly = null, terms = null, wouldAgain = false, tags = '', stage = '', outcome = '',
   invested = false, anonymous = true, body = '' }) {
   getDb()
     .prepare(
-      `INSERT INTO hr_funder_reviews (funder_id, user_id, rating, speed, value_add, invested, anonymous, body, created_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `INSERT INTO hr_funder_reviews
+         (funder_id, user_id, rating, speed, value_add, founder_friendly, terms,
+          would_again, tags, stage, outcome, invested, anonymous, body, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
        ON CONFLICT (funder_id, user_id) DO UPDATE SET
          rating = excluded.rating, speed = excluded.speed, value_add = excluded.value_add,
-         invested = excluded.invested, anonymous = excluded.anonymous, body = excluded.body,
+         founder_friendly = excluded.founder_friendly, terms = excluded.terms,
+         would_again = excluded.would_again, tags = excluded.tags, stage = excluded.stage,
+         outcome = excluded.outcome, invested = excluded.invested,
+         anonymous = excluded.anonymous, body = excluded.body,
          created_at = excluded.created_at`,
     )
-    .run(funderId, userId, rating, speed, valueAdd, int(invested), int(anonymous), body, nowSeconds());
+    .run(funderId, userId, rating, speed, valueAdd, founderFriendly, terms,
+      int(wouldAgain), tags, stage, outcome, int(invested), int(anonymous), body, nowSeconds());
+  return myReview(funderId, userId);
 }
 
-export function funderReviews(funderId) {
+/**
+ * Reviews, most-corroborated first.
+ *
+ * Sorting by helpful votes rather than recency is the whole design: the review
+ * three other founders have said matches their experience is worth more than
+ * the one posted this morning, and putting it first is what stops a single
+ * angry account defining a fund's page.
+ */
+export function funderReviews(funderId, { sort = 'helpful' } = {}) {
+  const order = sort === 'recent' ? 'r.created_at DESC' : 'helpful DESC, r.created_at DESC';
   return getDb()
-    .prepare('SELECT * FROM hr_funder_reviews WHERE funder_id = ? ORDER BY created_at DESC')
+    .prepare(
+      `SELECT r.*,
+              (SELECT COUNT(*) FROM hr_review_votes v WHERE v.review_id = r.id AND v.helpful = 1) AS helpful,
+              (SELECT COUNT(*) FROM hr_review_comments c WHERE c.review_id = r.id AND c.deleted = 0) AS reply_count
+       FROM hr_funder_reviews r WHERE r.funder_id = ? ORDER BY ${order}`,
+    )
     .all(funderId);
 }
 
@@ -1100,32 +1179,45 @@ export function pipelineEntry(userId, funderId) {
 /* ----------------------------------------------------------- office hours */
 
 export function createSlot({ hostId, title, description = '', format = 'one-on-one',
-  startsAt, minutes = 30, capacity = 1, place = '', topics = '' }) {
+  startsAt, minutes = 30, capacity = 1, place = '', topics = '', mentorId = null, url = '' }) {
   const info = getDb()
     .prepare(
-      `INSERT INTO hr_slots (host_id, title, description, format, starts_at, minutes, capacity, place, topics, created_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO hr_slots (host_id, title, description, format, starts_at, minutes, capacity,
+                             place, topics, created_at, mentor_id, url)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     )
-    .run(hostId, title, description, format, startsAt, minutes, Math.max(1, capacity), place, topics, nowSeconds());
+    .run(hostId, title, description, format, startsAt, minutes, Math.max(1, capacity),
+      place, topics, nowSeconds(), mentorId, url);
   return Number(info.lastInsertRowid);
 }
 
 export function getSlot(id) {
-  const row = getDb().prepare('SELECT * FROM hr_slots WHERE id = ?').get(Number(id));
+  const row = getDb()
+    .prepare(
+      `SELECT s.*, n.name AS mentor_name, n.slug AS mentor_slug, n.org AS mentor_org,
+              n.role AS mentor_role, n.track AS mentor_track, n.vetted AS mentor_vetted
+       FROM hr_slots s LEFT JOIN hr_mentors n ON n.id = s.mentor_id WHERE s.id = ?`,
+    )
+    .get(Number(id));
   if (!row) return null;
   row.booked = getDb().prepare('SELECT COUNT(*) AS n FROM hr_bookings WHERE slot_id = ?').get(row.id).n;
   return row;
 }
 
-export function listSlots({ upcoming = true, hostId = '', limit = 60 } = {}) {
-  const where = ['canceled = 0'];
+export function listSlots({ upcoming = true, hostId = '', mentorId = 0, track = '', limit = 60 } = {}) {
+  const where = ['s.canceled = 0'];
   const params = [];
-  if (upcoming) { where.push('starts_at > ?'); params.push(nowSeconds() - 3600); }
-  if (hostId) { where.push('host_id = ?'); params.push(hostId); }
+  if (upcoming) { where.push('s.starts_at > ?'); params.push(nowSeconds() - 3600); }
+  if (hostId) { where.push('s.host_id = ?'); params.push(hostId); }
+  if (mentorId) { where.push('s.mentor_id = ?'); params.push(mentorId); }
+  if (track) { where.push('n.track = ?'); params.push(track); }
   return getDb()
     .prepare(
-      `SELECT s.*, (SELECT COUNT(*) FROM hr_bookings b WHERE b.slot_id = s.id) AS booked
-       FROM hr_slots s WHERE ${where.join(' AND ')}
+      `SELECT s.*, (SELECT COUNT(*) FROM hr_bookings b WHERE b.slot_id = s.id) AS booked,
+              n.name AS mentor_name, n.slug AS mentor_slug, n.track AS mentor_track,
+              n.org AS mentor_org, n.vetted AS mentor_vetted
+       FROM hr_slots s LEFT JOIN hr_mentors n ON n.id = s.mentor_id
+       WHERE ${where.join(' AND ')}
        ORDER BY s.starts_at ${upcoming ? 'ASC' : 'DESC'} LIMIT ?`,
     )
     .all(...params, limit);
@@ -1572,6 +1664,14 @@ export function networkStats() {
     slots: one('SELECT COUNT(*) AS n FROM hr_slots WHERE canceled = 0 AND starts_at > ?', nowSeconds()).n,
     events: one('SELECT COUNT(*) AS n FROM hr_events WHERE canceled = 0 AND starts_at > ?', nowSeconds()).n,
     library: one('SELECT COUNT(*) AS n FROM hr_library').n,
+    mentors: one('SELECT COUNT(*) AS n FROM hr_mentors WHERE active = 1').n,
+    vetted: one('SELECT COUNT(*) AS n FROM hr_mentors WHERE active = 1 AND vetted = 1').n,
+    atlas: one('SELECT COUNT(*) AS n FROM hr_atlas').n,
+    atlasActive: one(`SELECT COUNT(*) AS n FROM hr_atlas WHERE status = 'active'`).n,
+    modules: one('SELECT COUNT(*) AS n FROM hr_modules').n,
+    channels: one('SELECT COUNT(*) AS n FROM hr_channels WHERE archived = 0').n,
+    chat: one('SELECT COUNT(*) AS n FROM hr_chat WHERE deleted = 0').n,
+    yearbook: one('SELECT COUNT(*) AS n FROM hr_yearbook').n,
   };
 }
 
@@ -1586,4 +1686,925 @@ export function topAnswerers(limit = 6, sinceDays = 30) {
        GROUP BY c.author_id ORDER BY points DESC, answers DESC LIMIT ?`,
     )
     .all(since, limit);
+}
+
+/* ==========================================================================
+ * CHAT
+ *
+ * The forum is where a question goes when the answer should be findable in a
+ * year. Chat is everything else — and everything else is most of what a room
+ * says to itself. Keeping them in separate tables keeps them at separate
+ * stakes: nothing here is scored, ranked or surfaced on the home page, which is
+ * exactly what makes people willing to type in it.
+ *
+ * Delivery is polling, not sockets. A Netlify function cannot hold a socket
+ * open, and a five-second poll against an indexed integer range is cheap enough
+ * that the complexity of anything else would buy nothing.
+ * ======================================================================== */
+
+export const CHANNEL_KINDS = [
+  { slug: 'open', label: 'Open' },
+  { slug: 'cohort', label: 'Cohort' },
+  { slug: 'house', label: 'House' },
+  { slug: 'project', label: 'Project' },
+];
+
+export function createChannel({ slug, name, topic = '', kind = 'open', scope = '',
+  position = 0, createdBy = null }) {
+  const unique = slug ? slugify(slug, 'channel') : uniqueSlug('hr_channels', name, 'channel');
+  const info = getDb()
+    .prepare(
+      `INSERT OR IGNORE INTO hr_channels (slug, name, topic, kind, scope, position, created_by, created_at, last_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    )
+    .run(unique, name, topic, kind, scope, position, createdBy, nowSeconds(), nowSeconds());
+  return Number(info.lastInsertRowid) || getChannel(unique)?.id || 0;
+}
+
+export function getChannel(idOrSlug) {
+  const db = getDb();
+  return (/^\d+$/.test(String(idOrSlug))
+    ? db.prepare('SELECT * FROM hr_channels WHERE id = ?').get(Number(idOrSlug))
+    : db.prepare('SELECT * FROM hr_channels WHERE slug = ?').get(String(idOrSlug))) ?? null;
+}
+
+/**
+ * Every channel with this member's unread count attached.
+ *
+ * The unread count is a range count over an indexed integer column, which is
+ * why `last_read_id` is an id and not a timestamp: two messages posted in the
+ * same second cannot confuse it, and a clock that drifts cannot either.
+ */
+export function channelsFor(userId, { includeArchived = false } = {}) {
+  const clause = includeArchived ? '' : 'WHERE c.archived = 0';
+  return getDb()
+    .prepare(
+      `SELECT c.*,
+              COALESCE(r.last_read_id, 0) AS last_read_id,
+              COALESCE(r.muted, 0) AS muted,
+              (SELECT COUNT(*) FROM hr_chat m
+                WHERE m.channel_id = c.id AND m.deleted = 0
+                  AND m.id > COALESCE(r.last_read_id, 0)
+                  AND m.author_id <> ?) AS unread,
+              (SELECT COUNT(*) FROM hr_chat m WHERE m.channel_id = c.id AND m.deleted = 0) AS message_count
+       FROM hr_channels c
+       LEFT JOIN hr_channel_reads r ON r.channel_id = c.id AND r.user_id = ?
+       ${clause}
+       ORDER BY c.position, c.name`,
+    )
+    .all(userId, userId);
+}
+
+export function unreadChatCount(userId) {
+  if (!userId) return 0;
+  return getDb()
+    .prepare(
+      `SELECT COUNT(*) AS n FROM hr_chat m
+       JOIN hr_channels c ON c.id = m.channel_id AND c.archived = 0
+       LEFT JOIN hr_channel_reads r ON r.channel_id = m.channel_id AND r.user_id = ?
+       WHERE m.deleted = 0 AND m.author_id <> ?
+         AND COALESCE(r.muted, 0) = 0
+         AND m.id > COALESCE(r.last_read_id, 0)`,
+    )
+    .get(userId, userId).n;
+}
+
+const CHAT_PAGE = 60;
+
+/**
+ * A window of messages.
+ *
+ * `after` powers the poll (everything newer than what I have), `before` powers
+ * scrollback (the page above what I have). Both are id comparisons so a client
+ * never has to reason about time.
+ */
+export function chatMessages(channelId, { after = 0, before = 0, limit = CHAT_PAGE } = {}) {
+  const db = getDb();
+  if (after) {
+    return db
+      .prepare(
+        `SELECT * FROM hr_chat WHERE channel_id = ? AND id > ? AND deleted = 0
+         ORDER BY id LIMIT ?`,
+      )
+      .all(channelId, after, limit);
+  }
+  const rows = db
+    .prepare(
+      `SELECT * FROM hr_chat WHERE channel_id = ? AND deleted = 0 ${before ? 'AND id < ?' : ''}
+       ORDER BY id DESC LIMIT ?`,
+    )
+    .all(...(before ? [channelId, before, limit] : [channelId, limit]));
+  return rows.reverse();
+}
+
+export function postChat({ channelId, authorId, body, replyTo = null }) {
+  const text = String(body || '').trim();
+  if (!text) return { ok: false, error: 'Nothing to say.' };
+  return transaction((db) => {
+    const now = nowSeconds();
+    const info = db
+      .prepare('INSERT INTO hr_chat (channel_id, author_id, body, reply_to, created_at) VALUES (?, ?, ?, ?, ?)')
+      .run(channelId, authorId, text.slice(0, 4000), replyTo || null, now);
+    db.prepare('UPDATE hr_channels SET last_at = ? WHERE id = ?').run(now, channelId);
+    const id = Number(info.lastInsertRowid);
+    // Posting is also reading: your own message must not come back as unread.
+    db.prepare(
+      `INSERT INTO hr_channel_reads (channel_id, user_id, last_read_id) VALUES (?, ?, ?)
+       ON CONFLICT (channel_id, user_id) DO UPDATE SET last_read_id = MAX(last_read_id, excluded.last_read_id)`,
+    ).run(channelId, authorId, id);
+    return { ok: true, id };
+  });
+}
+
+export function deleteChat(id, userId, { isAdmin = false } = {}) {
+  const row = getDb().prepare('SELECT * FROM hr_chat WHERE id = ?').get(id);
+  if (!row) return false;
+  if (row.author_id !== userId && !isAdmin) return false;
+  getDb().prepare('UPDATE hr_chat SET deleted = 1, body = ? WHERE id = ?').run('', id);
+  return true;
+}
+
+export function markChannelRead(channelId, userId, upToId = null) {
+  const top = upToId ?? (getDb()
+    .prepare('SELECT MAX(id) AS m FROM hr_chat WHERE channel_id = ?')
+    .get(channelId).m ?? 0);
+  getDb()
+    .prepare(
+      `INSERT INTO hr_channel_reads (channel_id, user_id, last_read_id) VALUES (?, ?, ?)
+       ON CONFLICT (channel_id, user_id) DO UPDATE SET last_read_id = MAX(last_read_id, excluded.last_read_id)`,
+    )
+    .run(channelId, userId, top);
+  return top;
+}
+
+export function toggleMute(channelId, userId) {
+  const db = getDb();
+  db.prepare(
+    `INSERT INTO hr_channel_reads (channel_id, user_id, last_read_id, muted) VALUES (?, ?, 0, 1)
+     ON CONFLICT (channel_id, user_id) DO UPDATE SET muted = 1 - muted`,
+  ).run(channelId, userId);
+  return !!db.prepare('SELECT muted FROM hr_channel_reads WHERE channel_id = ? AND user_id = ?')
+    .get(channelId, userId)?.muted;
+}
+
+export function toggleReaction(messageId, userId, emoji) {
+  const db = getDb();
+  const clean = String(emoji || '').slice(0, 8);
+  if (!clean) return false;
+  const existing = db.prepare('SELECT 1 FROM hr_chat_reactions WHERE message_id = ? AND user_id = ? AND emoji = ?')
+    .get(messageId, userId, clean);
+  if (existing) {
+    db.prepare('DELETE FROM hr_chat_reactions WHERE message_id = ? AND user_id = ? AND emoji = ?')
+      .run(messageId, userId, clean);
+    return false;
+  }
+  db.prepare('INSERT INTO hr_chat_reactions (message_id, user_id, emoji) VALUES (?, ?, ?)')
+    .run(messageId, userId, clean);
+  return true;
+}
+
+export function reactionsFor(messageIds) {
+  if (!messageIds.length) return {};
+  const rows = getDb()
+    .prepare(
+      `SELECT message_id, emoji, COUNT(*) AS n, GROUP_CONCAT(user_id) AS who
+       FROM hr_chat_reactions WHERE message_id IN (${placeholders(messageIds.length)})
+       GROUP BY message_id, emoji ORDER BY n DESC`,
+    )
+    .all(...messageIds);
+  const out = {};
+  for (const row of rows) {
+    (out[row.message_id] ||= []).push({
+      emoji: row.emoji, n: row.n, who: String(row.who || '').split(','),
+    });
+  }
+  return out;
+}
+
+export function searchChat(query, { limit = 40 } = {}) {
+  if (!query) return [];
+  return getDb()
+    .prepare(
+      `SELECT m.*, c.slug AS channel_slug, c.name AS channel_name
+       FROM hr_chat m JOIN hr_channels c ON c.id = m.channel_id
+       WHERE m.deleted = 0 AND m.body LIKE ? ESCAPE '\\'
+       ORDER BY m.id DESC LIMIT ?`,
+    )
+    .all(like(query), limit);
+}
+
+/* ==========================================================================
+ * YEARBOOK
+ * ======================================================================== */
+
+export function getYearbook(userId) {
+  return getDb().prepare('SELECT * FROM hr_yearbook WHERE user_id = ?').get(userId) ?? null;
+}
+
+export function upsertYearbook(userId, patch = {}) {
+  const current = getYearbook(userId) || {};
+  const value = (key, fallback = '') => (patch[key] === undefined ? (current[key] ?? fallback) : patch[key]);
+  getDb()
+    .prepare(
+      `INSERT INTO hr_yearbook (user_id, cohort, house, venture, one_liner, quote, building,
+                                before_haus, photo_url, site_url, featured, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+       ON CONFLICT (user_id) DO UPDATE SET
+         cohort = excluded.cohort, house = excluded.house, venture = excluded.venture,
+         one_liner = excluded.one_liner, quote = excluded.quote, building = excluded.building,
+         before_haus = excluded.before_haus, photo_url = excluded.photo_url,
+         site_url = excluded.site_url, featured = excluded.featured, updated_at = excluded.updated_at`,
+    )
+    .run(userId, value('cohort'), value('house'), value('venture'), value('one_liner'),
+      value('quote'), value('building'), value('before_haus'), value('photo_url'),
+      value('site_url'), int(value('featured', 0)), nowSeconds());
+  return getYearbook(userId);
+}
+
+/**
+ * The wall. One row per member who has a yearbook entry or a cohort, ordered so
+ * that the people who filled theirs in come first — the alternative is a grid
+ * of blank cards, which is how every founder wall dies.
+ */
+export function yearbookWall({ cohort = '', house = '', q = '', tag = '',
+  limit = 200, offset = 0 } = {}) {
+  const where = ['1 = 1'];
+  const params = [];
+  if (cohort) { where.push('COALESCE(NULLIF(y.cohort, \'\'), m.cohort) = ?'); params.push(cohort); }
+  if (house) { where.push('y.house = ?'); params.push(house); }
+  if (tag) { where.push('EXISTS (SELECT 1 FROM hr_expertise e WHERE e.user_id = m.user_id AND e.tag = ?)'); params.push(tag); }
+  if (q) {
+    where.push(`(m.name LIKE ? ESCAPE '\\' OR m.user_id LIKE ? ESCAPE '\\' OR m.headline LIKE ? ESCAPE '\\'
+                 OR y.venture LIKE ? ESCAPE '\\' OR y.one_liner LIKE ? ESCAPE '\\' OR m.org LIKE ? ESCAPE '\\')`);
+    params.push(...Array(6).fill(like(q)));
+  }
+  const clause = where.join(' AND ');
+  const rows = getDb()
+    .prepare(
+      `SELECT m.*, u.karma,
+              COALESCE(y.cohort, '') AS y_cohort, COALESCE(y.house, '') AS house,
+              COALESCE(y.venture, '') AS venture, COALESCE(y.one_liner, '') AS one_liner,
+              COALESCE(y.quote, '') AS quote, COALESCE(y.building, '') AS building,
+              COALESCE(y.before_haus, '') AS before_haus, COALESCE(y.photo_url, '') AS photo_url,
+              COALESCE(y.site_url, '') AS site_url, COALESCE(y.featured, 0) AS featured,
+              (y.user_id IS NOT NULL) AS has_entry,
+              (SELECT COUNT(*) FROM hr_signatures s WHERE s.user_id = m.user_id) AS signatures
+       FROM hr_members m
+       JOIN users u ON u.id = m.user_id
+       LEFT JOIN hr_yearbook y ON y.user_id = m.user_id
+       WHERE ${clause}
+       ORDER BY featured DESC, has_entry DESC, m.name COLLATE NOCASE, m.user_id
+       LIMIT ? OFFSET ?`,
+    )
+    .all(...params, limit, offset);
+  const { total } = getDb()
+    .prepare(
+      `SELECT COUNT(*) AS total FROM hr_members m
+       LEFT JOIN hr_yearbook y ON y.user_id = m.user_id WHERE ${clause}`,
+    )
+    .get(...params);
+  for (const row of rows) {
+    row.cohort = row.y_cohort || row.cohort || '';
+    row.expertise = memberExpertise(row.user_id);
+  }
+  return { members: rows, total };
+}
+
+/** Cohorts as the wall sees them: the yearbook value wins over the profile. */
+export function wallCohorts() {
+  return getDb()
+    .prepare(
+      `SELECT cohort, COUNT(*) AS n FROM (
+         SELECT COALESCE(NULLIF(y.cohort, ''), m.cohort) AS cohort
+         FROM hr_members m LEFT JOIN hr_yearbook y ON y.user_id = m.user_id
+       ) WHERE cohort IS NOT NULL AND cohort <> '' GROUP BY cohort ORDER BY cohort DESC`,
+    )
+    .all();
+}
+
+export function houses() {
+  return getDb()
+    .prepare(`SELECT house, COUNT(*) AS n FROM hr_yearbook WHERE house <> '' GROUP BY house ORDER BY house`)
+    .all();
+}
+
+export function signatures(userId) {
+  return getDb()
+    .prepare('SELECT * FROM hr_signatures WHERE user_id = ? ORDER BY created_at DESC')
+    .all(userId);
+}
+
+export function signYearbook({ userId, authorId, body }) {
+  const text = String(body || '').trim().slice(0, 600);
+  if (!text) return { ok: false, error: 'Write something first.' };
+  if (userId === authorId) return { ok: false, error: 'You cannot sign your own yearbook.' };
+  getDb()
+    .prepare(
+      `INSERT INTO hr_signatures (user_id, author_id, body, created_at) VALUES (?, ?, ?, ?)
+       ON CONFLICT (user_id, author_id) DO UPDATE SET body = excluded.body, created_at = excluded.created_at`,
+    )
+    .run(userId, authorId, text, nowSeconds());
+  return { ok: true };
+}
+
+/* ==========================================================================
+ * BIOLAB ATLAS
+ * ======================================================================== */
+
+export function upsertLab(lab) {
+  const slug = slugify(`${lab.name}-${lab.city}`, 'lab');
+  const existing = getDb().prepare('SELECT id FROM hr_atlas WHERE slug = ?').get(slug);
+  const capabilities = Array.isArray(lab.capabilities) ? lab.capabilities.join(',') : (lab.capabilities || '');
+  if (existing) {
+    getDb()
+      .prepare(
+        `UPDATE hr_atlas SET name = ?, city = ?, country = ?, region = ?, kind = ?, status = ?,
+                bsl = ?, website = ?, capabilities = ?, note = ?, source = ? WHERE id = ?`,
+      )
+      .run(lab.name, lab.city, lab.country, lab.region, lab.kind, lab.status,
+        lab.bsl || '', lab.website || null, capabilities, lab.note || '', lab.source || '', existing.id);
+    return existing.id;
+  }
+  const info = getDb()
+    .prepare(
+      `INSERT INTO hr_atlas (slug, name, city, country, region, kind, status, bsl, website,
+                             capabilities, note, source, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    )
+    .run(slug, lab.name, lab.city, lab.country, lab.region, lab.kind, lab.status,
+      lab.bsl || '', lab.website || null, capabilities, lab.note || '', lab.source || '', nowSeconds());
+  return Number(info.lastInsertRowid);
+}
+
+export function getLab(idOrSlug) {
+  const db = getDb();
+  const row = (/^\d+$/.test(String(idOrSlug))
+    ? db.prepare('SELECT * FROM hr_atlas WHERE id = ?').get(Number(idOrSlug))
+    : db.prepare('SELECT * FROM hr_atlas WHERE slug = ?').get(String(idOrSlug))) ?? null;
+  if (!row) return null;
+  return { ...row, capabilities: tagList(row.capabilities) };
+}
+
+/**
+ * The atlas query.
+ *
+ * Default sort puts active labs first, because the single most common reason a
+ * directory of community labs is useless is that the dead entries are mixed in
+ * with the live ones and look identical.
+ */
+export function searchLabs({ q = '', region = '', country = '', status = '', kind = '',
+  capability = '', limit = 300, offset = 0 } = {}) {
+  const where = ['1 = 1'];
+  const params = [];
+  if (region) { where.push('region = ?'); params.push(region); }
+  if (country) { where.push('country = ?'); params.push(country); }
+  if (status) { where.push('status = ?'); params.push(status); }
+  if (kind) { where.push('kind = ?'); params.push(kind); }
+  if (capability) { where.push(`capabilities LIKE ? ESCAPE '\\'`); params.push(like(capability)); }
+  if (q) {
+    where.push(`(name LIKE ? ESCAPE '\\' OR city LIKE ? ESCAPE '\\' OR country LIKE ? ESCAPE '\\'
+                 OR note LIKE ? ESCAPE '\\' OR capabilities LIKE ? ESCAPE '\\')`);
+    params.push(...Array(5).fill(like(q)));
+  }
+  const clause = where.join(' AND ');
+  const rows = getDb()
+    .prepare(
+      `SELECT *, (SELECT COUNT(*) FROM hr_atlas_reports r WHERE r.lab_id = hr_atlas.id) AS reports
+       FROM hr_atlas WHERE ${clause}
+       ORDER BY CASE status WHEN 'active' THEN 0 WHEN 'limited' THEN 1 WHEN 'unknown' THEN 2 ELSE 3 END,
+                country, city, name
+       LIMIT ? OFFSET ?`,
+    )
+    .all(...params, limit, offset);
+  const { total } = getDb().prepare(`SELECT COUNT(*) AS total FROM hr_atlas WHERE ${clause}`).get(...params);
+  return {
+    labs: rows.map((row) => ({ ...row, capabilities: tagList(row.capabilities) })),
+    total,
+  };
+}
+
+export function atlasFacets() {
+  const db = getDb();
+  return {
+    regions: db.prepare(`SELECT region AS slug, region AS label, COUNT(*) AS count FROM hr_atlas
+                         WHERE region <> '' GROUP BY region ORDER BY count DESC`).all(),
+    countries: db.prepare(`SELECT country AS slug, country AS label, COUNT(*) AS count FROM hr_atlas
+                           WHERE country <> '' GROUP BY country ORDER BY country`).all(),
+    statuses: db.prepare(`SELECT status AS slug, status AS label, COUNT(*) AS count FROM hr_atlas
+                          GROUP BY status`).all(),
+  };
+}
+
+/**
+ * A member reporting what they actually found. The report also moves the lab's
+ * status, because a first-hand account from last month outranks any directory —
+ * that is the entire premise of keeping an atlas rather than linking to one.
+ */
+export function reportLab({ labId, userId, status, body = '' }) {
+  const valid = ['active', 'limited', 'dormant', 'unknown'];
+  if (!valid.includes(status)) return { ok: false, error: 'Unknown status.' };
+  return transaction((db) => {
+    const now = nowSeconds();
+    db.prepare('INSERT INTO hr_atlas_reports (lab_id, user_id, status, body, created_at) VALUES (?, ?, ?, ?, ?)')
+      .run(labId, userId, status, String(body || '').slice(0, 2000), now);
+    db.prepare('UPDATE hr_atlas SET status = ?, confirmed_by = ?, confirmed_at = ? WHERE id = ?')
+      .run(status, userId, now, labId);
+    return { ok: true };
+  });
+}
+
+export function labReports(labId) {
+  return getDb()
+    .prepare('SELECT * FROM hr_atlas_reports WHERE lab_id = ? ORDER BY created_at DESC LIMIT 20')
+    .all(labId);
+}
+
+/* ==========================================================================
+ * MENTORS
+ * ======================================================================== */
+
+export function upsertMentor(mentor) {
+  const slug = slugify(mentor.name, 'mentor');
+  const tags = Array.isArray(mentor.tags) ? mentor.tags.join(',') : (mentor.tags || '');
+  const existing = getDb().prepare('SELECT id FROM hr_mentors WHERE slug = ?').get(slug);
+  if (existing) {
+    getDb()
+      .prepare(
+        `UPDATE hr_mentors SET name = ?, role = ?, org = ?, track = ?, tags = ?, location = ?,
+                bio = ?, format = ?, scheduler = ?, vetted = ?, user_id = ?, source = ? WHERE id = ?`,
+      )
+      .run(mentor.name, mentor.role || '', mentor.org || '', mentor.track || 'founder', tags,
+        mentor.location || '', mentor.bio || '', mentor.format || 'one-on-one',
+        mentor.scheduler || '', int(mentor.vetted), mentor.userId || null,
+        mentor.source || 'seed', existing.id);
+    return existing.id;
+  }
+  const info = getDb()
+    .prepare(
+      `INSERT INTO hr_mentors (slug, user_id, name, role, org, track, tags, location, bio,
+                               format, scheduler, vetted, source, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    )
+    .run(slug, mentor.userId || null, mentor.name, mentor.role || '', mentor.org || '',
+      mentor.track || 'founder', tags, mentor.location || '', mentor.bio || '',
+      mentor.format || 'one-on-one', mentor.scheduler || '', int(mentor.vetted),
+      mentor.source || 'seed', nowSeconds());
+  return Number(info.lastInsertRowid);
+}
+
+export function getMentor(idOrSlug) {
+  const db = getDb();
+  const row = (/^\d+$/.test(String(idOrSlug))
+    ? db.prepare('SELECT * FROM hr_mentors WHERE id = ?').get(Number(idOrSlug))
+    : db.prepare('SELECT * FROM hr_mentors WHERE slug = ?').get(String(idOrSlug))) ?? null;
+  if (!row) return null;
+  return { ...row, tags: tagList(row.tags) };
+}
+
+/**
+ * The searchable roster.
+ *
+ * Vetted first by default: a vetted mentor has been met by a steward and has
+ * agreed to take bookings, and an unvetted one is a name. Sorting them together
+ * would make the list longer and less useful, which is the trade every mentor
+ * directory gets wrong.
+ */
+export function searchMentors({ q = '', track = '', tag = '', vetted = false, format = '',
+  limit = 60, offset = 0 } = {}) {
+  const where = ['active = 1'];
+  const params = [];
+  if (track) { where.push('track = ?'); params.push(track); }
+  if (format) { where.push('format = ?'); params.push(format); }
+  if (vetted) where.push('vetted = 1');
+  if (tag) { where.push(`(',' || tags || ',') LIKE ? ESCAPE '\\'`); params.push(`%,${tag},%`); }
+  if (q) {
+    where.push(`(name LIKE ? ESCAPE '\\' OR org LIKE ? ESCAPE '\\' OR role LIKE ? ESCAPE '\\'
+                 OR tags LIKE ? ESCAPE '\\' OR location LIKE ? ESCAPE '\\' OR bio LIKE ? ESCAPE '\\')`);
+    params.push(...Array(6).fill(like(q)));
+  }
+  const clause = where.join(' AND ');
+  const rows = getDb()
+    .prepare(
+      `SELECT m.*,
+              (SELECT COUNT(*) FROM hr_slots s
+                WHERE s.mentor_id = m.id AND s.canceled = 0 AND s.starts_at > ?) AS open_slots
+       FROM hr_mentors m WHERE ${clause}
+       ORDER BY vetted DESC, open_slots DESC, name COLLATE NOCASE LIMIT ? OFFSET ?`,
+    )
+    .all(nowSeconds(), ...params, limit, offset);
+  const { total } = getDb().prepare(`SELECT COUNT(*) AS total FROM hr_mentors WHERE ${clause}`).get(...params);
+  return { mentors: rows.map((row) => ({ ...row, tags: tagList(row.tags) })), total };
+}
+
+export function mentorTagCloud(limit = 40) {
+  const rows = getDb().prepare('SELECT tags FROM hr_mentors WHERE active = 1').all();
+  const counts = new Map();
+  for (const row of rows) {
+    for (const tag of tagList(row.tags)) counts.set(tag, (counts.get(tag) || 0) + 1);
+  }
+  return [...counts.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, limit)
+    .map(([slug, count]) => ({ slug, label: slug, count }));
+}
+
+export function mentorSlots(mentorId) {
+  return getDb()
+    .prepare(
+      `SELECT s.*, (SELECT COUNT(*) FROM hr_bookings b WHERE b.slot_id = s.id) AS booked
+       FROM hr_slots s WHERE s.mentor_id = ? AND s.canceled = 0 AND s.starts_at > ?
+       ORDER BY s.starts_at`,
+    )
+    .all(mentorId, nowSeconds());
+}
+
+export function bumpMentorSessions(mentorId) {
+  getDb().prepare('UPDATE hr_mentors SET sessions = sessions + 1 WHERE id = ?').run(mentorId);
+}
+
+/* ==========================================================================
+ * FUNDER REVIEW REPLIES AND VOTES
+ * ======================================================================== */
+
+export function getReview(id) {
+  return getDb().prepare('SELECT * FROM hr_funder_reviews WHERE id = ?').get(id) ?? null;
+}
+
+export function addReviewComment({ reviewId, authorId, body, anonymous = false }) {
+  const text = String(body || '').trim();
+  if (!text) return { ok: false, error: 'Nothing to add.' };
+  const info = getDb()
+    .prepare('INSERT INTO hr_review_comments (review_id, author_id, body, anonymous, created_at) VALUES (?, ?, ?, ?, ?)')
+    .run(reviewId, authorId, text.slice(0, 4000), int(anonymous), nowSeconds());
+  return { ok: true, id: Number(info.lastInsertRowid) };
+}
+
+export function reviewComments(reviewIds) {
+  if (!reviewIds.length) return {};
+  const rows = getDb()
+    .prepare(
+      `SELECT * FROM hr_review_comments
+       WHERE review_id IN (${placeholders(reviewIds.length)}) AND deleted = 0
+       ORDER BY created_at`,
+    )
+    .all(...reviewIds);
+  const out = {};
+  for (const row of rows) (out[row.review_id] ||= []).push(row);
+  return out;
+}
+
+export function deleteReviewComment(id, userId, { isAdmin = false } = {}) {
+  const row = getDb().prepare('SELECT * FROM hr_review_comments WHERE id = ?').get(id);
+  if (!row || (row.author_id !== userId && !isAdmin)) return false;
+  getDb().prepare('UPDATE hr_review_comments SET deleted = 1 WHERE id = ?').run(id);
+  return true;
+}
+
+/** "This matches my experience." Toggles, so it can be taken back. */
+export function toggleReviewHelpful(reviewId, userId) {
+  const db = getDb();
+  const existing = db.prepare('SELECT 1 FROM hr_review_votes WHERE review_id = ? AND user_id = ?')
+    .get(reviewId, userId);
+  if (existing) {
+    db.prepare('DELETE FROM hr_review_votes WHERE review_id = ? AND user_id = ?').run(reviewId, userId);
+    return false;
+  }
+  db.prepare('INSERT INTO hr_review_votes (review_id, user_id, helpful, created_at) VALUES (?, ?, 1, ?)')
+    .run(reviewId, userId, nowSeconds());
+  return true;
+}
+
+export function helpfulIds(userId, reviewIds) {
+  if (!userId || !reviewIds.length) return new Set();
+  const rows = getDb()
+    .prepare(`SELECT review_id FROM hr_review_votes WHERE user_id = ? AND review_id IN (${placeholders(reviewIds.length)})`)
+    .all(userId, ...reviewIds);
+  return new Set(rows.map((row) => row.review_id));
+}
+
+/** The tags reviewers reach for most on one funder — the shape of the pattern. */
+export function funderTagCloud(funderId, limit = 8) {
+  const rows = getDb().prepare('SELECT tags FROM hr_funder_reviews WHERE funder_id = ?').all(funderId);
+  const counts = new Map();
+  for (const row of rows) {
+    for (const tag of tagList(row.tags)) counts.set(tag, (counts.get(tag) || 0) + 1);
+  }
+  return [...counts.entries()].sort((a, b) => b[1] - a[1]).slice(0, limit)
+    .map(([slug, count]) => ({ slug, label: slug.replace(/-/g, ' '), count }));
+}
+
+/* ==========================================================================
+ * THE LIBRARY AS A TRAINING SYSTEM
+ * ======================================================================== */
+
+export function upsertTrack(track, position = 0) {
+  getDb()
+    .prepare(
+      `INSERT INTO hr_tracks (slug, title, focus, blurb, position) VALUES (?, ?, ?, ?, ?)
+       ON CONFLICT (slug) DO UPDATE SET title = excluded.title, focus = excluded.focus,
+         blurb = excluded.blurb, position = excluded.position`,
+    )
+    .run(track.slug, track.title, track.focus || '', track.blurb || '', position);
+}
+
+export function upsertModule(module, position = 0) {
+  getDb()
+    .prepare(
+      `INSERT INTO hr_modules (slug, track, title, kind, summary, outcomes, work, deliverable,
+                               minutes, week, position)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+       ON CONFLICT (slug) DO UPDATE SET track = excluded.track, title = excluded.title,
+         kind = excluded.kind, summary = excluded.summary, outcomes = excluded.outcomes,
+         work = excluded.work, deliverable = excluded.deliverable, minutes = excluded.minutes,
+         week = excluded.week, position = excluded.position`,
+    )
+    .run(module.slug, module.track, module.title, module.kind, module.summary,
+      (module.outcomes || []).join('\n'), (module.work || []).join('\n'),
+      module.deliverable || '', module.minutes || 45, module.week || 0, position);
+}
+
+const splitLines = (value) => String(value || '').split('\n').map((s) => s.trim()).filter(Boolean);
+
+function hydrateModule(row) {
+  if (!row) return null;
+  return { ...row, outcomes: splitLines(row.outcomes), work: splitLines(row.work) };
+}
+
+export function tracks() {
+  return getDb().prepare('SELECT * FROM hr_tracks ORDER BY position, title').all();
+}
+
+export function getTrack(slug) {
+  return getDb().prepare('SELECT * FROM hr_tracks WHERE slug = ?').get(slug) ?? null;
+}
+
+export function getModule(idOrSlug) {
+  const db = getDb();
+  return hydrateModule(/^\d+$/.test(String(idOrSlug))
+    ? db.prepare('SELECT * FROM hr_modules WHERE id = ?').get(Number(idOrSlug))
+    : db.prepare('SELECT * FROM hr_modules WHERE slug = ?').get(String(idOrSlug)));
+}
+
+export function listModules({ track = '', kind = '', q = '', week = 0, userId = '',
+  limit = 200, offset = 0 } = {}) {
+  const where = ['1 = 1'];
+  const params = [];
+  if (track) { where.push('m.track = ?'); params.push(track); }
+  if (kind) { where.push('m.kind = ?'); params.push(kind); }
+  if (week) { where.push('m.week = ?'); params.push(week); }
+  if (q) {
+    where.push(`(m.title LIKE ? ESCAPE '\\' OR m.summary LIKE ? ESCAPE '\\'
+                 OR m.outcomes LIKE ? ESCAPE '\\' OR m.work LIKE ? ESCAPE '\\'
+                 OR m.deliverable LIKE ? ESCAPE '\\')`);
+    params.push(...Array(5).fill(like(q)));
+  }
+  const clause = where.join(' AND ');
+  const rows = getDb()
+    .prepare(
+      `SELECT m.*, t.title AS track_title,
+              (SELECT p.state FROM hr_progress p WHERE p.module_id = m.id AND p.user_id = ?) AS state
+       FROM hr_modules m JOIN hr_tracks t ON t.slug = m.track
+       WHERE ${clause} ORDER BY t.position, m.position LIMIT ? OFFSET ?`,
+    )
+    .all(userId || '', ...params, limit, offset);
+  const { total } = getDb()
+    .prepare(`SELECT COUNT(*) AS total FROM hr_modules m WHERE ${clause}`)
+    .get(...params);
+  return { modules: rows.map(hydrateModule), total };
+}
+
+export function setProgress({ userId, moduleId, state = 'started', note = '', link = '' }) {
+  if (state === 'none') {
+    getDb().prepare('DELETE FROM hr_progress WHERE user_id = ? AND module_id = ?').run(userId, moduleId);
+    return null;
+  }
+  getDb()
+    .prepare(
+      `INSERT INTO hr_progress (user_id, module_id, state, note, link, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?)
+       ON CONFLICT (user_id, module_id) DO UPDATE SET state = excluded.state,
+         note = excluded.note, link = excluded.link, updated_at = excluded.updated_at`,
+    )
+    .run(userId, moduleId, state, String(note || '').slice(0, 4000), String(link || '').slice(0, 500), nowSeconds());
+  return getProgress(userId, moduleId);
+}
+
+export function getProgress(userId, moduleId) {
+  if (!userId) return null;
+  return getDb().prepare('SELECT * FROM hr_progress WHERE user_id = ? AND module_id = ?')
+    .get(userId, moduleId) ?? null;
+}
+
+/**
+ * Where a member is across the whole manual.
+ *
+ * "Done" counts modules whose deliverable exists, not modules that were opened,
+ * which is the difference between a training system and a reading list.
+ */
+export function progressSummary(userId) {
+  const db = getDb();
+  const total = db.prepare('SELECT COUNT(*) AS n FROM hr_modules').get().n;
+  const rows = db
+    .prepare(
+      `SELECT m.track, t.title AS track_title, COUNT(m.id) AS total,
+              SUM(CASE WHEN p.state = 'done' THEN 1 ELSE 0 END) AS done,
+              SUM(CASE WHEN p.state = 'started' THEN 1 ELSE 0 END) AS started
+       FROM hr_modules m
+       JOIN hr_tracks t ON t.slug = m.track
+       LEFT JOIN hr_progress p ON p.module_id = m.id AND p.user_id = ?
+       GROUP BY m.track ORDER BY t.position`,
+    )
+    .all(userId || '');
+  const done = rows.reduce((sum, row) => sum + (row.done || 0), 0);
+  const started = rows.reduce((sum, row) => sum + (row.started || 0), 0);
+  return { total, done, started, percent: total ? Math.round((done / total) * 100) : 0, byTrack: rows };
+}
+
+/** Deliverables the member has produced, which is the actual portfolio. */
+export function deliverables(userId) {
+  return getDb()
+    .prepare(
+      `SELECT m.slug, m.title, m.deliverable, m.week, p.state, p.note, p.link, p.updated_at
+       FROM hr_progress p JOIN hr_modules m ON m.id = p.module_id
+       WHERE p.user_id = ? AND m.deliverable <> '' ORDER BY m.week, m.position`,
+    )
+    .all(userId);
+}
+
+export function bumpModuleReads(id) {
+  getDb().prepare('UPDATE hr_modules SET reads = reads + 1 WHERE id = ?').run(id);
+}
+
+/* ==========================================================================
+ * EVENTS: CALENDAR AND EXTERNAL SOURCES
+ * ======================================================================== */
+
+/**
+ * Events in a window, for the month grid.
+ *
+ * Includes cancelled events rather than hiding them: a cancelled event still
+ * needs to appear on the day it would have been, or the people who had it in
+ * their diary never find out.
+ */
+export function eventsBetween(startsAt, endsAt) {
+  return getDb()
+    .prepare(
+      `SELECT e.*,
+              (SELECT COUNT(*) FROM hr_rsvps r WHERE r.event_id = e.id AND r.status = 'going') AS going,
+              s.source AS external_source, s.url AS external_url
+       FROM hr_events e
+       LEFT JOIN hr_event_sources s ON s.event_id = e.id
+       WHERE e.starts_at >= ? AND e.starts_at < ? ORDER BY e.starts_at`,
+    )
+    .all(startsAt, endsAt);
+}
+
+export function eventSource(eventId) {
+  return getDb().prepare('SELECT * FROM hr_event_sources WHERE event_id = ?').get(eventId) ?? null;
+}
+
+/**
+ * Create or update an event that came from an external calendar.
+ *
+ * Idempotent on (source, external_id), so a sweep that runs twice does not
+ * produce two copies of the same evening.
+ */
+export function upsertExternalEvent({ source = 'luma', externalId, hostId, title, description = '',
+  kind = 'meetup', startsAt, minutes = 90, place = '', url = null, capacity = 0, canceled = false }) {
+  return transaction((db) => {
+    const now = nowSeconds();
+    const existing = db.prepare('SELECT event_id FROM hr_event_sources WHERE source = ? AND external_id = ?')
+      .get(source, externalId);
+    if (existing) {
+      db.prepare(
+        `UPDATE hr_events SET title = ?, description = ?, kind = ?, starts_at = ?, minutes = ?,
+                place = ?, url = ?, capacity = ?, canceled = ? WHERE id = ?`,
+      ).run(title, description, kind, startsAt, minutes, place, url, capacity, int(canceled), existing.event_id);
+      db.prepare('UPDATE hr_event_sources SET url = ?, synced_at = ? WHERE event_id = ?')
+        .run(url || '', now, existing.event_id);
+      return { id: existing.event_id, created: false };
+    }
+    const info = db
+      .prepare(
+        `INSERT INTO hr_events (host_id, title, description, kind, starts_at, minutes, place, url,
+                                capacity, canceled, created_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      )
+      .run(hostId, title, description, kind, startsAt, minutes, place, url, capacity, int(canceled), now);
+    const id = Number(info.lastInsertRowid);
+    db.prepare('INSERT INTO hr_event_sources (event_id, source, external_id, url, synced_at) VALUES (?, ?, ?, ?, ?)')
+      .run(id, source, externalId, url || '', now);
+    return { id, created: true };
+  });
+}
+
+export function lastSync(source = 'luma') {
+  return getDb().prepare('SELECT MAX(synced_at) AS at, COUNT(*) AS n FROM hr_event_sources WHERE source = ?')
+    .get(source);
+}
+
+/* ==========================================================================
+ * NEWS SUBMISSIONS
+ * ======================================================================== */
+
+export function recordNewsSubmission({ userId, title, url = '', body = '', topic = 'general',
+  status = 'pending', remoteId = null, error = '' }) {
+  const now = nowSeconds();
+  const info = getDb()
+    .prepare(
+      `INSERT INTO hr_news_submissions (user_id, remote_id, title, url, body, topic, status, error, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    )
+    .run(userId, remoteId, title, url, body, topic, status, error, now, now);
+  return Number(info.lastInsertRowid);
+}
+
+export function updateNewsSubmission(id, { status, remoteId, error = '' }) {
+  getDb()
+    .prepare('UPDATE hr_news_submissions SET status = ?, remote_id = COALESCE(?, remote_id), error = ?, updated_at = ? WHERE id = ?')
+    .run(status, remoteId ?? null, error, nowSeconds(), id);
+}
+
+export function newsSubmissions(userId, { limit = 30 } = {}) {
+  return getDb()
+    .prepare('SELECT * FROM hr_news_submissions WHERE user_id = ? ORDER BY created_at DESC LIMIT ?')
+    .all(userId, limit);
+}
+
+/* ==========================================================================
+ * THE ROSTER
+ *
+ * Cached Airtable verdicts. The address is only ever a SHA-256 here — see
+ * roster.js for why — so every function takes a hash, not an email.
+ * ======================================================================== */
+
+export function recordVerdict({ hash, masked, verdict, reason, person = {} }) {
+  const now = nowSeconds();
+  getDb()
+    .prepare(
+      `INSERT INTO hr_roster (email_hash, masked, verdict, reason, name, cohort, house,
+                              status, lifecycle, resident_type, attempts, checked_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?)
+       ON CONFLICT (email_hash) DO UPDATE SET
+         masked = excluded.masked, verdict = excluded.verdict, reason = excluded.reason,
+         name = excluded.name, cohort = excluded.cohort, house = excluded.house,
+         status = excluded.status, lifecycle = excluded.lifecycle,
+         resident_type = excluded.resident_type,
+         attempts = hr_roster.attempts + 1, checked_at = excluded.checked_at`,
+    )
+    .run(hash, masked, verdict, reason, person.name || '', person.cohort || '', person.house || '',
+      person.status || '', person.lifecycle || '', person.residentType || '', now);
+  return rosterRow(hash);
+}
+
+export function rosterRow(hash) {
+  return getDb().prepare('SELECT * FROM hr_roster WHERE email_hash = ?').get(hash) ?? null;
+}
+
+export function linkRosterUser(hash, userId) {
+  getDb().prepare('UPDATE hr_roster SET user_id = ? WHERE email_hash = ?').run(userId, hash);
+}
+
+export function setUserRoster(userId, status) {
+  getDb()
+    .prepare('UPDATE users SET roster_status = ?, roster_checked_at = ? WHERE id = ?')
+    .run(status, nowSeconds(), userId);
+}
+
+/**
+ * A steward's decision on a conflict.
+ *
+ * Stored separately from `verdict`, not overwriting it, so the next Airtable
+ * check does not silently erase a human judgement — and so the steward view can
+ * still show what the data said when they overrode it.
+ */
+export function decideRoster({ hash, userId, decision, note = '' }) {
+  getDb()
+    .prepare('UPDATE hr_roster SET decision = ?, decided_by = ?, decided_at = ?, note = ? WHERE email_hash = ?')
+    .run(decision, userId, nowSeconds(), String(note || '').slice(0, 500), hash);
+  return rosterRow(hash);
+}
+
+/** Conflicts a steward has not ruled on yet. This is the queue that matters. */
+export function pendingRoster() {
+  return getDb()
+    .prepare(`SELECT * FROM hr_roster WHERE verdict = 'review' AND decision IS NULL
+              ORDER BY checked_at DESC LIMIT 100`)
+    .all();
+}
+
+export function recentRoster({ limit = 60 } = {}) {
+  return getDb()
+    .prepare('SELECT * FROM hr_roster ORDER BY checked_at DESC LIMIT ?')
+    .all(limit);
+}
+
+export function rosterCounts() {
+  const rows = getDb()
+    .prepare('SELECT verdict, COUNT(*) AS n FROM hr_roster GROUP BY verdict')
+    .all();
+  const out = { allow: 0, deny: 0, review: 0, error: 0 };
+  for (const row of rows) out[row.verdict] = row.n;
+  out.pending = pendingRoster().length;
+  return out;
 }

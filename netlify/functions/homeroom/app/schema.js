@@ -416,4 +416,285 @@ CREATE TABLE IF NOT EXISTS hr_notifications (
 );
 
 CREATE INDEX IF NOT EXISTS idx_bf_notifications_user ON hr_notifications(user_id, created_at DESC);
+
+/* ------------------------------------------------------------------- chat */
+
+/* The forum is for things worth finding again. Chat is for the rest, which is
+   most of what a room actually says to itself. Separate tables, separate
+   ranking, separate expectations: nothing here is scored, and nothing here is
+   the place to put the answer you want someone to find in a year. */
+CREATE TABLE IF NOT EXISTS hr_channels (
+  id          INTEGER PRIMARY KEY AUTOINCREMENT,
+  slug        TEXT NOT NULL UNIQUE,
+  name        TEXT NOT NULL,
+  topic       TEXT NOT NULL DEFAULT '',
+  kind        TEXT NOT NULL DEFAULT 'open'
+              CHECK (kind IN ('open','cohort','house','project')),
+  scope       TEXT NOT NULL DEFAULT '',
+  position    INTEGER NOT NULL DEFAULT 0,
+  archived    INTEGER NOT NULL DEFAULT 0,
+  created_by  TEXT REFERENCES users(id) ON DELETE SET NULL,
+  created_at  INTEGER NOT NULL,
+  last_at     INTEGER NOT NULL DEFAULT 0
+);
+
+CREATE INDEX IF NOT EXISTS idx_hr_channels_last ON hr_channels(archived, last_at DESC);
+
+CREATE TABLE IF NOT EXISTS hr_chat (
+  id         INTEGER PRIMARY KEY AUTOINCREMENT,
+  channel_id INTEGER NOT NULL REFERENCES hr_channels(id) ON DELETE CASCADE,
+  author_id  TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  body       TEXT NOT NULL,
+  reply_to   INTEGER REFERENCES hr_chat(id) ON DELETE SET NULL,
+  deleted    INTEGER NOT NULL DEFAULT 0,
+  created_at INTEGER NOT NULL,
+  edited_at  INTEGER
+);
+
+CREATE INDEX IF NOT EXISTS idx_hr_chat_channel ON hr_chat(channel_id, id);
+
+/* One row per member per channel. "last_read_id" rather than a timestamp: ids
+   are monotonic here and a clock is not, so the unread count cannot drift. */
+CREATE TABLE IF NOT EXISTS hr_channel_reads (
+  channel_id   INTEGER NOT NULL REFERENCES hr_channels(id) ON DELETE CASCADE,
+  user_id      TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  last_read_id INTEGER NOT NULL DEFAULT 0,
+  muted        INTEGER NOT NULL DEFAULT 0,
+  PRIMARY KEY (channel_id, user_id)
+);
+
+CREATE TABLE IF NOT EXISTS hr_chat_reactions (
+  message_id INTEGER NOT NULL REFERENCES hr_chat(id) ON DELETE CASCADE,
+  user_id    TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  emoji      TEXT NOT NULL,
+  PRIMARY KEY (message_id, user_id, emoji)
+);
+
+/* --------------------------------------------------------------- yearbook */
+
+/* The founder wall: the parts of a profile that belong to a cohort rather than
+   to a directory row. Kept off hr_members so a yearbook entry can stand for a
+   past cohort without implying the profile is still current. */
+CREATE TABLE IF NOT EXISTS hr_yearbook (
+  user_id     TEXT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+  cohort      TEXT NOT NULL DEFAULT '',
+  house       TEXT NOT NULL DEFAULT '',
+  venture     TEXT NOT NULL DEFAULT '',
+  one_liner   TEXT NOT NULL DEFAULT '',
+  quote       TEXT NOT NULL DEFAULT '',
+  building    TEXT NOT NULL DEFAULT '',
+  before_haus TEXT NOT NULL DEFAULT '',
+  photo_url   TEXT NOT NULL DEFAULT '',
+  site_url    TEXT NOT NULL DEFAULT '',
+  featured    INTEGER NOT NULL DEFAULT 0,
+  updated_at  INTEGER NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_hr_yearbook_cohort ON hr_yearbook(cohort);
+
+/* A signature in someone's yearbook. Short, visible to members, and not a DM —
+   the point is that the rest of the cohort can read it. */
+CREATE TABLE IF NOT EXISTS hr_signatures (
+  id         INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id    TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  author_id  TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  body       TEXT NOT NULL,
+  created_at INTEGER NOT NULL,
+  UNIQUE (user_id, author_id)
+);
+
+/* ------------------------------------------------------------------ atlas */
+
+CREATE TABLE IF NOT EXISTS hr_atlas (
+  id           INTEGER PRIMARY KEY AUTOINCREMENT,
+  slug         TEXT NOT NULL UNIQUE,
+  name         TEXT NOT NULL,
+  city         TEXT NOT NULL DEFAULT '',
+  country      TEXT NOT NULL DEFAULT '',
+  region       TEXT NOT NULL DEFAULT '',
+  kind         TEXT NOT NULL DEFAULT 'community',
+  status       TEXT NOT NULL DEFAULT 'unknown'
+               CHECK (status IN ('active','limited','dormant','unknown')),
+  bsl          TEXT NOT NULL DEFAULT '',
+  website      TEXT,
+  capabilities TEXT NOT NULL DEFAULT '',
+  note         TEXT NOT NULL DEFAULT '',
+  source       TEXT NOT NULL DEFAULT '',
+  confirmed_by TEXT REFERENCES users(id) ON DELETE SET NULL,
+  confirmed_at INTEGER,
+  created_at   INTEGER NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_hr_atlas_region ON hr_atlas(region, status);
+
+/* "I was there in March and it is open." Worth more than any directory. */
+CREATE TABLE IF NOT EXISTS hr_atlas_reports (
+  id         INTEGER PRIMARY KEY AUTOINCREMENT,
+  lab_id     INTEGER NOT NULL REFERENCES hr_atlas(id) ON DELETE CASCADE,
+  user_id    TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  status     TEXT NOT NULL,
+  body       TEXT NOT NULL DEFAULT '',
+  created_at INTEGER NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_hr_atlas_reports ON hr_atlas_reports(lab_id, created_at DESC);
+
+/* ---------------------------------------------------------------- mentors */
+
+CREATE TABLE IF NOT EXISTS hr_mentors (
+  id          INTEGER PRIMARY KEY AUTOINCREMENT,
+  slug        TEXT NOT NULL UNIQUE,
+  user_id     TEXT REFERENCES users(id) ON DELETE SET NULL,
+  name        TEXT NOT NULL,
+  role        TEXT NOT NULL DEFAULT '',
+  org         TEXT NOT NULL DEFAULT '',
+  track       TEXT NOT NULL DEFAULT 'founder',
+  tags        TEXT NOT NULL DEFAULT '',
+  location    TEXT NOT NULL DEFAULT '',
+  bio         TEXT NOT NULL DEFAULT '',
+  format      TEXT NOT NULL DEFAULT 'one-on-one',
+  scheduler   TEXT NOT NULL DEFAULT '',
+  vetted      INTEGER NOT NULL DEFAULT 0,
+  active      INTEGER NOT NULL DEFAULT 1,
+  sessions    INTEGER NOT NULL DEFAULT 0,
+  source      TEXT NOT NULL DEFAULT 'seed',
+  created_at  INTEGER NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_hr_mentors_track ON hr_mentors(track, vetted DESC);
+
+/* ------------------------------------------------------- funder reviews++ */
+
+/* Rate My Funder: a review gets replies, because one bad experience is an
+   anecdote and three replies saying the same thing is a pattern. */
+CREATE TABLE IF NOT EXISTS hr_review_comments (
+  id         INTEGER PRIMARY KEY AUTOINCREMENT,
+  review_id  INTEGER NOT NULL REFERENCES hr_funder_reviews(id) ON DELETE CASCADE,
+  author_id  TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  body       TEXT NOT NULL,
+  anonymous  INTEGER NOT NULL DEFAULT 0,
+  deleted    INTEGER NOT NULL DEFAULT 0,
+  created_at INTEGER NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_hr_review_comments ON hr_review_comments(review_id, created_at);
+
+/* "This matches my experience" — the helpful vote, and the thing that sorts
+   the review list. */
+CREATE TABLE IF NOT EXISTS hr_review_votes (
+  review_id  INTEGER NOT NULL REFERENCES hr_funder_reviews(id) ON DELETE CASCADE,
+  user_id    TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  helpful    INTEGER NOT NULL DEFAULT 1,
+  created_at INTEGER NOT NULL,
+  PRIMARY KEY (review_id, user_id)
+);
+
+/* ----------------------------------------------------------- the library+ */
+
+CREATE TABLE IF NOT EXISTS hr_tracks (
+  slug     TEXT PRIMARY KEY,
+  title    TEXT NOT NULL,
+  focus    TEXT NOT NULL DEFAULT '',
+  blurb    TEXT NOT NULL DEFAULT '',
+  position INTEGER NOT NULL DEFAULT 0
+);
+
+CREATE TABLE IF NOT EXISTS hr_modules (
+  id          INTEGER PRIMARY KEY AUTOINCREMENT,
+  slug        TEXT NOT NULL UNIQUE,
+  track       TEXT NOT NULL REFERENCES hr_tracks(slug) ON DELETE CASCADE,
+  title       TEXT NOT NULL,
+  kind        TEXT NOT NULL DEFAULT 'playbook',
+  summary     TEXT NOT NULL DEFAULT '',
+  outcomes    TEXT NOT NULL DEFAULT '',
+  work        TEXT NOT NULL DEFAULT '',
+  deliverable TEXT NOT NULL DEFAULT '',
+  minutes     INTEGER NOT NULL DEFAULT 45,
+  week        INTEGER NOT NULL DEFAULT 0,
+  position    INTEGER NOT NULL DEFAULT 0,
+  reads       INTEGER NOT NULL DEFAULT 0
+);
+
+CREATE INDEX IF NOT EXISTS idx_hr_modules_track ON hr_modules(track, position);
+
+/* Progress is per member and per module, and "done" means the deliverable
+   exists — which is why there is a note and a link, not just a checkbox. */
+CREATE TABLE IF NOT EXISTS hr_progress (
+  user_id    TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  module_id  INTEGER NOT NULL REFERENCES hr_modules(id) ON DELETE CASCADE,
+  state      TEXT NOT NULL DEFAULT 'started'
+             CHECK (state IN ('started','done')),
+  note       TEXT NOT NULL DEFAULT '',
+  link       TEXT NOT NULL DEFAULT '',
+  updated_at INTEGER NOT NULL,
+  PRIMARY KEY (user_id, module_id)
+);
+
+/* ------------------------------------------------------------ events sync */
+
+/* Set on any event that came from a Luma calendar, so a re-sync updates the
+   row it already created rather than adding a second copy of the same event. */
+CREATE TABLE IF NOT EXISTS hr_event_sources (
+  event_id    INTEGER PRIMARY KEY REFERENCES hr_events(id) ON DELETE CASCADE,
+  source      TEXT NOT NULL DEFAULT 'luma',
+  external_id TEXT NOT NULL,
+  url         TEXT NOT NULL DEFAULT '',
+  synced_at   INTEGER NOT NULL,
+  UNIQUE (source, external_id)
+);
+
+/* ------------------------------------------------------- news via Supabase */
+
+/* The local receipt for something a member sent to the public feed at
+   haus.fund/news. The canonical row lives in Supabase; this one exists so a
+   member can see the state of their own submission even when Supabase is
+   unreachable, which on an ephemeral container it sometimes is. */
+CREATE TABLE IF NOT EXISTS hr_news_submissions (
+  id           INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id      TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  remote_id    TEXT,
+  title        TEXT NOT NULL,
+  url          TEXT NOT NULL DEFAULT '',
+  body         TEXT NOT NULL DEFAULT '',
+  topic        TEXT NOT NULL DEFAULT 'general',
+  status       TEXT NOT NULL DEFAULT 'pending'
+               CHECK (status IN ('pending','queued','published','rejected','failed')),
+  error        TEXT NOT NULL DEFAULT '',
+  created_at   INTEGER NOT NULL,
+  updated_at   INTEGER NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_hr_news_user ON hr_news_submissions(user_id, created_at DESC);
+
+/* ----------------------------------------------------------------- roster */
+
+/* Who the Airtable said was in the programme, and when we last asked.
+   The address is stored as a SHA-256 and never in the clear: a copy of this
+   database should not also be a copy of the resident list. "masked" keeps
+   enough for a steward to recognise a row ("el****@haus.fund") without it
+   being a list of addresses. */
+CREATE TABLE IF NOT EXISTS hr_roster (
+  email_hash    TEXT PRIMARY KEY,
+  masked        TEXT NOT NULL DEFAULT '',
+  verdict       TEXT NOT NULL DEFAULT 'deny'
+                CHECK (verdict IN ('allow','deny','review','error')),
+  reason        TEXT NOT NULL DEFAULT '',
+  name          TEXT NOT NULL DEFAULT '',
+  cohort        TEXT NOT NULL DEFAULT '',
+  house         TEXT NOT NULL DEFAULT '',
+  status        TEXT NOT NULL DEFAULT '',
+  lifecycle     TEXT NOT NULL DEFAULT '',
+  resident_type TEXT NOT NULL DEFAULT '',
+  user_id       TEXT REFERENCES users(id) ON DELETE SET NULL,
+  attempts      INTEGER NOT NULL DEFAULT 1,
+  checked_at    INTEGER NOT NULL,
+  /* A steward resolving a "review" by hand. Their decision outranks the rule
+     until the Airtable itself changes. */
+  decided_by    TEXT REFERENCES users(id) ON DELETE SET NULL,
+  decided_at    INTEGER,
+  decision      TEXT CHECK (decision IN ('allow','deny')),
+  note          TEXT NOT NULL DEFAULT ''
+);
+
+CREATE INDEX IF NOT EXISTS idx_hr_roster_verdict ON hr_roster(verdict, checked_at DESC);
 `;

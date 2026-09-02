@@ -7,16 +7,19 @@ const STATIC = process.env.HOMEROOM_STATIC_BASE || '/homeroom-assets';
 
 const TABS = [
   { href: '/homeroom', label: 'Home', match: (p) => p === '/homeroom' },
+  { href: '/homeroom/chat', label: 'Chat', match: (p) => p.startsWith('/homeroom/chat') },
   { href: '/homeroom/forum', label: 'Forum', match: (p) => /^\/homeroom\/(forum|post|ask|reply|comment)/.test(p) },
-  { href: '/homeroom/people', label: 'People', match: (p) => /^\/homeroom\/(people|p\/)/.test(p) },
+  { href: '/homeroom/yearbook', label: 'Yearbook', match: (p) => /^\/homeroom\/(yearbook|people|p\/)/.test(p) },
   { href: '/homeroom/labs', label: 'Labs', match: (p) => /^\/homeroom\/lab/.test(p) },
-  { href: '/homeroom/deals', label: 'Deals', match: (p) => /^\/homeroom\/deal/.test(p) },
-  { href: '/homeroom/funders', label: 'Funders', match: (p) => /^\/homeroom\/(funder|pipeline)/.test(p) },
-  { href: '/homeroom/hours', label: 'Hours', match: (p) => p.startsWith('/homeroom/hours') },
-  { href: '/homeroom/jobs', label: 'Jobs', match: (p) => p.startsWith('/homeroom/job') },
+  { href: '/homeroom/perks', label: 'Perks', match: (p) => /^\/homeroom\/(perks?|deals?|deal\/)/.test(p) },
+  { href: '/homeroom/funders', label: 'Funders', match: (p) => /^\/homeroom\/(funder|pipeline|review)/.test(p) },
+  { href: '/homeroom/mentors', label: 'Mentors', match: (p) => /^\/homeroom\/(mentors?|hours)/.test(p) },
   { href: '/homeroom/events', label: 'Events', match: (p) => p.startsWith('/homeroom/event') },
-  { href: '/homeroom/library', label: 'Library', match: (p) => p.startsWith('/homeroom/library') },
+  { href: '/homeroom/library', label: 'Library', match: (p) => /^\/homeroom\/(library|track|module)/.test(p) },
 ];
+
+/* Ten sections is already the most a single bar carries legibly. Jobs sits in
+   the footer rather than making the nav wrap onto a ragged second row. */
 
 /**
  * Page chrome, in Haus livery.
@@ -27,10 +30,10 @@ const TABS = [
  *
  * @param {object} ctx  request context: { user, csrf, path, fullPath, badges }
  */
-export function homeroomLayout(ctx, { title, description, content, flash, error, wide = false }) {
+export function homeroomLayout(ctx, { title, description, content, flash, error, subnav = '', wide = false }) {
   const fullTitle = title ? `${title} — Homeroom · Haus` : `Homeroom — ${HOMEROOM_TAGLINE}`;
   const desc = description
-    || 'Homeroom — the members-only side of Haus: forum, member directory, lab directory, deals, funder reviews, office hours, jobs, events and library.';
+    || 'Homeroom — the members-only side of Haus: chat, forum, the yearbook, the biolab atlas, perks, funder reviews, mentors and office hours, events, the founder manual and jobs.';
 
   return raw(`<!DOCTYPE html>
 <html lang="en">
@@ -52,6 +55,7 @@ export function homeroomLayout(ctx, { title, description, content, flash, error,
 ${masthead(ctx)}
 <main>
   <div class="wrap${wide ? ' wide' : ''}">
+    ${subnav || ''}
     ${error ? `<div class="notice bad">${esc(error)}</div>` : ''}
     ${flash ? `<div class="notice">${esc(flash)}</div>` : ''}
     ${content}
@@ -107,7 +111,8 @@ function masthead(ctx) {
 
   const alerts = Number(badges.notifications || 0);
   const me = ctx.user
-    ? `<a class="count" href="/homeroom/messages">Messages${
+    ? `<a class="count" href="/homeroom/chat">Chat${badges.chat ? `<b>${badges.chat}</b>` : ''}</a>
+       <a class="count" href="/homeroom/messages">Messages${
         badges.messages ? `<b>${badges.messages}</b>` : ''
       }</a>
        <a class="count" href="/homeroom/notifications">Alerts${alerts ? `<b>${alerts}</b>` : ''}</a>
@@ -138,7 +143,10 @@ function footer(ctx) {
     <a href="/homeroom/search">Search</a>
     <a href="/homeroom/settings">Settings</a>
     <a href="/homeroom/saved">Saved</a>
+    <a href="/homeroom/jobs">Jobs</a>
     <a href="/homeroom/intros">Intros</a>
+    <a href="/homeroom/publish">Publish to news</a>
+    ${ctx.user?.is_admin ? '<a href="/homeroom/stewards/access">Front door</a>' : ''}
     <a href="/homeroom/about">About Homeroom</a>
     <a href="/">Haus</a>
     ${out}

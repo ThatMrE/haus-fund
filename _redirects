@@ -30,6 +30,11 @@ https://www.haus.fund https://haus.fund 301!
 # an environment variable), but it is not part of the site.
 /netlify/* /404.html 404!
 
+# Supabase migrations and config live in the repo and describe the database
+# schema and its RLS policies. No secrets are in them — the keys are Netlify
+# environment variables — but there is no reason to serve them either.
+/supabase/* /404.html 404!
+
 # No catch-all. Unknown paths fall through to 404.html with a real 404 status.
 # A "/* /index.html 200" rule here would turn every typo into a soft 404: the
 # homepage served under a 200, which search engines penalise and users misread.

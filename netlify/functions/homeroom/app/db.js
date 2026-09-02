@@ -71,9 +71,52 @@ CREATE TABLE IF NOT EXISTS password_resets (
 CREATE INDEX IF NOT EXISTS idx_resets_user ON password_resets(user_id);
 `;
 
+/*
+ * Columns added after the first release.
+ *
+ * CREATE TABLE IF NOT EXISTS is enough for a new table and does nothing for a
+ * new column, so added columns are listed here and applied one at a time.
+ * SQLite has no ADD COLUMN IF NOT EXISTS, and it is cheaper to attempt the
+ * ALTER and ignore the duplicate-column error than to parse table_info on
+ * every boot.
+ */
+const ADDED_COLUMNS = [
+  // Rate My Funder: the axes a founder actually compares funders on.
+  ['hr_funder_reviews', 'founder_friendly', 'INTEGER'],
+  ['hr_funder_reviews', 'terms', 'INTEGER'],
+  ['hr_funder_reviews', 'would_again', "INTEGER NOT NULL DEFAULT 0"],
+  ['hr_funder_reviews', 'tags', "TEXT NOT NULL DEFAULT ''"],
+  ['hr_funder_reviews', 'stage', "TEXT NOT NULL DEFAULT ''"],
+  ['hr_funder_reviews', 'outcome', "TEXT NOT NULL DEFAULT ''"],
+  ['hr_funder_reviews', 'helpful', "INTEGER NOT NULL DEFAULT 0"],
+  // Office hours held by a mentor rather than by a member.
+  ['hr_slots', 'mentor_id', 'INTEGER'],
+  ['hr_slots', 'url', "TEXT NOT NULL DEFAULT ''"],
+  // Which roster verdict let this account in, and when it was last confirmed.
+  ['users', 'roster_status', "TEXT NOT NULL DEFAULT ''"],
+  ['users', 'roster_checked_at', 'INTEGER NOT NULL DEFAULT 0'],
+  // Perks: how you actually redeem the thing.
+  ['hr_deals', 'access', "TEXT NOT NULL DEFAULT 'code'"],
+  ['hr_deals', 'requirement', "TEXT NOT NULL DEFAULT ''"],
+  ['hr_deals', 'checked', "TEXT NOT NULL DEFAULT ''"],
+];
+
+function addColumns(instance) {
+  for (const [table, column, type] of ADDED_COLUMNS) {
+    try {
+      instance.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${type}`);
+    } catch (err) {
+      // "duplicate column name" is the expected outcome on every boot but the
+      // first. Anything else is a real schema problem and should be seen.
+      if (!/duplicate column/i.test(String(err?.message))) throw err;
+    }
+  }
+}
+
 function migrate(instance) {
   instance.exec(ACCOUNT_SCHEMA);
   instance.exec(HOMEROOM_SCHEMA);
+  addColumns(instance);
 }
 
 /** Run a function inside a transaction, rolling back if it throws. */

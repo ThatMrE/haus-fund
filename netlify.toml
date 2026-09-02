@@ -56,7 +56,9 @@
   for = "/*"
   [headers.values]
     X-Content-Type-Options = "nosniff"
-    X-Frame-Options = "DENY"
+    # SAMEORIGIN rather than DENY: /homeroom/labs/cores embeds /cores.html,
+    # which is this same origin. DENY blocks same-origin framing too.
+    X-Frame-Options = "SAMEORIGIN"
     X-XSS-Protection = "1; mode=block"
     Referrer-Policy = "strict-origin-when-cross-origin"
     Permissions-Policy = "geolocation=(), microphone=(), camera=()"

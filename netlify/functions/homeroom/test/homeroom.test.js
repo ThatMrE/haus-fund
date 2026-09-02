@@ -104,11 +104,18 @@ test('an unknown /homeroom path 404s in Bioface chrome, not the news layout', as
 test('every members-only surface renders for a signed-in member', async () => {
   const { call } = await member('gatecheck');
   const paths = [
-    '/homeroom', '/homeroom/forum', '/homeroom/ask', '/homeroom/people', '/homeroom/settings',
-    '/homeroom/labs', '/homeroom/labs/new', '/homeroom/deals', '/homeroom/deals/new',
-    '/homeroom/funders', '/homeroom/funders/new', '/homeroom/pipeline', '/homeroom/hours',
-    '/homeroom/hours/new', '/homeroom/jobs', '/homeroom/events', '/homeroom/events/new',
-    '/homeroom/library', '/homeroom/library/new', '/homeroom/intros', '/homeroom/messages',
+    '/homeroom', '/homeroom/forum', '/homeroom/ask', '/homeroom/settings',
+    '/homeroom/chat', '/homeroom/chat/new',
+    '/homeroom/yearbook', '/homeroom/yearbook/edit', '/homeroom/people',
+    '/homeroom/labs', '/homeroom/labs/new', '/homeroom/labs/cores', '/homeroom/labs/member',
+    '/homeroom/labs/member/new',
+    '/homeroom/perks', '/homeroom/perks/new',
+    '/homeroom/funders', '/homeroom/funders/new', '/homeroom/pipeline',
+    '/homeroom/mentors', '/homeroom/hours', '/homeroom/hours/new',
+    '/homeroom/jobs', '/homeroom/events', '/homeroom/events/list', '/homeroom/events/new',
+    '/homeroom/library', '/homeroom/library/new', '/homeroom/library/notes',
+    '/homeroom/publish',
+    '/homeroom/intros', '/homeroom/messages',
     '/homeroom/messages/new', '/homeroom/notifications', '/homeroom/saved', '/homeroom/search',
     '/homeroom/about',
   ];
@@ -260,7 +267,7 @@ test('the directory finds people by expertise, and profiles render', async () =>
 
 test('creating a lab makes you its admin and lets you post updates', async () => {
   const { call, csrf, id } = await member('labfounder');
-  const created = await call('/homeroom/labs/new', form({
+  const created = await call('/homeroom/labs/member/new', form({
     csrf, name: 'Test Foundry', tagline: 'A lab for the tests', kind: 'foundry', stage: 'bench',
     location: 'Nowhere', description: 'Exists only in memory.', tags: 'testing',
   }));
@@ -281,7 +288,7 @@ test('creating a lab makes you its admin and lets you post updates', async () =>
 test('outsiders cannot edit a lab or post its updates', async () => {
   const owner = await member('labowner');
   const stranger = await member('labstranger');
-  const created = await owner.call('/homeroom/labs/new', form({ csrf: owner.csrf, name: 'Closed Doors Lab' }));
+  const created = await owner.call('/homeroom/labs/member/new', form({ csrf: owner.csrf, name: 'Closed Doors Lab' }));
   const slug = created.headers.get('location').split('/').pop();
 
   assert.equal((await stranger.call(`/homeroom/lab/${slug}/edit`)).status, 403);
@@ -292,22 +299,29 @@ test('outsiders cannot edit a lab or post its updates', async () => {
 
 /* ----------------------------------------------------------------- deals */
 
-test('a deal code stays hidden until you claim it', async () => {
+test('a perk code stays hidden until you claim it', async () => {
   const poster = await member('dealposter');
   const claimer = await member('dealclaimer');
-  const created = await poster.call('/homeroom/deals/new', form({
-    csrf: poster.csrf, vendor: 'Testing Reagents', title: '40% off everything', category: 'reagents',
+  const created = await poster.call('/homeroom/perks/new', form({
+    csrf: poster.csrf, vendor: 'Testing Reagents', title: '40% off everything', category: 'wetlab',
     worth: '€900/yr', code: 'SECRET-CODE-42', summary: 'A discount that does not exist.',
   }));
   const slug = created.headers.get('location').split('/').pop();
 
-  const before = await (await claimer.call(`/homeroom/deal/${slug}`)).text();
+  const before = await (await claimer.call(`/homeroom/perk/${slug}`)).text();
   assert.doesNotMatch(before, /SECRET-CODE-42/);
-  assert.match(before, /Claim this deal/);
+  assert.match(before, /Claim this perk/);
 
-  await claimer.call(`/homeroom/deal/${slug}/claim`, form({ csrf: claimer.csrf }));
-  const after = await (await claimer.call(`/homeroom/deal/${slug}`)).text();
+  await claimer.call(`/homeroom/perk/${slug}/claim`, form({ csrf: claimer.csrf }));
+  const after = await (await claimer.call(`/homeroom/perk/${slug}`)).text();
   assert.match(after, /SECRET-CODE-42/);
+});
+
+test('the old /deals links still land on the perks page', async () => {
+  const { call } = await member('dealbookmark');
+  const redirect = await call('/homeroom/deals');
+  assert.equal(redirect.status, 303);
+  assert.equal(redirect.headers.get('location'), '/homeroom/perks');
 });
 
 /* --------------------------------------------------------------- funders */
@@ -400,7 +414,7 @@ test('roles need a lab, and applications reach the poster', async () => {
 
   assert.equal((await applicant.call('/homeroom/jobs/new')).status, 400);
 
-  const lab = await founder.call('/homeroom/labs/new', form({ csrf: founder.csrf, name: 'Hiring Lab' }));
+  const lab = await founder.call('/homeroom/labs/member/new', form({ csrf: founder.csrf, name: 'Hiring Lab' }));
   const orgId = hr.getOrg(lab.headers.get('location').split('/').pop()).id;
   const created = await founder.call('/homeroom/jobs/new', form({
     csrf: founder.csrf, org: String(orgId), title: 'Bench scientist', discipline: 'wetlab',
@@ -508,7 +522,7 @@ test('search covers every surface at once', async () => {
   await call('/homeroom/ask', form({
     csrf, title: 'Chromatophore sourcing in the EU', body: 'Where does anyone buy these?', category: 'wetlab',
   }));
-  await call('/homeroom/labs/new', form({ csrf, name: 'Chromatophore Works', tagline: 'We make them' }));
+  await call('/homeroom/labs/member/new', form({ csrf, name: 'Chromatophore Works', tagline: 'We make them' }));
   await call('/homeroom/settings', form({ csrf, headline: 'Chromatophore obsessive' }));
 
   const results = await (await call('/homeroom/api/search?q=chromatophore')).json();
