@@ -367,6 +367,26 @@ test('the request form refuses a vague ask', async () => {
     0, 'and writes nothing');
 });
 
+/* ============================================================ vetting gate */
+
+test('a pending submission is invisible to members, everywhere', async () => {
+  const m = mentor({ state: 'pending', name: 'Unvetted Stranger' });
+  const { call } = await member('vetgate');
+
+  assert.equal((await call(`/homeroom/mentor/${m.slug}`)).status, 404,
+    'not readable at a guessable URL either');
+  assert.doesNotMatch(await (await call('/homeroom/mentors')).text(), /Unvetted Stranger/);
+  assert.doesNotMatch(await (await call('/homeroom/api/mentors?limit=200')).text(),
+    /Unvetted Stranger/);
+});
+
+test('the vetting queue is stewards only', async () => {
+  const { call } = await member('notasteward');
+  const res = await call('/homeroom/stewards/mentors');
+  assert.equal(res.status, 403);
+  assert.match(await res.text(), /Stewards only/);
+});
+
 /* =================================================================== gate off */
 
 test('HOMEROOM_MENTOR_GATE=0 restores the direct link', async () => {

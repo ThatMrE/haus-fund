@@ -59,10 +59,49 @@ never asked at all.
 | `HOMEROOM_MENTOR_REQUEST_DAYS` | `10` | Before an unanswered request ages out. |
 | `HOMEROOM_MENTOR_GRANT_DAYS` | `14` | How long a booking link works. |
 
-**No imported mentor has an email address**, so until the onboarding form
-exists (Phase 2) every profile says so rather than sending a request nobody
-will receive. `/homeroom/health` reports the gate, the listed and paused
-counts, requests waiting, and grants issued this month.
+### Onboarding, and the front door for mentors
+
+Mentors self-onboard through a public Airtable form. `netlify/functions/
+mentor-sync.mjs` pulls the table every six hours, and a steward can fire it
+from `/homeroom/stewards/mentors`.
+
+**A submission is listed nowhere until a steward rules on it.** Not in the
+roster, not in the API, and not at its own URL — a pending profile 404s,
+because a guessable slug should not serve an unvetted stranger's self-written
+bio. `Vetted` being ticked in Airtable does not list anybody either; that
+checkbox is somebody's note to themselves, and the gate is a steward here.
+
+The sweep **fails closed**: Airtable unreachable, a timeout, or a table that
+comes back empty all leave the roster exactly as it was and say so on the
+steward page. An empty response and a wrong base id look identical, and one of
+those must not empty the roster.
+
+Rows match on the Airtable record id, so a mentor can be renamed without
+splitting into two rows; the name slug remains the fallback for rows imported
+before that column existed. A blank field never wipes a booking link or an
+address — Airtable omitting a field must not remove the only way to reach
+someone.
+
+`app/mentorfields.js` holds the field mapping and the **scheduler host
+allowlist** (cal.com, calendly.com, savvycal.com, lu.ma, zcal.co), shared with
+`scripts/import-mentors.js` so the two cannot drift. It is the only thing
+between a public form and a "book time" button that goes wherever a stranger
+typed.
+
+| Variable | Default | Notes |
+| --- | --- | --- |
+| `HOMEROOM_MENTOR_SYNC_TOKEN` | falls back to `AIRTABLE_TOKEN` | Read access to the Mentors base. Without it the sweep skips rather than failing. |
+| `HOMEROOM_MENTORS_BASE` / `_TABLE` | the existing Mentors base | |
+
+The form's field spec — what Airtable has to collect — is in
+[`docs/MENTOR-ENGINE.md`](docs/MENTOR-ENGINE.md) §8.4. Turn on Airtable's own
+rate-limiting and CAPTCHA before publishing the URL.
+
+**No mentor imported by the old script has an email address**, so until the
+form is live and synced, those rows are listed but cannot be asked — the
+profile says so rather than sending a request nobody will receive.
+`/homeroom/health` reports the gate, the roster by state, submissions awaiting
+review, requests waiting on a mentor, and grants issued this month.
 
 It started as a reskin of Bookface, Y Combinator's internal network. The idea it
 copies is that the value comes from the room being closed: people say what a

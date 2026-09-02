@@ -17,6 +17,7 @@ import * as access from './access.js';
 import * as luma from './luma.js';
 import * as desk from './mentordesk.js';
 import * as mentormail from './mentormail.js';
+import * as mentorsync from './mentorsync.js';
 import { homeroomLayout } from './views/layout.js';
 import * as views from './views/pages.js';
 import { parseWhen, toLocalInput } from './views/components.js';
@@ -1320,9 +1321,16 @@ function deskStateFor(ctx, mentor) {
   };
 }
 
+/* Which states a member may see a profile for at all. Same allowlist as the
+   roster query: a pending submission is an unvetted stranger's self-written
+   bio, and it should not be readable at a guessable URL just because it is not
+   in the list. */
+const VISIBLE_MENTOR_STATES = new Set(['listed', 'paused']);
+
 function mentorHandler(ctx, { slug }) {
   const mentor = bf.getMentor(slug);
   if (!mentor) return notFound(ctx);
+  if (!VISIBLE_MENTOR_STATES.has(mentor.state) && !ctx.user.is_admin) return notFound(ctx);
   render(
     ctx,
     views.mentorPage(ctx, {
@@ -1735,6 +1743,31 @@ async function mentorTokenAnswer(ctx, { token }, decision) {
   sendHtml(ctx.res, views.mentorAnsweredPage({
     mentor, decision: result.decision, paused: !!result.paused,
   }));
+}
+
+/* --------------------------------------------------- mentor desk: steward */
+
+function mentorAdminHandler(ctx, { error = null, flash = null } = {}) {
+  if (!stewardsOnly(ctx)) return;
+  const status = mentorsync.status();
+  render(ctx, views.mentorAdminPage(ctx, {
+    pending: mentorsync.pendingSubmissions(),
+    status,
+    stuck: mentorsync.stuckRequests(),
+    roster: status.byState,
+    error,
+    flash,
+  }), { title: 'Mentor desk' });
+}
+
+async function mentorSyncNow(ctx) {
+  if (!stewardsOnly(ctx)) return;
+  const result = await mentorsync.sync();
+  // Fail closed and say so. The roster is untouched either way, which is the
+  // property worth being loud about: a failed sync is not a smaller roster.
+  mentorAdminHandler(ctx, result.ok
+    ? { flash: `${result.seen} seen, ${result.created} new, ${result.updated} updated.` }
+    : { error: `${result.error} Nothing was changed.` });
 }
 
 function action(fn) {
@@ -2190,6 +2223,20 @@ const ROUTES = [
       query, results, voted: bf.votedIds(ctx.user.id, 'post', results.posts.map((p) => p.id)),
     }), { title: query ? `Search: ${query}` : 'Search' });
   }],
+  ['GET', '/homeroom/stewards/mentors', (ctx) => mentorAdminHandler(ctx)],
+  ['POST', '/homeroom/stewards/mentors/sync', action(mentorSyncNow)],
+  ['POST', '/homeroom/stewards/mentors/:id/rule', action((ctx, fields, p) => {
+    if (!stewardsOnly(ctx)) return;
+    const decision = fields.decision === 'list' ? 'list' : 'reject';
+    const note = trimmed(fields.note, 300);
+    // A rejection without a reason is a decision the next steward cannot read.
+    if (decision === 'reject' && !note) {
+      return mentorAdminHandler(ctx, { error: 'Say why, so the next steward is not guessing.' });
+    }
+    const ruled = mentorsync.rule({ mentorId: p.id, decision, actorId: ctx.user.id, note });
+    if (!ruled) return notFound(ctx);
+    seeOther(ctx, '/homeroom/stewards/mentors');
+  })],
   ['GET', '/homeroom/stewards/access', (ctx) => accessAdminHandler(ctx)],
   ['POST', '/homeroom/stewards/access/lookup', accessLookupHandler],
   ['POST', '/homeroom/stewards/access/:hash/decide', action((ctx, fields, p) => {

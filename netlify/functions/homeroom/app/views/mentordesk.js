@@ -231,3 +231,75 @@ export function grantGonePage(ctx, { mentor, reason }) {
     ? html`<a class="btn" href="/homeroom/mentor/${mentor.slug}">Ask ${mentor.name} again</a>`
     : html`<a class="btn" href="/homeroom/mentors">Back to the mentors</a>`}</p>`;
 }
+
+/* --------------------------------------------------------------- steward */
+
+/**
+ * Gate A: the queue of people nobody has ruled on yet.
+ *
+ * The whole submission is shown, not a summary. A steward is deciding whether
+ * to put a stranger in front of members, and the fields they most need are the
+ * ones a summary drops — the bio in full, the org, and whether there is a
+ * booking link at all.
+ */
+export function mentorAdminPage(ctx, { pending, status, stuck, roster, error = null, flash = null }) {
+  const last = status.last;
+  return html`<div class="pagehead">
+    <div>
+      <h1>Mentor desk</h1>
+      <p class="lede">Every submission from the onboarding form lands here and is listed nowhere
+        until you rule on it. The form is a public URL, so this queue is the only thing between
+        it and the roster.</p>
+    </div>
+    <form method="post" action="/homeroom/stewards/mentors/sync">
+      ${csrfField(ctx)}
+      <button class="btn ghost" type="submit" ${raw(status.configured ? '' : 'disabled')}>Sync now</button>
+    </form>
+  </div>
+
+  ${error ? html`<div class="notice bad">${error}</div>` : ''}
+  ${flash ? html`<div class="notice">${flash}</div>` : ''}
+
+  ${!status.configured ? html`<div class="notice bad">No Airtable token is set, so the form does
+    not reach Homeroom. Set <code>HOMEROOM_MENTOR_SYNC_TOKEN</code> or
+    <code>AIRTABLE_TOKEN</code>.</div>` : ''}
+
+  <div class="statrow">
+    ${Object.entries(roster).map(([state, n]) => html`<div class="stat">
+      <b>${n}</b><span>${state}</span></div>`)}
+  </div>
+
+  <p class="mono dim">${last
+    ? html`Last sync ${relTime(last.at)}: ${last.ok
+        ? html`${last.seen} seen, ${last.created} new, ${last.updated} updated`
+        : html`<b>failed</b> — ${last.error}`}`
+    : 'No sync has run in this container yet.'}</p>
+
+  ${section(`Waiting on a steward (${pending.length})`, pending.length
+    ? html`<ul class="rail-list wide">${pending.map((m) => html`<li class="slot">
+        <div class="mono"><b>${m.name}</b>
+          ${m.role ? html`<span class="sep">/</span> ${m.role}` : ''}
+          ${m.org ? html`<span class="sep">/</span> ${m.org}` : ''}
+          <span class="sep">/</span> ${m.track}
+          <span class="sep">/</span> up to ${m.capacity || 2} a month
+          <span class="sep">/</span> ${m.consent_mode}</div>
+        ${m.bio ? html`<div>${m.bio}</div>` : html`<div class="dim">No bio given.</div>`}
+        <div class="tagrow">${String(m.tags || '').split(',').filter(Boolean)
+          .map((t) => html`<span class="tag ghost">${t}</span>`)}</div>
+        <form method="post" action="/homeroom/stewards/mentors/${m.id}/rule" class="inline">
+          ${csrfField(ctx)}
+          <input type="text" name="note" maxlength="300" placeholder="why (required to reject)" />
+          <button class="btn solid" type="submit" name="decision" value="list">List them</button>
+          <button class="btn ghost" type="submit" name="decision" value="reject">Reject</button>
+        </form>
+      </li>`)}</ul>`
+    : empty('Nothing waiting. New form submissions appear here within six hours.'))}
+
+  ${section(`Waiting on a mentor (${stuck.length})`, stuck.length
+    ? html`<ul class="rail-list wide">${stuck.map((r) => html`<li class="slot">
+        <div class="mono"><a href="/homeroom/mentor/${r.mentor_slug}">${r.mentor_name}</a>
+          <span class="sep">/</span> asked ${relTime(r.created_at)}
+          <span class="sep">/</span> by ${r.member_id}</div>
+      </li>`)}</ul>`
+    : empty('No requests have been left sitting.'))}`;
+}

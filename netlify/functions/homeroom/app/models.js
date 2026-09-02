@@ -2190,7 +2190,16 @@ export function getMentor(idOrSlug) {
  */
 export function searchMentors({ q = '', track = '', tag = '', vetted = false, format = '',
   limit = 60, offset = 0 } = {}) {
-  const where = ['active = 1'];
+  /*
+   * `state` gates the roster, not just `active`.
+   *
+   * Listed and paused are the two states a member should see: paused means
+   * "here, but not taking requests right now", which the profile explains.
+   * Everything else — pending review, rejected, dormant, withdrawn — is
+   * invisible, and it is an allowlist rather than a list of exclusions so a
+   * state added later is hidden by default rather than accidentally published.
+   */
+  const where = ["active = 1", "state IN ('listed','paused')"];
   const params = [];
   if (track) { where.push('track = ?'); params.push(track); }
   if (format) { where.push('format = ?'); params.push(format); }

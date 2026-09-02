@@ -343,7 +343,40 @@ one — it is how gate B reaches them. It is stored hashed for lookup and
 encrypted or re-fetched for sending, following §9 of the intro engine spec.
 Nothing outside the list is ever requested.
 
-### 8.4 Failure direction
+### 8.4 The form's fields
+
+What the Airtable form must collect, and what each one does once it arrives.
+The sweep reads these names (with the aliases in `mentorfields.js`); anything
+else on the form is ignored rather than stored.
+
+| Field | Type | What it does |
+| --- | --- | --- |
+| **Name** | text, required | The only field with no default. A row without one is skipped entirely. |
+| **Email** | email, required | How gate B reaches them. Validated on the way in; a malformed one is dropped, and a mentor with no address cannot be asked at all. |
+| **Role**, **Organization** | text | Shown on the profile. |
+| **Area of Expertise** | text or select | Mapped onto one of the twelve tracks by `trackFor()`. Unrecognised lands on `founder`, which is the honest "we do not know". |
+| **Tags** | multi-select | What they actually help with. This is what the request form heads itself with, and the single biggest lever on whether requests are well-routed. |
+| **Bio** | long text | Shown in full to the steward vetting them, and on the profile. |
+| **Scheduler** | URL, required to be bookable | Must be on the host allowlist: cal.com, calendly.com, savvycal.com, lu.ma, zcal.co. Anything else is dropped and they are listed as unbookable until a steward chases it. |
+| **Capacity** | number | Sessions a month. Blank means 2. Capped at 30, because a number typed into a public form is not a promise anyone should be held to. |
+| **Consent Mode** | single select: `ask-me` / `auto` / `auto-track` | How they want to be approached (§3.1). Anything unrecognised falls back to `ask-me`. |
+| **Tracks** | multi-select | Only meaningful with `auto-track`: the tracks they will take without being asked. |
+| **Format** | select | `one-on-one` or `group`. |
+
+Two things the form should say in its own words, because the system cannot say
+them later:
+
+- **What "auto" means**, next to the field. Someone picking it is waiving the
+  per-request ask, and that should be a decision rather than a default they
+  clicked past.
+- **What happens to the booking link** — shown to a member only after they
+  accept, through a link that expires, and no, we cannot stop someone who has
+  already opened it from saving it. §7.2.
+
+Rate-limiting and CAPTCHA are Airtable's settings, not Homeroom's. Turn them on
+before the URL is published anywhere.
+
+### 8.5 Failure direction
 
 **The sync fails closed and silent.** Airtable unreachable means the existing
 roster stands unchanged — no new mentors, no removals, an error on the steward
@@ -606,12 +639,27 @@ Also lazy rather than scheduled: `expireStale()` runs when request pages are
 read, not on a cron. A container in `/tmp` has no cron of its own, so anything
 that only runs on a timer does not run.
 
-**Phase 2 — the form and the sync.** (~3 days)
-The Airtable form, the field allowlist, the scheduled sync plus "sync now", the
-vetting queue, `airtable_id` matching.
+**Phase 2 — the form and the sync. BUILT.**
+The field allowlist, the scheduled sync plus "sync now", the vetting queue,
+`airtable_id` matching.
 
 *Done when:* a form submission appears in the vetting queue within six hours and
-nowhere else until a steward acts.
+nowhere else until a steward acts. Asserted in `test/mentorsync.test.js`.
+
+Shipped as `app/mentorsync.js`, `app/mentorfields.js` (shared with the CSV
+importer so the two cannot drift), `netlify/functions/mentor-sync.mjs` on a
+six-hourly schedule, and `/homeroom/stewards/mentors`.
+
+Three things came out differently or newly here:
+
+| Change | Why |
+| --- | --- |
+| **The roster query gates on `state`, not just `active`** | A new form row is `active = 1` like any other, so filtering on `active` alone would have published every submission the moment it synced. `searchMentors()` now takes an allowlist — `listed` and `paused` — so a state added later is hidden by default rather than accidentally published. Caught by the first test written for this phase. |
+| **A pending profile 404s at its own URL** | Not being in the list is not the same as not being readable. A submission is an unvetted stranger's self-written bio, and a guessable slug should not serve it. Stewards can still see it. |
+| **An empty table is refused, not believed** | An empty response and a wrong base id look identical, and one of them must not empty the roster. `--replace-seed` in the importer already encoded this; the sweep now does too. |
+
+**The form is still yours to build**, in Airtable — this is the half that is
+not code. §8.5 below is the field spec it has to produce.
 
 **Phase 3 — keeping it alive.** (~3 days)
 Re-confirmation, auto-pause, dormancy, outcomes, the metrics, the steward

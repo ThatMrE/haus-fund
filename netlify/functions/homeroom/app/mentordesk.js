@@ -547,6 +547,7 @@ export function deskStats(now = nowSeconds()) {
     listed: one("SELECT COUNT(*) FROM hr_mentors WHERE state = 'listed' AND active = 1"),
     paused: one("SELECT COUNT(*) FROM hr_mentors WHERE state = 'paused'"),
     waiting: one("SELECT COUNT(*) FROM hr_mentor_requests WHERE state = 'sent'"),
+    pendingReview: one("SELECT COUNT(*) FROM hr_mentors WHERE state = 'pending'"),
     grantsThisMonth: one(
       'SELECT COUNT(*) FROM hr_mentor_grants WHERE created_at >= ? AND created_at < ?', start, end),
   };
