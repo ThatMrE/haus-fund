@@ -1,0 +1,69 @@
+{
+  "treeId": "biopunk-accelerator",
+  "id": "prioritization-map",
+  "title": {
+    "name": "Founder judgment and the prioritisation map",
+    "level": 2
+  },
+  "track": "founder-fundamentals",
+  "kind": "workshop",
+  "week": 10,
+  "minutes": 90,
+  "deliverable": "Company Prioritization Map",
+  "defaultStatus": "inProgress",
+  "isUnlocked": true,
+  "onMainPath": true,
+  "link": "/homeroom/library/module/prioritization-map",
+  "initialPosition": [
+    1,
+    6
+  ],
+  "dependencies": [
+    "decision-making",
+    "risk-mapping"
+  ],
+  "leadsTo": [],
+  "overview": {
+    "description": "Biopunk workshop 2 in the medium case. By week 10 the problem is no longer what to do, it is what to stop.",
+    "objectives": [
+      "Rank company activities by contribution to the next milestone",
+      "Say no to good opportunities that are not this quarter’s opportunity",
+      "Distinguish evidence from opinion in your own reasoning"
+    ],
+    "prerequisites": [
+      "Deciding on incomplete information",
+      "Technical risk, market risk and the risk map"
+    ]
+  },
+  "steps": {
+    "intro": "Biopunk workshop 2 in the medium case. By week 10 the problem is no longer what to do, it is what to stop.",
+    "estimatedMinutes": 90,
+    "instructions": [
+      "List everything the company is currently doing.",
+      "Score each against the next funding or customer milestone.",
+      "Kill or park the bottom third. Write down what you killed and why — you will be asked."
+    ]
+  },
+  "submission": {
+    "description": "Produce the Company Prioritization Map and log it against this module in Homeroom. Done means the artefact exists, not that you read the page."
+  },
+  "video": {
+    "url": "https://www.youtube.com/watch?v=ZoKLofsp8u0",
+    "title": "Lessons from working with 600+ YC startups",
+    "source": "Gustaf Alströmer, Y Combinator"
+  },
+  "resources": [
+    {
+      "title": "YC — how to prioritise your time as a founder",
+      "url": "https://www.ycombinator.com/library"
+    },
+    {
+      "title": "Paul Graham — the top idea in your mind",
+      "url": "https://www.paulgraham.com/top.html"
+    },
+    {
+      "title": "Kauffman Founders School — founder judgement and focus",
+      "url": "https://www.entrepreneurship.org/learning-paths"
+    }
+  ]
+}

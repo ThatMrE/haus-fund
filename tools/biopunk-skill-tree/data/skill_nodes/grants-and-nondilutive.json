@@ -1,0 +1,75 @@
+{
+  "treeId": "biopunk-accelerator",
+  "id": "grants-and-nondilutive",
+  "title": {
+    "name": "Grants and non-dilutive capital",
+    "level": 3
+  },
+  "track": "fundraising-and-capital",
+  "kind": "workshop",
+  "week": 7,
+  "minutes": 90,
+  "deliverable": "Grant Pipeline",
+  "defaultStatus": "inProgress",
+  "isUnlocked": true,
+  "onMainPath": true,
+  "link": "/homeroom/library/module/grants-and-nondilutive",
+  "initialPosition": [
+    3,
+    2
+  ],
+  "dependencies": [
+    "raising-on-an-idea"
+  ],
+  "leadsTo": [],
+  "overview": {
+    "description": "Sponsor-led, with grants office hours the same week. SBIR, STTR, NIH, NSF, ARPA-H, DoD, DOE — and the registration steps that quietly eat a month.",
+    "objectives": [
+      "Choose between grants and venture for a given milestone rather than pursuing both badly",
+      "Time an application backwards from the deadline including registrations",
+      "Write specific aims a reviewer can score without reading twice"
+    ],
+    "prerequisites": [
+      "Raising on an idea"
+    ]
+  },
+  "steps": {
+    "intro": "Sponsor-led, with grants office hours the same week. SBIR, STTR, NIH, NSF, ARPA-H, DoD, DOE — and the registration steps that quietly eat a month.",
+    "estimatedMinutes": 90,
+    "instructions": [
+      "Complete SAM.gov, eRA Commons and SBA registration now, before you have a target.",
+      "Build the pipeline: agency, mechanism, deadline, fit, effort. Twelve months out.",
+      "Draft one specific aims page and take it to grants office hours."
+    ]
+  },
+  "submission": {
+    "description": "Produce the Grant Pipeline and log it against this module in Homeroom. Done means the artefact exists, not that you read the page."
+  },
+  "video": {
+    "url": "https://www.youtube.com/watch?v=aOC0ADPimE4",
+    "title": "America's Seed Fund: How to Fund Your Startup with an NIH SBIR Grant",
+    "source": "NIH SEED"
+  },
+  "resources": [
+    {
+      "title": "NIH SEED — small business funding, start here",
+      "url": "https://seed.nih.gov/small-business-funding"
+    },
+    {
+      "title": "Understanding SBIR and STTR — the difference that decides eligibility",
+      "url": "https://seed.nih.gov/small-business-funding/small-business-program-basics/understanding-sbir-sttr"
+    },
+    {
+      "title": "SBIR.gov — cross-agency solicitations and deadlines",
+      "url": "https://www.sbir.gov/"
+    },
+    {
+      "title": "SAM.gov — the registration that quietly eats a month",
+      "url": "https://sam.gov/"
+    },
+    {
+      "title": "eRA Commons — register before you have a target",
+      "url": "https://public.era.nih.gov/commons/"
+    }
+  ]
+}

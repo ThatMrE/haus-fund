@@ -957,7 +957,10 @@ export function libraryPage(ctx, { tracks, progress, modules, filters, entries, 
       <p class="lede">Six tracks, ${progress.total} modules, and a deliverable at the end of the ones
         that matter. Not a reading list — a module is done when the artefact exists.</p>
     </div>
-    <a class="btn ghost" href="/homeroom/library/notes">Your deliverables</a>
+    <div class="row">
+      <a class="btn ghost" href="/skilltree">Skill tree ↗</a>
+      <a class="btn ghost" href="/homeroom/library/notes">Your deliverables</a>
+    </div>
   </div>
 
   <div class="progressbar">
@@ -965,6 +968,11 @@ export function libraryPage(ctx, { tracks, progress, modules, filters, entries, 
     <div class="mono">${progress.done} done · ${progress.started} in progress · ${progress.total} total
       <b>${progress.percent}%</b></div>
   </div>
+
+  <p class="mono dim tiny">The same curriculum is drawn as a navigable graph at
+    <a href="/skilltree">haus.fund/skilltree</a> — every module as a node, with what it
+    builds on, what it leads to, curated reading and a video. Progress there is kept in the
+    browser; the deliverable you log here is the record.</p>
 
   <form class="searchbar" method="get" action="/homeroom/library">
     <input type="search" name="q" value="${filters.q}" placeholder="search every module" />

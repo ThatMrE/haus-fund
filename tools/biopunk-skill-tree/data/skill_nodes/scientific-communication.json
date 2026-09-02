@@ -1,0 +1,70 @@
+{
+  "treeId": "biopunk-accelerator",
+  "id": "scientific-communication",
+  "title": {
+    "name": "Explaining science to people who are not scientists",
+    "level": 3
+  },
+  "track": "brand-network-and-life",
+  "kind": "workshop",
+  "week": 11,
+  "minutes": 60,
+  "deliverable": "2-minute explanation",
+  "defaultStatus": "inProgress",
+  "isUnlocked": true,
+  "onMainPath": true,
+  "link": "/homeroom/library/module/scientific-communication",
+  "initialPosition": [
+    6,
+    1
+  ],
+  "dependencies": [
+    "credibility-stack"
+  ],
+  "leadsTo": [
+    "press-and-media",
+    "demo-day"
+  ],
+  "overview": {
+    "description": "Delivered alongside Orrick 3 in week 11 and again in demo day preparation. Investors, customers, journalists, policymakers and patients each need a different version, and none of them need the abstract.",
+    "objectives": [
+      "Explain your science in two minutes without analogy collapse",
+      "Adapt the same explanation across five audiences",
+      "Answer a hostile technical question without becoming defensive"
+    ],
+    "prerequisites": [
+      "The scientific credibility stack"
+    ]
+  },
+  "steps": {
+    "intro": "Delivered alongside Orrick 3 in week 11 and again in demo day preparation. Investors, customers, journalists, policymakers and patients each need a different version, and none of them need the abstract.",
+    "estimatedMinutes": 60,
+    "instructions": [
+      "Write the two-minute version. Deliver it to someone outside biology.",
+      "Write the thirty-second version. Then the one-sentence version.",
+      "Have a scientist try to break it. Fix what breaks."
+    ]
+  },
+  "submission": {
+    "description": "Produce the 2-minute explanation and log it against this module in Homeroom. Done means the artefact exists, not that you read the page."
+  },
+  "video": {
+    "url": "https://www.youtube.com/watch?v=tmFwSntejpM",
+    "title": "The Art of Communicating Science",
+    "source": "Alan Alda, World Science Festival"
+  },
+  "resources": [
+    {
+      "title": "Alan Alda Center for Communicating Science",
+      "url": "https://www.aldacenter.org/"
+    },
+    {
+      "title": "AAAS — communication toolkit for scientists",
+      "url": "https://www.aaas.org/resources/communication-toolkit"
+    },
+    {
+      "title": "Kevin Hale — how to pitch, and why the explanation comes first",
+      "url": "https://www.youtube.com/watch?v=17XZGUX_9iM"
+    }
+  ]
+}

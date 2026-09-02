@@ -1,0 +1,71 @@
+{
+  "treeId": "biopunk-accelerator",
+  "id": "fundraising-narrative",
+  "title": {
+    "name": "The fundraising narrative and investor communication",
+    "level": 3
+  },
+  "track": "fundraising-and-capital",
+  "kind": "workshop",
+  "week": 11,
+  "minutes": 60,
+  "deliverable": "Fundraising Narrative",
+  "defaultStatus": "inProgress",
+  "isUnlocked": true,
+  "onMainPath": true,
+  "link": "/homeroom/library/module/fundraising-narrative",
+  "initialPosition": [
+    3,
+    4
+  ],
+  "dependencies": [
+    "raising-on-an-idea",
+    "credibility-stack"
+  ],
+  "leadsTo": [
+    "demo-day"
+  ],
+  "overview": {
+    "description": "Investors fund a story that is consistent with the data, not a story instead of the data — and not the data instead of a story.",
+    "objectives": [
+      "Write a narrative that survives a technical sceptic and a generalist in the same room",
+      "Run monthly investor updates that make the next raise easier",
+      "Balance credibility and ambition without sounding like either a paper or a pitch"
+    ],
+    "prerequisites": [
+      "Raising on an idea",
+      "The scientific credibility stack"
+    ]
+  },
+  "steps": {
+    "intro": "Investors fund a story that is consistent with the data, not a story instead of the data — and not the data instead of a story.",
+    "estimatedMinutes": 60,
+    "instructions": [
+      "Write the narrative in five sentences. Problem, insight, why now, evidence, ask.",
+      "Give it to a scientist and a generalist. Fix whatever both stumble on.",
+      "Send the first investor update this month, even with no investors."
+    ]
+  },
+  "submission": {
+    "description": "Produce the Fundraising Narrative and log it against this module in Homeroom. Done means the artefact exists, not that you read the page."
+  },
+  "video": {
+    "url": "https://www.youtube.com/watch?v=17XZGUX_9iM",
+    "title": "How to Pitch Your Startup",
+    "source": "Kevin Hale, Y Combinator"
+  },
+  "resources": [
+    {
+      "title": "YC — the standard 10-slide seed deck",
+      "url": "https://www.ycombinator.com/library/4T-how-to-design-a-better-pitch-deck"
+    },
+    {
+      "title": "Sequoia — writing a business plan",
+      "url": "https://www.sequoiacap.com/article/writing-a-business-plan/"
+    },
+    {
+      "title": "LifeSciVC — the biotech narrative that survives a sceptic",
+      "url": "https://lifescivc.com/"
+    }
+  ]
+}

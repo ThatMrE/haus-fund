@@ -1,0 +1,73 @@
+{
+  "treeId": "biopunk-accelerator",
+  "id": "lab-operations",
+  "title": {
+    "name": "Startup labs versus academic labs",
+    "level": 3
+  },
+  "track": "team-and-operations",
+  "kind": "playbook",
+  "week": 0,
+  "minutes": 60,
+  "deliverable": "",
+  "defaultStatus": "inProgress",
+  "isUnlocked": true,
+  "onMainPath": false,
+  "link": "/homeroom/library/module/lab-operations",
+  "initialPosition": [
+    5,
+    2
+  ],
+  "dependencies": [
+    "biosafety-and-compliance"
+  ],
+  "leadsTo": [
+    "manufacturing-scaleup"
+  ],
+  "overview": {
+    "description": "A startup lab optimises for repeatability under time pressure. An academic lab optimises for novelty. The equipment looks identical and almost nothing else is.",
+    "objectives": [
+      "Set up an ELN and a documentation culture people will actually keep",
+      "Choose a BSL pathway and build to it rather than around it",
+      "Make an experiment repeatable by someone who did not run it"
+    ],
+    "prerequisites": [
+      "Biosafety, EHS and dual-use review"
+    ]
+  },
+  "steps": {
+    "intro": "A startup lab optimises for repeatability under time pressure. An academic lab optimises for novelty. The equipment looks identical and almost nothing else is.",
+    "estimatedMinutes": 60,
+    "instructions": [
+      "Choose an ELN this week. Any of them beats a notebook nobody can search.",
+      "Write one protocol so completely that a new hire could run it unaided. Then have them.",
+      "Audit your freezer. Unlabelled samples are a liability, not an asset."
+    ]
+  },
+  "submission": {
+    "description": "No named deliverable. Work the steps and keep the notes with the module in Homeroom."
+  },
+  "video": {
+    "url": "https://www.youtube.com/watch?v=Lc8xWm5sarA",
+    "title": "Electronic lab notebooks for data management and collaboration",
+    "source": "Research data management seminar"
+  },
+  "resources": [
+    {
+      "title": "Ten simple rules for implementing electronic lab notebooks",
+      "url": "https://journals.plos.org/ploscompbiol/article?id=10.1371/journal.pcbi.1008995"
+    },
+    {
+      "title": "protocols.io — write a protocol someone else can run",
+      "url": "https://www.protocols.io/"
+    },
+    {
+      "title": "FAIR data principles — findable, accessible, interoperable, reusable",
+      "url": "https://www.go-fair.org/fair-principles/"
+    },
+    {
+      "title": "Core Facility Finder — the instrument you were about to buy",
+      "url": "/cores"
+    }
+  ]
+}

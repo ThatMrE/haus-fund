@@ -1,0 +1,67 @@
+{
+  "treeId": "biopunk-accelerator",
+  "id": "capital-efficiency",
+  "title": {
+    "name": "Burn rate versus learning rate",
+    "level": 2
+  },
+  "track": "founder-fundamentals",
+  "kind": "playbook",
+  "week": 0,
+  "minutes": 45,
+  "deliverable": "",
+  "defaultStatus": "inProgress",
+  "isUnlocked": true,
+  "onMainPath": false,
+  "link": "/homeroom/library/module/capital-efficiency",
+  "initialPosition": [
+    1,
+    5
+  ],
+  "dependencies": [
+    "risk-mapping"
+  ],
+  "leadsTo": [],
+  "overview": {
+    "description": "Capital efficiency is not frugality. It is the ratio of what you learned to what you spent, and expensive validation is the most common way to get it badly wrong.",
+    "objectives": [
+      "Measure spend against assumptions retired, not against runway consumed",
+      "Recognise the experiment that costs ten times more and proves the same thing",
+      "Spend on the things investors actually reward"
+    ],
+    "prerequisites": [
+      "Technical risk, market risk and the risk map"
+    ]
+  },
+  "steps": {
+    "intro": "Capital efficiency is not frugality. It is the ratio of what you learned to what you spent, and expensive validation is the most common way to get it badly wrong.",
+    "estimatedMinutes": 45,
+    "instructions": [
+      "Take last month’s spend and assign every line to an assumption it tested.",
+      "Anything that tested nothing is either infrastructure or waste. Decide which.",
+      "Design next month so the largest line item retires the largest risk."
+    ]
+  },
+  "submission": {
+    "description": "No named deliverable. Work the steps and keep the notes with the module in Homeroom."
+  },
+  "video": {
+    "url": "https://www.youtube.com/watch?v=LBC16jhiwak",
+    "title": "Managing Startup Finances",
+    "source": "Kirsty Nathoo, Y Combinator"
+  },
+  "resources": [
+    {
+      "title": "Paul Graham — default alive or default dead",
+      "url": "https://www.paulgraham.com/aord.html"
+    },
+    {
+      "title": "YC — how much runway should you target",
+      "url": "https://www.ycombinator.com/library"
+    },
+    {
+      "title": "Core Facility Finder — use an instrument instead of buying one",
+      "url": "/cores"
+    }
+  ]
+}

@@ -1,0 +1,69 @@
+{
+  "treeId": "biopunk-accelerator",
+  "id": "ind-and-clinical-path",
+  "title": {
+    "name": "Preclinical, IND and the clinical path",
+    "level": 5
+  },
+  "track": "legal-ip-and-regulatory",
+  "kind": "reference",
+  "week": 0,
+  "minutes": 60,
+  "deliverable": "",
+  "defaultStatus": "inProgress",
+  "isUnlocked": true,
+  "onMainPath": false,
+  "link": "/homeroom/library/module/ind-and-clinical-path",
+  "initialPosition": [
+    4,
+    5
+  ],
+  "dependencies": [
+    "regulatory-strategy"
+  ],
+  "leadsTo": [],
+  "overview": {
+    "description": "The therapeutics counterpart to the regulatory workshop, which leans device and diagnostic. IND-enabling work, the pre-IND meeting, what phase 1 actually costs and how long each gate really takes — because the gates, not the science, set your financing plan.",
+    "objectives": [
+      "Sequence IND-enabling work — tox, CMC, pharmacology — and know which is on the critical path",
+      "Use a pre-IND meeting to get the agency’s view before committing to the package",
+      "Read phase 1/2/3 as financing milestones rather than as scientific stages",
+      "Estimate the money and the calendar to first-in-human honestly, including CRO and CDMO queues"
+    ],
+    "prerequisites": [
+      "Validation, regulatory pathways and quality systems"
+    ]
+  },
+  "steps": {
+    "intro": "The therapeutics counterpart to the regulatory workshop, which leans device and diagnostic. IND-enabling work, the pre-IND meeting, what phase 1 actually costs and how long each gate really takes — because the gates, not the science, set your financing plan.",
+    "estimatedMinutes": 60,
+    "instructions": [
+      "Write your route to first-in-human as a gantt with the three longest-lead items marked.",
+      "Draft the pre-IND briefing questions. Three good questions beat twelve vague ones.",
+      "Price the IND-enabling package with a real CRO quote, not a benchmark.",
+      "Check the number against what the round you are raising can actually buy."
+    ]
+  },
+  "submission": {
+    "description": "No named deliverable. Work the steps and keep the notes with the module in Homeroom."
+  },
+  "video": null,
+  "resources": [
+    {
+      "title": "FDA — the Investigational New Drug application",
+      "url": "https://www.fda.gov/drugs/types-applications/investigational-new-drug-ind-application"
+    },
+    {
+      "title": "FDA — pre-IND consultation, before you commit to the package",
+      "url": "https://www.fda.gov/drugs/investigational-new-drug-ind-application/pre-investigational-new-drug-pind-consultation-program"
+    },
+    {
+      "title": "FDA — the drug development process, phase by phase",
+      "url": "https://www.fda.gov/patients/learn-about-drug-and-device-approvals/drug-development-process"
+    },
+    {
+      "title": "FDA — formal meetings for CBER-regulated products",
+      "url": "https://www.fda.gov/vaccines-blood-biologics/development-approval-process-cber/formal-meetings-and-requests-feedback-cber-regulated-products"
+    }
+  ]
+}

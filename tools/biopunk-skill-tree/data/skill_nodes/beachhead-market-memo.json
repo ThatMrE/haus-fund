@@ -1,0 +1,75 @@
+{
+  "treeId": "biopunk-accelerator",
+  "id": "beachhead-market-memo",
+  "title": {
+    "name": "Beachhead markets and why superior products fail",
+    "level": 2
+  },
+  "track": "founder-fundamentals",
+  "kind": "workshop",
+  "week": 1,
+  "minutes": 90,
+  "deliverable": "Beachhead Market Memo",
+  "defaultStatus": "inProgress",
+  "isUnlocked": true,
+  "onMainPath": true,
+  "link": "/homeroom/library/module/beachhead-market-memo",
+  "initialPosition": [
+    1,
+    1
+  ],
+  "dependencies": [
+    "risk-mapping"
+  ],
+  "leadsTo": [
+    "primary-market-research",
+    "category-design",
+    "target-product-profile"
+  ],
+  "overview": {
+    "description": "A technically superior product losing to a worse one is the default outcome, not the exception. Usually because the better product asked the customer to change more than the improvement was worth.",
+    "objectives": [
+      "Choose a beachhead you can dominate rather than a market you can enter",
+      "State the switching cost you are asking a customer to bear",
+      "Distinguish fastest path to revenue from fastest path to learning, and pick deliberately"
+    ],
+    "prerequisites": [
+      "Technical risk, market risk and the risk map"
+    ]
+  },
+  "steps": {
+    "intro": "A technically superior product losing to a worse one is the default outcome, not the exception. Usually because the better product asked the customer to change more than the improvement was worth.",
+    "estimatedMinutes": 90,
+    "instructions": [
+      "Name the single customer segment where you win outright, not narrowly.",
+      "Estimate how many such customers exist. If it is more than a few hundred, narrow further.",
+      "Write the memo: who, why them, why now, what they use today, what it costs them to switch."
+    ]
+  },
+  "submission": {
+    "description": "Produce the Beachhead Market Memo and log it against this module in Homeroom. Done means the artefact exists, not that you read the page."
+  },
+  "video": {
+    "url": "https://www.youtube.com/watch?v=FqmCN5Tt0Jo",
+    "title": "Introduction to Disciplined Entrepreneurship",
+    "source": "Bill Aulet, MIT"
+  },
+  "resources": [
+    {
+      "title": "Disciplined Entrepreneurship — beachhead market selection",
+      "url": "https://disciplinedentrepreneurship.com/"
+    },
+    {
+      "title": "MIT Martin Trust Center — entrepreneurship resources",
+      "url": "https://entrepreneurship.mit.edu/"
+    },
+    {
+      "title": "April Dunford — positioning and market category",
+      "url": "https://www.aprildunford.com/"
+    },
+    {
+      "title": "YC — how to get startup ideas",
+      "url": "https://www.ycombinator.com/library/8g-how-to-get-startup-ideas"
+    }
+  ]
+}

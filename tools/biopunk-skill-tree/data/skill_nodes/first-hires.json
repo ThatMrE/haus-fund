@@ -1,0 +1,69 @@
+{
+  "treeId": "biopunk-accelerator",
+  "id": "first-hires",
+  "title": {
+    "name": "First hires and scientific hiring",
+    "level": 2
+  },
+  "track": "team-and-operations",
+  "kind": "playbook",
+  "week": 0,
+  "minutes": 60,
+  "deliverable": "Hiring Plan",
+  "defaultStatus": "inProgress",
+  "isUnlocked": true,
+  "onMainPath": false,
+  "link": "/homeroom/library/module/first-hires",
+  "initialPosition": [
+    5,
+    1
+  ],
+  "dependencies": [
+    "company-formation"
+  ],
+  "leadsTo": [
+    "hiring-and-governance"
+  ],
+  "overview": {
+    "description": "The first three hires set the culture whether or not you meant them to. In a wet lab they also set the safety practice.",
+    "objectives": [
+      "Decide PhD versus engineer, specialist versus generalist, for the work you actually have",
+      "Run a work trial that tells you something a interview cannot",
+      "End a hire that is not working, early and decently"
+    ],
+    "prerequisites": [
+      "Orrick 1: Formation and startup foundations"
+    ]
+  },
+  "steps": {
+    "intro": "The first three hires set the culture whether or not you meant them to. In a wet lab they also set the safety practice.",
+    "estimatedMinutes": 60,
+    "instructions": [
+      "Write the first three roles as outcomes, not titles.",
+      "Design a paid work trial: real work, scoped to a day or two.",
+      "Agree in advance what six weeks of not working looks like."
+    ]
+  },
+  "submission": {
+    "description": "Produce the Hiring Plan and log it against this module in Homeroom. Done means the artefact exists, not that you read the page."
+  },
+  "video": {
+    "url": "https://www.youtube.com/watch?v=AZidfpz9KfY",
+    "title": "Building an Engineering Team",
+    "source": "Ammon Bartram and Harj Taggar, Y Combinator"
+  },
+  "resources": [
+    {
+      "title": "YC Startup Library — hiring",
+      "url": "https://www.ycombinator.com/library"
+    },
+    {
+      "title": "Orrick Tech Studio — offer letters and employment agreements",
+      "url": "https://www.orrick.com/en/tech-studio/resources/forms"
+    },
+    {
+      "title": "Haus careers — how this network writes a role as an outcome",
+      "url": "/careers"
+    }
+  ]
+}

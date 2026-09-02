@@ -1,0 +1,71 @@
+{
+  "treeId": "biopunk-accelerator",
+  "id": "demo-day",
+  "title": {
+    "name": "Demo day preparation and pitch review",
+    "level": 4
+  },
+  "track": "brand-network-and-life",
+  "kind": "workshop",
+  "week": 12,
+  "minutes": 120,
+  "deliverable": "Demo Day Pitch",
+  "defaultStatus": "inProgress",
+  "isUnlocked": true,
+  "onMainPath": true,
+  "link": "/homeroom/library/module/demo-day",
+  "initialPosition": [
+    6,
+    6
+  ],
+  "dependencies": [
+    "fundraising-narrative",
+    "scientific-communication"
+  ],
+  "leadsTo": [
+    "showcase-capstone"
+  ],
+  "overview": {
+    "description": "Week 12. Pitch review, investor feedback, narrative refinement, Q&A preparation and media training, then the Final Showcase.",
+    "objectives": [
+      "Deliver a pitch that holds a room that does not know your field",
+      "Handle the Q&A, which is where the round is actually won or lost",
+      "Follow up after demo day in a way that converts interest into capital"
+    ],
+    "prerequisites": [
+      "The fundraising narrative and investor communication",
+      "Explaining science to people who are not scientists"
+    ]
+  },
+  "steps": {
+    "intro": "Week 12. Pitch review, investor feedback, narrative refinement, Q&A preparation and media training, then the Final Showcase.",
+    "estimatedMinutes": 120,
+    "instructions": [
+      "Present to the cohort first. Take the hits there.",
+      "Prepare the five questions you least want to be asked. Answer each in two sentences.",
+      "Write the follow-up email before demo day, not after."
+    ]
+  },
+  "submission": {
+    "description": "Produce the Demo Day Pitch and log it against this module in Homeroom. Done means the artefact exists, not that you read the page."
+  },
+  "video": {
+    "url": "https://www.youtube.com/watch?v=lw2X3PxKlAY",
+    "title": "How to Perfectly Pitch Your Seed Stage Startup",
+    "source": "Michael Seibel, Y Combinator"
+  },
+  "resources": [
+    {
+      "title": "YC — how to design a better pitch deck",
+      "url": "https://www.ycombinator.com/library/4T-how-to-design-a-better-pitch-deck"
+    },
+    {
+      "title": "IndieBio demo days — the biotech version of the format",
+      "url": "https://sosv.com/"
+    },
+    {
+      "title": "The 2050 Final Showcase — what this cohort is building toward",
+      "url": "/showcase"
+    }
+  ]
+}

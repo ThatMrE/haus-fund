@@ -1,0 +1,69 @@
+{
+  "treeId": "biopunk-accelerator",
+  "id": "manufacturing-scaleup",
+  "title": {
+    "name": "Manufacturing, biomanufacturing and scale-up",
+    "level": 6
+  },
+  "track": "team-and-operations",
+  "kind": "workshop",
+  "week": 9,
+  "minutes": 90,
+  "deliverable": "Manufacturing Roadmap",
+  "defaultStatus": "inProgress",
+  "isUnlocked": true,
+  "onMainPath": true,
+  "link": "/homeroom/library/module/manufacturing-scaleup",
+  "initialPosition": [
+    5,
+    5
+  ],
+  "dependencies": [
+    "technoeconomics",
+    "lab-operations"
+  ],
+  "leadsTo": [],
+  "overview": {
+    "description": "Sponsor-led. OEMs, RFQs, supplier qualification, DFM, DFT, sourcing, logistics, domestic and Shenzhen manufacturing, pilot plants, CMOs, CDMOs and tech transfer.",
+    "objectives": [
+      "Write an RFQ that gets comparable quotes back",
+      "Qualify a supplier before you depend on one",
+      "Plan a tech transfer to a CDMO as a project, not an email"
+    ],
+    "prerequisites": [
+      "Technoeconomics, cost curves and willingness to pay",
+      "Startup labs versus academic labs"
+    ]
+  },
+  "steps": {
+    "intro": "Sponsor-led. OEMs, RFQs, supplier qualification, DFM, DFT, sourcing, logistics, domestic and Shenzhen manufacturing, pilot plants, CMOs, CDMOs and tech transfer.",
+    "estimatedMinutes": 90,
+    "instructions": [
+      "Build the bill of materials at pilot scale and at commercial scale.",
+      "Send the same RFQ to three suppliers. Compare on total landed cost.",
+      "Write the tech transfer package as though you were leaving the company."
+    ]
+  },
+  "submission": {
+    "description": "Produce the Manufacturing Roadmap and log it against this module in Homeroom. Done means the artefact exists, not that you read the page."
+  },
+  "video": null,
+  "resources": [
+    {
+      "title": "FDA — current good manufacturing practice, and when it starts applying",
+      "url": "https://www.fda.gov/drugs/pharmaceutical-quality-resources/current-good-manufacturing-practice-cgmp-regulations"
+    },
+    {
+      "title": "NIIMBL — biopharmaceutical manufacturing training and standards",
+      "url": "https://niimbl.my.site.com/"
+    },
+    {
+      "title": "BioPhorum — tech transfer practice between sponsor and CDMO",
+      "url": "https://www.biophorum.com/"
+    },
+    {
+      "title": "Technology transfer and scale-down model development (review)",
+      "url": "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC3981586/"
+    }
+  ]
+}

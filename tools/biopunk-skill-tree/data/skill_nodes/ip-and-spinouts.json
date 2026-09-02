@@ -1,0 +1,75 @@
+{
+  "treeId": "biopunk-accelerator",
+  "id": "ip-and-spinouts",
+  "title": {
+    "name": "Orrick 2: IP, academic spinouts and research commercialisation",
+    "level": 2
+  },
+  "track": "legal-ip-and-regulatory",
+  "kind": "workshop",
+  "week": 6,
+  "minutes": 90,
+  "deliverable": "Commercialization Pathway Plan",
+  "defaultStatus": "inProgress",
+  "isUnlocked": true,
+  "onMainPath": true,
+  "link": "/homeroom/library/module/ip-and-spinouts",
+  "initialPosition": [
+    4,
+    1
+  ],
+  "dependencies": [
+    "company-formation"
+  ],
+  "leadsTo": [
+    "diligence-room"
+  ],
+  "overview": {
+    "description": "Patents, provisional patents, trade secrets, publication timing, university IP, licensing, sponsored research agreements, freedom to operate and advisor agreements. Followed by founder-specific IP review.",
+    "objectives": [
+      "Decide patent versus trade secret for each piece of your technology",
+      "Time a publication so it does not destroy patentability",
+      "Negotiate a university licence you can actually build a company on",
+      "Run a freedom-to-operate check before you commit to a route"
+    ],
+    "prerequisites": [
+      "Orrick 1: Formation and startup foundations"
+    ]
+  },
+  "steps": {
+    "intro": "Patents, provisional patents, trade secrets, publication timing, university IP, licensing, sponsored research agreements, freedom to operate and advisor agreements. Followed by founder-specific IP review.",
+    "estimatedMinutes": 90,
+    "instructions": [
+      "Inventory every piece of IP and who owns it. Check your employment and student agreements.",
+      "Map publication dates against filing dates. Any publication before a filing is a decision, so make it deliberately.",
+      "If a university has a claim, get the licence terms in writing before the next raise.",
+      "Book the IP review slot."
+    ]
+  },
+  "submission": {
+    "description": "Produce the Commercialization Pathway Plan and log it against this module in Homeroom. Done means the artefact exists, not that you read the page."
+  },
+  "video": {
+    "url": "https://www.youtube.com/watch?v=OprU1Z2bJS4",
+    "title": "IP Strategies for Deep Tech",
+    "source": "IP practitioner panel"
+  },
+  "resources": [
+    {
+      "title": "USPTO — provisional application for patent",
+      "url": "https://www.uspto.gov/patents/basics/apply/provisional-application"
+    },
+    {
+      "title": "USPTO — patent basics, including what publication costs you",
+      "url": "https://www.uspto.gov/patents/basics"
+    },
+    {
+      "title": "NIH Office of Technology Transfer — licensing from a federal lab",
+      "url": "https://www.techtransfer.nih.gov/"
+    },
+    {
+      "title": "AUTM — university licensing practice and norms",
+      "url": "https://autm.net/"
+    }
+  ]
+}
