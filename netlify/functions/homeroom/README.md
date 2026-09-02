@@ -230,6 +230,110 @@ outranks it, so the next weekly re-check does not quietly undo their work.
 | `HOMEROOM_STATIC_BASE` | `/homeroom-assets` | Where the stylesheet and client script are served from. |
 | `HOMEROOM_SEED` | — | What a cold container fills itself with. Unset: the full sample network, including ten invented accounts sharing a documented password — for reviewing the design, never for production. `real`: only the researched reference data (perks, capital map, atlas, manual, channels) and no accounts. `off`: nothing, in which case pair it with `HOMEROOM_ACCESS=closed` or a roster token, because with no accounts the first signup is made a steward. |
 
+### The steward account
+
+Homeroom's database lives on the function container's `/tmp`. Every cold
+container starts empty, seeds itself and is thrown away again — so an admin
+account created by hand through a form or a one-off script exists on exactly one
+container and is gone by the next request. **The only account that survives a
+redeploy is one rebuilt from configuration**, which is what these three do. They
+are read on every boot, whatever `HOMEROOM_SEED` is set to.
+
+| Variable | Notes |
+| --- | --- |
+| `HOMEROOM_STEWARD` | Handle of the admin account. Unset: no account is created, and nobody is an admin. |
+| `HOMEROOM_STEWARD_EMAIL` | The sign-in address. Defaults to `<handle>@haus.fund`. |
+| `HOMEROOM_STEWARD_PASSWORD_HASH` | A scrypt hash from `npm run steward`. Preferred: a hash in the dashboard is useless to anyone who reads it, a plaintext password is a working key. |
+| `HOMEROOM_STEWARD_PASSWORD` | Plaintext fallback, honoured only when no hash is set. Subject to the same 10-character floor as the signup form. |
+
+Generate a set:
+
+```bash
+npm run steward -- --handle <handle> --email you@example.org
+```
+
+It prints the three variables and shows the password once. Paste the variables
+into Netlify and the password into a password manager; nothing else stores it.
+
+If `HOMEROOM_STEWARD` is set but neither secret is, the boot logs an error and
+creates nothing — an admin account nobody holds the key to is worse than none.
+The same is true of a hash in the wrong format, a handle or address the signup
+form would reject, and an address already belonging to a different account. None
+of these are fatal: a misconfigured steward must not take the site down.
+
+Two consequences of the storage worth knowing before you rely on it:
+
+- **Changing the password inside Homeroom does not stick.** That change lives on
+  one container. To rotate for real, re-run `npm run steward` and update
+  `HOMEROOM_STEWARD_PASSWORD_HASH`.
+- **Sessions do not survive a container either**, unless `HOMEROOM_SECRET` is
+  set, and not across containers regardless — expect to sign in again.
+
+An existing ordinary account named by `HOMEROOM_STEWARD` is promoted rather than
+replaced, and its password is left alone. `npm run steward -- --apply --force`
+resets a local account's password and ends its open sessions.
+
+### Accounts (Supabase Auth)
+
+By default Homeroom holds its own passwords, in the SQLite database on the
+container's `/tmp` — which means an account lasts until the next cold start.
+Setting `HOMEROOM_AUTH=supabase` moves the credential to Supabase, which is
+durable, and brings the one piece of account management this app has never had:
+a password-reset email that is actually sent.
+
+| Variable | Notes |
+| --- | --- |
+| `HOMEROOM_AUTH` | `local` (default) or `supabase`. |
+| `SUPABASE_URL` | `https://<project-ref>.supabase.co`. Shared with the publishing integration below. |
+| `SUPABASE_PUBLISHABLE_KEY` | The publishable (anon) key. This is the key a browser would use; it is not a privileged one. |
+
+`HOMEROOM_AUTH=supabase` with no project configured falls back to local accounts
+rather than taking the front door off its hinges, and `/homeroom/health` says so
+under `auth`.
+
+**What moves and what does not.** Supabase owns the password, its hashing, the
+reset tokens and the recovery email. It owns nothing else. Homeroom keeps its
+own `users` row and its own session cookie, because every table in the schema
+hangs off `users.id` by foreign key — posts, chat, reviews, progress, bookings.
+`users.supabase_id` links the two. A Supabase access token is never stored or
+put in a cookie: nothing here acts on a member's behalf at Supabase, so keeping
+one would be liability without use.
+
+Create a test account and prove it can sign in:
+
+```bash
+SUPABASE_URL=... SUPABASE_PUBLISHABLE_KEY=... \
+  npm run supabase:user -- you@example.org --handle you
+```
+
+It reports whether signups are enabled and whether email confirmation is on,
+creates the account with the handle in `user_metadata`, then immediately signs
+in with the password it just set — so a misconfigured project fails there rather
+than on the login page.
+
+Two settings in the Supabase dashboard decide whether this works:
+
+- **Authentication → URL Configuration → Redirect URLs** must include
+  `https://your-site/homeroom/reset`, or the reset email sends people to the
+  site root instead of the form.
+- **Authentication → Sign In / Providers → Email → Confirm email.** With it on,
+  a new account cannot sign in until the link is clicked; signup says so rather
+  than failing a login mysteriously. Turn it off while testing.
+
+**Password resets accept both link shapes.** Supabase's default template uses
+the implicit flow and returns the token in the URL *fragment*, which a server
+never sees — so `/homeroom/reset` carries a few lines of script that move it
+into the form and wipe it from the address bar. A template that emits
+`{{ .TokenHash }}` instead produces a `?token_hash=` the server verifies
+directly, with no token ever touching client-side JavaScript. That one is
+better; both work.
+
+`POST /homeroom/password` changes a password from the settings page, in either
+mode. It requires the current one — which is not ceremony: without it, a session
+cookie left open on a shared laptop is enough to lock its owner out of their own
+account. Every other session for that account ends; the one making the change
+does not.
+
 ### Publishing to /news (Supabase)
 
 | Variable | Notes |

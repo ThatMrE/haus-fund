@@ -250,6 +250,23 @@ export function userCount() {
   return getDb().prepare('SELECT COUNT(*) AS n FROM users').get().n;
 }
 
+/* ---- linking a local identity to a Supabase credential ---- */
+
+export function getUserBySupabaseId(supabaseId) {
+  if (!supabaseId) return null;
+  return getDb().prepare('SELECT * FROM users WHERE supabase_id = ?').get(String(supabaseId)) ?? null;
+}
+
+export function linkSupabaseId(userId, supabaseId) {
+  getDb().prepare('UPDATE users SET supabase_id = ? WHERE id = ?').run(String(supabaseId || ''), userId);
+}
+
+export function setUserEmail(userId, email) {
+  getDb()
+    .prepare('UPDATE users SET email = ? WHERE id = ?')
+    .run(email ? String(email).trim().toLowerCase() : null, userId);
+}
+
 /* ---------------------------------------------------------------- members */
 
 const MEMBER_COLUMNS = `m.*, u.karma AS karma, u.created_at AS user_created_at, u.is_admin AS is_admin`;

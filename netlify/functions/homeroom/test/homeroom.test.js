@@ -811,3 +811,51 @@ test('the session cookie is Secure behind https, and not over plain http', async
   const plain = overHttp.headers.getSetCookie?.()[0] ?? '';
   assert.doesNotMatch(plain, /Secure/, 'but local development over http still works');
 });
+
+/* -------------------------------------------- changing a local password */
+
+test('a member can change their own local password', async () => {
+  const { call, csrf } = await member('localrotate');
+  const res = await call('/homeroom/password', form({
+    csrf, current: 'a-good-passphrase',
+    password: 'the-replacement-phrase', confirm: 'the-replacement-phrase',
+  }));
+  assert.equal(res.status, 303);
+
+  const { verifyPassword } = await import('../app/auth.js');
+  assert.ok(verifyPassword('the-replacement-phrase', hr.getUser('localrotate').password_hash));
+});
+
+test('the current local password has to be right', async () => {
+  const { call, csrf } = await member('localguess');
+  const res = await call('/homeroom/password', form({
+    csrf, current: 'not-what-it-was',
+    password: 'the-replacement-phrase', confirm: 'the-replacement-phrase',
+  }));
+
+  assert.equal(res.status, 400);
+  assert.match(await res.text(), /current password is wrong/i);
+  const { verifyPassword } = await import('../app/auth.js');
+  assert.ok(verifyPassword('a-good-passphrase', hr.getUser('localguess').password_hash), 'unchanged');
+});
+
+test('changing a local password ends the other sessions and keeps mine', async () => {
+  const { call, csrf } = await member('localkick');
+
+  // A second session for the same account, as if from another machine.
+  resetRateLimits();
+  const elsewhere = agent();
+  const loginCsrf = await csrfFor(elsewhere, '/homeroom/login');
+  await elsewhere('/homeroom/login', form({
+    csrf: loginCsrf, email: 'localkick@example.com', password: 'a-good-passphrase',
+  }));
+  assert.equal((await elsewhere('/homeroom/settings')).status, 200);
+
+  await call('/homeroom/password', form({
+    csrf, current: 'a-good-passphrase',
+    password: 'a-fresh-new-passphrase', confirm: 'a-fresh-new-passphrase',
+  }));
+
+  assert.equal((await call('/homeroom/settings')).status, 200, 'I stay signed in');
+  assert.match(await (await elsewhere('/homeroom/settings')).text(), /Members only/i);
+});

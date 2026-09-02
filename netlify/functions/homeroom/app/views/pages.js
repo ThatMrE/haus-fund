@@ -191,13 +191,16 @@ export function forgotSentPage(ctx, { email, link = null }) {
   </div>`;
 }
 
-export function resetPage(ctx, { token, error = null }) {
+export function resetPage(ctx, { token, error = null, tokenHash = '', supabase = false }) {
   return html`<h1>Choose a password</h1>
   <p class="lede">This replaces the old one, and signs out every other session.</p>
   ${error ? html`<div class="notice bad">${error}</div>` : ''}
-  <form class="stack" method="post" action="/homeroom/reset">
+  <form class="stack" method="post" action="/homeroom/reset" id="reset-form">
     <input type="hidden" name="csrf" value="${ctx.csrf}" />
     <input type="hidden" name="token" value="${token}" />
+    ${supabase ? html`
+      <input type="hidden" name="token_hash" value="${tokenHash}" />
+      <input type="hidden" name="access_token" id="reset-access-token" value="" />` : ''}
     <div class="field"><label for="password">New password</label>
       <input id="password" name="password" type="password" autocomplete="new-password"
         required minlength="10" autofocus />
@@ -205,7 +208,50 @@ export function resetPage(ctx, { token, error = null }) {
     <div class="field"><label for="confirm">New password again</label>
       <input id="confirm" name="confirm" type="password" autocomplete="new-password" required /></div>
     <button class="btn solid wide" type="submit">Save password</button>
-  </form>`;
+  </form>
+  ${supabase ? resetFragmentScript() : ''}`;
+}
+
+/**
+ * Move a recovery token out of the URL fragment and into the form.
+ *
+ * Supabase's default recovery email uses the implicit flow, which returns the
+ * token after a `#`. A fragment is never sent to a server — that is the whole
+ * point of one — so a server-rendered page cannot see it without this. The
+ * token goes into a hidden field, the fragment is wiped from the address bar so
+ * it stays out of history and out of any Referer header, and the password is
+ * submitted normally.
+ *
+ * Projects whose email template carries a `token_hash` instead never run this:
+ * that token arrives as a query parameter the server can verify directly, which
+ * is the better of the two and the one worth configuring.
+ */
+function resetFragmentScript() {
+  return raw(`<script>
+(function () {
+  var hash = window.location.hash || '';
+  if (hash.indexOf('access_token=') === -1) return;
+  var params = new URLSearchParams(hash.slice(1));
+  var token = params.get('access_token');
+  if (!token) return;
+  var field = document.getElementById('reset-access-token');
+  if (field) field.value = token;
+  history.replaceState(null, '', window.location.pathname);
+})();
+</script>`);
+}
+
+/**
+ * The project requires a confirmed address, so the account exists but has no
+ * key yet. Saying this plainly beats a sign-in that fails for no visible reason.
+ */
+export function confirmEmailPage(ctx, { email }) {
+  return html`<h1>Confirm your email</h1>
+  <p class="lede">Your account is created. We sent a confirmation link to ${email} — click it, then
+    sign in.</p>
+  <p>The link comes from Supabase, which handles passwords for Homeroom. If it does not arrive
+    within a few minutes, check the spam folder before asking a steward.</p>
+  <div class="alt"><a href="/homeroom/login">Back to sign in</a></div>`;
 }
 
 export function resetExpiredPage() {
@@ -684,7 +730,10 @@ export function memberPage(ctx, {
   </div>`;
 }
 
-export function settingsPage(ctx, { member, error = null, saved = false }) {
+export function settingsPage(ctx, {
+  member, error = null, saved = false,
+  passwordError = null, passwordSaved = false, authMode = 'local',
+}) {
   const checked = (flag) => raw(member[flag] ? 'checked' : '');
   return html`<h1>Your profile</h1>
   <p class="lede">This is what the directory searches. Vague profiles get no intros.</p>
@@ -736,7 +785,41 @@ export function settingsPage(ctx, { member, error = null, saved = false }) {
       <label class="check"><input type="checkbox" name="open_hiring" value="1" ${checked('open_hiring')} /> being contacted about jobs</label>
     </fieldset>
     <button class="btn solid" type="submit">Save profile</button>
-  </form>`;
+  </form>
+
+  ${passwordForm(ctx, { error: passwordError, saved: passwordSaved, authMode })}`;
+}
+
+/**
+ * Change your own password.
+ *
+ * Asks for the current one, which is not ceremony: it is what stops a borrowed
+ * laptop or a stolen session cookie from becoming a permanent takeover of the
+ * account. It is also the token exchange when Supabase holds the credential —
+ * proving the old password is how a new one gets authorised.
+ */
+function passwordForm(ctx, { error, saved, authMode }) {
+  return html`<h2 id="password">Password</h2>
+  <p class="lede">Changing it signs out every other session, including any you have forgotten
+    about.</p>
+  ${saved ? html`<div class="notice">Password changed. Your other sessions are signed out.</div>` : ''}
+  ${error ? html`<div class="notice bad">${error}</div>` : ''}
+  <form class="stack wide" method="post" action="/homeroom/password">
+    ${csrfField(ctx)}
+    <div class="field"><label for="current">Current password</label>
+      <input id="current" name="current" type="password" autocomplete="current-password" required /></div>
+    <div class="row">
+      <div class="field"><label for="new-password">New password</label>
+        <input id="new-password" name="password" type="password" autocomplete="new-password"
+          required minlength="10" />
+        <div class="hint">At least 10 characters. Longer beats complicated.</div></div>
+      <div class="field"><label for="new-confirm">New password again</label>
+        <input id="new-confirm" name="confirm" type="password" autocomplete="new-password" required /></div>
+    </div>
+    <button class="btn solid" type="submit">Change password</button>
+  </form>
+  ${authMode === 'supabase' ? html`<p class="hint">Passwords for Homeroom are held by Supabase, so
+    this changes it everywhere the account is used.</p>` : ''}`;
 }
 
 /* ------------------------------------------------------------------- labs */

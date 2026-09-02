@@ -50,6 +50,14 @@ async function boot() {
         seedHomeroom();
       }
     }
+
+    // Independently of seeding, and on every boot. This database lives on the
+    // container's /tmp, so an admin account created by hand exists until the
+    // next cold start and no longer; the only account that survives a redeploy
+    // is one rebuilt from configuration. A no-op unless HOMEROOM_STEWARD is set.
+    const { ensureSteward } = await import('./app/steward.js');
+    ensureSteward();
+
     const { handle } = await import('./app/app.js');
     return handle;
   })();
