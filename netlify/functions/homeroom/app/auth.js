@@ -56,6 +56,16 @@ export function getSessionUser(token) {
   return row;
 }
 
+/**
+ * End every session an account has on this container.
+ *
+ * The counterpart to changing a password: a credential change that leaves the
+ * old cookie working has not actually taken the key back from anyone.
+ */
+export function destroyAllSessions(userId) {
+  return getDb().prepare('DELETE FROM sessions WHERE user_id = ?').run(userId).changes;
+}
+
 export function destroySession(token) {
   if (!token) return;
   getDb().prepare('DELETE FROM sessions WHERE token = ?').run(token);

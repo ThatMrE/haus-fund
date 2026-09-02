@@ -8,13 +8,17 @@
  */
 
 import { sendHtml, sendJson, readBody, rateLimit } from './http.js';
-import { checkCsrf } from './auth.js';
+import {
+  checkCsrf, hashPassword, verifyPassword, validatePassword, destroyAllSessions,
+  createSession, sessionCookie,
+} from './auth.js';
 import { clampInt, nowSeconds, normalizeUrl } from './util.js';
 import * as bf from './models.js';
 import * as supabase from './supabase.js';
 import * as roster from './roster.js';
 import * as access from './access.js';
 import * as luma from './luma.js';
+import * as sbAuth from './supabase-auth.js';
 import { homeroomLayout } from './views/layout.js';
 import * as views from './views/pages.js';
 import { parseWhen, toLocalInput } from './views/components.js';
@@ -349,6 +353,70 @@ async function settingsSubmit(ctx) {
     open_hiring: checkbox(fields.open_hiring),
   });
   seeOther(ctx, '/homeroom/settings?saved=1');
+}
+
+/**
+ * Change your own password.
+ *
+ * Requires the current one. That is not ceremony: without it, a session cookie
+ * someone left open on a shared laptop is enough to lock its owner out of their
+ * own account permanently. It is also exactly what Supabase needs — proving the
+ * old password is what mints the token authorising the new one — so the same
+ * form works whichever side is holding the credential.
+ */
+async function passwordSubmit(ctx) {
+  const { fields } = await readBody(ctx.req);
+  if (!csrfOk(ctx, fields)) return;
+
+  const authMode = sbAuth.configured() ? 'supabase' : 'local';
+  const back = (error) => render(ctx, views.settingsPage(ctx, {
+    member: bf.ensureMember(ctx.user.id), passwordError: error, authMode,
+  }), { title: 'Your profile', status: error ? 400 : 200 });
+
+  // Per account rather than per address: guessing a current password should not
+  // get cheaper by moving to a second machine.
+  if (!rateLimit(`password:${ctx.user.id}`, { limit: 6, windowMs: 60 * 60_000 })) {
+    return back('Too many attempts. Wait an hour.');
+  }
+
+  const next = String(fields.password || '');
+  if (next !== String(fields.confirm || '')) return back('Those two do not match.');
+  const weak = validatePassword(next);
+  if (weak) return back(weak);
+
+  const account = bf.getUser(ctx.user.id);
+  const current = String(fields.current || '');
+
+  if (authMode === 'supabase') {
+    if (!account.email) return back('This account has no email address, so Supabase cannot verify it.');
+    const signedIn = await sbAuth.signInWithPassword({ email: account.email, password: current });
+    if (!signedIn.ok) {
+      if (signedIn.code === 'unreachable' || signedIn.code === 'timeout' || signedIn.status >= 500) {
+        return back('Supabase is unreachable, so the password cannot be changed right now.');
+      }
+      return back('That current password is wrong.');
+    }
+    const updated = await sbAuth.updatePassword({
+      accessToken: signedIn.session.accessToken,
+      password: next,
+    });
+    if (!updated.ok) return back(updated.error);
+    await sbAuth.signOut(signedIn.session.accessToken);
+  } else {
+    if (!verifyPassword(current, account.password_hash)) return back('That current password is wrong.');
+    bf.setPassword(ctx.user.id, hashPassword(next));
+  }
+
+  // Everything else this account had open, gone — then a fresh session, so the
+  // person who just changed it is not signed out by their own change.
+  destroyAllSessions(ctx.user.id);
+  const token = createSession(ctx.user.id);
+  const proto = String(ctx.req.headers['x-forwarded-proto'] || '').split(',')[0].trim();
+  ctx.res.writeHead(303, {
+    location: '/homeroom/settings?password=1',
+    'set-cookie': sessionCookie(token, { secure: proto ? proto === 'https' : !!process.env.NETLIFY }),
+  });
+  ctx.res.end();
 }
 
 /* ------------------------------------------------------------------ labs */
@@ -1700,9 +1768,13 @@ const ROUTES = [
   ['GET', '/homeroom/people', peopleHandler],
   ['GET', '/homeroom/p/:handle', memberHandler],
   ['GET', '/homeroom/settings', (ctx) => render(ctx, views.settingsPage(ctx, {
-    member: bf.ensureMember(ctx.user.id), saved: ctx.query.get('saved') === '1',
+    member: bf.ensureMember(ctx.user.id),
+    saved: ctx.query.get('saved') === '1',
+    passwordSaved: ctx.query.get('password') === '1',
+    authMode: sbAuth.configured() ? 'supabase' : 'local',
   }), { title: 'Your profile' })],
   ['POST', '/homeroom/settings', settingsSubmit],
+  ['POST', '/homeroom/password', passwordSubmit],
 
   ['GET', '/homeroom/labs/new', (ctx) => render(ctx, views.labFormAtlasPage(ctx, {}),
     { title: 'Add a lab', subnav: views.subnav(views.LAB_TABS, 'atlas') })],

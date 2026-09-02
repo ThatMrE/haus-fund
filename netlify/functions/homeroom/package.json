@@ -14,6 +14,7 @@
     "reset": "node --disable-warning=ExperimentalWarning app/seed.js --reset",
     "seed:real": "node --disable-warning=ExperimentalWarning app/seed-real.js",
     "steward": "node --disable-warning=ExperimentalWarning scripts/make-steward.js",
+    "supabase:user": "node --disable-warning=ExperimentalWarning scripts/make-supabase-user.js",
     "mentors:import": "node --disable-warning=ExperimentalWarning scripts/import-mentors.js",
     "roster:check": "node --disable-warning=ExperimentalWarning scripts/check-roster.js",
     "test": "node --disable-warning=ExperimentalWarning --test test/*.test.js"

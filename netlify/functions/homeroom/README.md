@@ -273,6 +273,67 @@ An existing ordinary account named by `HOMEROOM_STEWARD` is promoted rather than
 replaced, and its password is left alone. `npm run steward -- --apply --force`
 resets a local account's password and ends its open sessions.
 
+### Accounts (Supabase Auth)
+
+By default Homeroom holds its own passwords, in the SQLite database on the
+container's `/tmp` — which means an account lasts until the next cold start.
+Setting `HOMEROOM_AUTH=supabase` moves the credential to Supabase, which is
+durable, and brings the one piece of account management this app has never had:
+a password-reset email that is actually sent.
+
+| Variable | Notes |
+| --- | --- |
+| `HOMEROOM_AUTH` | `local` (default) or `supabase`. |
+| `SUPABASE_URL` | `https://<project-ref>.supabase.co`. Shared with the publishing integration below. |
+| `SUPABASE_PUBLISHABLE_KEY` | The publishable (anon) key. This is the key a browser would use; it is not a privileged one. |
+
+`HOMEROOM_AUTH=supabase` with no project configured falls back to local accounts
+rather than taking the front door off its hinges, and `/homeroom/health` says so
+under `auth`.
+
+**What moves and what does not.** Supabase owns the password, its hashing, the
+reset tokens and the recovery email. It owns nothing else. Homeroom keeps its
+own `users` row and its own session cookie, because every table in the schema
+hangs off `users.id` by foreign key — posts, chat, reviews, progress, bookings.
+`users.supabase_id` links the two. A Supabase access token is never stored or
+put in a cookie: nothing here acts on a member's behalf at Supabase, so keeping
+one would be liability without use.
+
+Create a test account and prove it can sign in:
+
+```bash
+SUPABASE_URL=... SUPABASE_PUBLISHABLE_KEY=... \
+  npm run supabase:user -- you@example.org --handle you
+```
+
+It reports whether signups are enabled and whether email confirmation is on,
+creates the account with the handle in `user_metadata`, then immediately signs
+in with the password it just set — so a misconfigured project fails there rather
+than on the login page.
+
+Two settings in the Supabase dashboard decide whether this works:
+
+- **Authentication → URL Configuration → Redirect URLs** must include
+  `https://your-site/homeroom/reset`, or the reset email sends people to the
+  site root instead of the form.
+- **Authentication → Sign In / Providers → Email → Confirm email.** With it on,
+  a new account cannot sign in until the link is clicked; signup says so rather
+  than failing a login mysteriously. Turn it off while testing.
+
+**Password resets accept both link shapes.** Supabase's default template uses
+the implicit flow and returns the token in the URL *fragment*, which a server
+never sees — so `/homeroom/reset` carries a few lines of script that move it
+into the form and wipe it from the address bar. A template that emits
+`{{ .TokenHash }}` instead produces a `?token_hash=` the server verifies
+directly, with no token ever touching client-side JavaScript. That one is
+better; both work.
+
+`POST /homeroom/password` changes a password from the settings page, in either
+mode. It requires the current one — which is not ceremony: without it, a session
+cookie left open on a shared laptop is enough to lock its owner out of their own
+account. Every other session for that account ends; the one making the change
+does not.
+
 ### Publishing to /news (Supabase)
 
 | Variable | Notes |

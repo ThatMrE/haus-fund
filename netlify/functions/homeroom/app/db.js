@@ -99,6 +99,9 @@ const ADDED_COLUMNS = [
   ['hr_deals', 'access', "TEXT NOT NULL DEFAULT 'code'"],
   ['hr_deals', 'requirement', "TEXT NOT NULL DEFAULT ''"],
   ['hr_deals', 'checked', "TEXT NOT NULL DEFAULT ''"],
+  // Which Supabase credential this account signs in with, when HOMEROOM_AUTH
+  // is supabase. Empty for a local account, so the two can coexist.
+  ['users', 'supabase_id', "TEXT NOT NULL DEFAULT ''"],
 ];
 
 function addColumns(instance) {
