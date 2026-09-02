@@ -10,6 +10,7 @@
     "dev": "node --disable-warning=ExperimentalWarning --watch server.js",
     "seed": "node --disable-warning=ExperimentalWarning app/seed.js",
     "reset": "node --disable-warning=ExperimentalWarning app/seed.js --reset",
+    "seed:real": "node --disable-warning=ExperimentalWarning app/seed-real.js",
     "mentors:import": "node --disable-warning=ExperimentalWarning scripts/import-mentors.js",
     "roster:check": "node --disable-warning=ExperimentalWarning scripts/check-roster.js",
     "test": "node --disable-warning=ExperimentalWarning --test test/*.test.js"

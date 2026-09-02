@@ -589,6 +589,35 @@ export const PERKS = [
     checked: '2026-09',
   },
 
+  /* ------------------------------------------------------------------ ops */
+  {
+    vendor: 'FedEx / UPS', title: 'Small-business shipping programmes', category: 'ops', access: 'apply',
+    worth: '15–30% off published rates',
+    url: 'https://www.fedex.com/en-us/small-business.html',
+    summary: 'Both carriers discount for small businesses, and neither advertises it at the counter.',
+    details: 'FedEx Advantage and the equivalent UPS small-business programme are free to join and apply to an account rather than a shipment. Worth doing before your first reagent order, not after — the discount is not retroactive.',
+    requirement: 'A registered business and an account number.',
+    checked: '2026-09',
+  },
+  {
+    vendor: 'Cryoport / World Courier', title: 'Specialty cold-chain logistics', category: 'ops', access: 'apply',
+    worth: 'Account rate cards; validated shippers on loan',
+    url: 'https://www.cryoport.com/',
+    summary: 'For anything that must stay at −80 or in vapour phase across a border.',
+    details: 'General couriers will take a dry-ice box and lose it. These two do validated, temperature-logged shipping with customs handling for biological material, and both quote per account. Get the rate card and the IATA paperwork sorted before a shipment is urgent.',
+    requirement: 'A business account; some routes need permits you should ask about early.',
+    checked: '2026-09',
+  },
+  {
+    vendor: 'Customs brokers', title: 'Importing instruments and reagents', category: 'ops', access: 'open',
+    worth: 'Avoids the multi-week hold that costs far more',
+    url: 'https://www.cbp.gov/trade/programs-administration/customs-brokers',
+    summary: 'A second-hand instrument bought abroad is cheap right up to the customs hold.',
+    details: 'Lab equipment and biological material both attract scrutiny. A broker costs a few hundred dollars and knows which HTS code, permit and FDA prior notice a given item needs. Budget for one on any cross-border instrument purchase, and check export control before shipping the other way.',
+    requirement: 'None. Engage before the shipment moves, not after it stops.',
+    checked: '2026-09',
+  },
+
   /* ---------------------------------------------------------- programs */
   {
     vendor: 'IndieBio', title: 'Accelerator', category: 'programs', access: 'apply',

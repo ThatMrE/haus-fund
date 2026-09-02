@@ -2608,3 +2608,76 @@ export function rosterCounts() {
   out.pending = pendingRoster().length;
   return out;
 }
+
+/* ==========================================================================
+ * IDEMPOTENT UPSERTS FOR THE REAL DATA SETS
+ *
+ * `createDeal` and `createFunder` mint a unique slug, which is right when a
+ * member adds one by hand and wrong when a script re-runs the catalogue: the
+ * second run would produce aws-activate-credits-2. These two key on the plain
+ * slug instead, so re-running seed-real.js refreshes rows rather than
+ * multiplying them.
+ * ======================================================================== */
+
+export function upsertDeal(deal) {
+  const slug = slugify(`${deal.vendor}-${deal.title}`, 'deal');
+  const db = getDb();
+  const existing = db.prepare('SELECT id FROM hr_deals WHERE slug = ?').get(slug);
+  if (existing) {
+    db.prepare(
+      `UPDATE hr_deals SET vendor = ?, title = ?, category = ?, summary = ?, details = ?,
+              worth = ?, url = ?, access = ?, requirement = ?, checked = ? WHERE id = ?`,
+    ).run(deal.vendor, deal.title, deal.category, deal.summary || '', deal.details || '',
+      deal.worth || '', deal.url || null, deal.access || 'code', deal.requirement || '',
+      deal.checked || '', existing.id);
+    // `code` is deliberately not overwritten: a steward may have entered the
+    // real one, and the data file ships with it empty by design.
+    return { id: existing.id, slug, created: false };
+  }
+  const info = db
+    .prepare(
+      `INSERT INTO hr_deals (slug, vendor, title, category, summary, details, worth, code, url,
+                             posted_by, created_at, access, requirement, checked)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    )
+    .run(slug, deal.vendor, deal.title, deal.category, deal.summary || '', deal.details || '',
+      deal.worth || '', deal.code || '', deal.url || null, deal.postedBy, nowSeconds(),
+      deal.access || 'code', deal.requirement || '', deal.checked || '');
+  return { id: Number(info.lastInsertRowid), slug, created: true };
+}
+
+export function upsertFunder(funder) {
+  const slug = slugify(funder.name, 'funder');
+  const db = getDb();
+  const existing = db.prepare('SELECT id FROM hr_funders WHERE slug = ?').get(slug);
+  if (existing) {
+    db.prepare(
+      `UPDATE hr_funders SET name = ?, kind = ?, focus = ?, stages = ?, check_size = ?,
+              location = ?, website = ?, description = ?, dilutive = ? WHERE id = ?`,
+    ).run(funder.name, funder.kind, funder.focus || '', funder.stages || '',
+      funder.checkSize || '', funder.location || '', funder.website || null,
+      funder.description || '', int(funder.dilutive), existing.id);
+    return { id: existing.id, slug, created: false };
+  }
+  const info = db
+    .prepare(
+      `INSERT INTO hr_funders (slug, name, kind, focus, stages, check_size, location, website,
+                               description, dilutive, added_by, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    )
+    .run(slug, funder.name, funder.kind, funder.focus || '', funder.stages || '',
+      funder.checkSize || '', funder.location || '', funder.website || null,
+      funder.description || '', int(funder.dilutive), funder.addedBy || null, nowSeconds());
+  return { id: Number(info.lastInsertRowid), slug, created: true };
+}
+
+/** Remove rows of a real data set that the data file no longer contains. */
+export function pruneBySlug(table, keep) {
+  if (!keep.length) return 0;
+  const rows = getDb().prepare(`SELECT slug FROM ${table}`).all();
+  const stale = rows.map((r) => r.slug).filter((slug) => !keep.includes(slug));
+  if (!stale.length) return 0;
+  const stmt = getDb().prepare(`DELETE FROM ${table} WHERE slug = ?`);
+  for (const slug of stale) stmt.run(slug);
+  return stale.length;
+}

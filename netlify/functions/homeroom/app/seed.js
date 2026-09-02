@@ -18,6 +18,7 @@ import { FUNDERS as CAPITAL_MAP } from './data/funders.js';
 import { ATLAS_LABS } from './data/atlas.js';
 import { MENTORS as MENTOR_ROSTER } from './data/mentors.js';
 import { NETWORK_MENTORS } from './data/network.js';
+import { CHANNELS } from './data/channels.js';
 import { TRACKS, LIBRARY_MODULES } from './data/curriculum.js';
 
 const HOUR = 3600;
@@ -36,22 +37,6 @@ const SAMPLE_TABLES = [
   'hr_chat_reactions', 'hr_chat', 'hr_channel_reads', 'hr_channels',
   'hr_signatures', 'hr_yearbook', 'hr_atlas_reports', 'hr_atlas', 'hr_news_submissions',
   'hr_messages', 'hr_thread_members', 'hr_threads', 'hr_notifications', 'hr_expertise', 'hr_members',
-];
-
-/**
- * The channels a new room opens with.
- *
- * Deliberately few. A chat that opens with twenty channels reads as abandoned
- * on day one; five that fill up can be split later, and splitting a busy
- * channel is a much easier conversation than reviving a dead one.
- */
-const CHANNELS = [
-  ['general', 'general', 'Anything. The default room.', 'open'],
-  ['wetlab', 'wetlab', 'Protocols going wrong, reagents going missing, kit that will not behave.', 'open'],
-  ['fundraising', 'fundraising', 'Live raises, investor behaviour, term sheet questions. Say the real numbers.', 'open'],
-  ['perks', 'perks', 'Codes, credits and who has actually redeemed what. Stewards post confirmed codes here.', 'open'],
-  ['mentors', 'mentors', 'Who to ask about what, and intro requests that do not need a whole form.', 'open'],
-  ['showcase', 'showcase', 'Wins, launches, papers, first customers. Post yours.', 'open'],
 ];
 
 /**

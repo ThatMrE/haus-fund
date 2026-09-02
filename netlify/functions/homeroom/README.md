@@ -228,7 +228,7 @@ outranks it, so the next weekly re-check does not quietly undo their work.
 | `HOMEROOM_DB` | `/tmp/haus-homeroom.db` | SQLite file. |
 | `HOMEROOM_SECRET` | random per boot | Set in production, or CSRF tokens rotate on restart and every open form breaks. |
 | `HOMEROOM_STATIC_BASE` | `/homeroom-assets` | Where the stylesheet and client script are served from. |
-| `HOMEROOM_SEED` | — | `off` stops a cold container filling itself with the sample network. Set this once there is real content. |
+| `HOMEROOM_SEED` | — | What a cold container fills itself with. Unset: the full sample network, including ten invented accounts sharing a documented password — for reviewing the design, never for production. `real`: only the researched reference data (perks, capital map, atlas, manual, channels) and no accounts. `off`: nothing, in which case pair it with `HOMEROOM_ACCESS=closed` or a roster token, because with no accounts the first signup is made a steward. |
 
 ### Publishing to /news (Supabase)
 
@@ -327,7 +327,7 @@ and "done" means the artefact exists, with a link to it.
 
 | File | What it is | Real? |
 | --- | --- | --- |
-| `perks.js` | Startup programmes across 17 categories | Real programmes and terms; `checked` records when. Codes are left empty rather than invented. |
+| `perks.js` | 64 startup programmes across 17 categories | Real programmes and terms; `checked` records when. Codes are left empty rather than invented. |
 | `funders.js` | The capital map: grants, accelerators, pre-seed, seed, studios, fellowships, angels, prizes | Real, publicly listed programmes. Deliberately carries **no** seeded ratings — a fabricated review of a real organisation is the one thing a review site cannot survive. |
 | `atlas.js` | Community, DIYbio and open-science labs worldwide | Real labs, sourced from HTGAA nodes, DIYbio.org, DIYbiosphere and member submissions; `source` and `status` are per row. |
 | `curriculum.js` | The six tracks, their modules and the S26 sequence | Straight from the Fall 2026 program design document. |
