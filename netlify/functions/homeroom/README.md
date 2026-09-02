@@ -190,6 +190,30 @@ enough to be a mailing list.
 answers, and how many decisions are waiting on a steward — so "is the door
 wired up" is one curl rather than a deploy and a guess.
 
+### Check it before you switch it on
+
+The gate is the one part of Homeroom whose failure is invisible until a cohort is
+standing outside it, so there is a script that runs the *same* `evaluate()` the
+live gate runs — imported, not reimplemented, so the two cannot drift — against
+the real table and prints what would happen.
+
+```bash
+export HOMEROOM_ROSTER_TOKEN=pat...
+
+npm run roster:check -- --audit            # what the gate would do to everyone
+npm run roster:check -- --audit --emails   # ... with addresses shown
+npm run roster:check someone@example.org   # one person: "why can't they sign in?"
+```
+
+The audit prints the verdict split, the reason breakdown, every conflict needing
+a steward — and, separately, **anyone who would be allowed but has no email
+address on file.** Those are a silent lockout: they cannot sign up, and because
+they never reach the door they never appear in the review queue either. Fix
+those in Airtable before the cohort arrives.
+
+It writes nothing, to Airtable or to Homeroom, and it needs only
+`data.records:read` on the People base.
+
 ### The steward page
 
 `/homeroom/stewards/access` is the queue of conflicts, a live "check this
