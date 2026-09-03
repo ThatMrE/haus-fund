@@ -15,7 +15,6 @@
  * Airtable is stubbed by replacing globalThis.fetch. No network.
  */
 
-process.env.HOMEROOM_DB = ':memory:';
 process.env.HOMEROOM_SECRET = 'test-secret';
 process.env.HOMEROOM_SEED = 'off';
 process.env.HOMEROOM_MENTOR_SYNC_TOKEN = 'test-token';
@@ -28,18 +27,18 @@ import * as hr from '../app/models.js';
 import * as desk from '../app/mentordesk.js';
 import { normalize } from '../app/mentorfields.js';
 
-getDb();
+await getDb();
 
 /** A steward, so the audit log's foreign key has somebody to point at. */
-getDb().prepare(
-  'INSERT OR IGNORE INTO users (id, email, password_hash, created_at, is_admin) VALUES (?, ?, ?, ?, 1)',
-).run('steward1', 'steward1@fixture.test', 'not-a-real-hash', Math.floor(Date.now() / 1000));
+(await (await getDb()).prepare(
+  'INSERT INTO users (id, email, password_hash, created_at, is_admin) VALUES (?, ?, ?, ?, 1) ON CONFLICT DO NOTHING',
+).run('steward1', 'steward1@fixture.test', 'not-a-real-hash', Math.floor(Date.now() / 1000)));
 
 const realFetch = globalThis.fetch;
 afterEach(() => { globalThis.fetch = realFetch; });
 
-beforeEach(() => {
-  getDb().exec('DELETE FROM hr_mentors');
+beforeEach(async () => {
+  await (await getDb()).exec('DELETE FROM hr_mentors');
 });
 
 /** Airtable's response shape, with only the fields the sweep asked for. */
@@ -76,22 +75,22 @@ test('a form submission arrives pending, and is listed nowhere', async () => {
   assert.equal(result.ok, true);
   assert.equal(result.created, 1);
 
-  const row = getDb().prepare('SELECT * FROM hr_mentors').get();
+  const row = (await (await getDb()).prepare('SELECT * FROM hr_mentors').get());
   assert.equal(row.state, 'pending');
   assert.equal(row.vetted, 0);
   assert.equal(row.source, 'form');
 
   // Not on the roster, not in the search, not askable.
-  assert.equal(hr.searchMentors({}).total, 0, 'searchMentors filters on active/state');
-  assert.equal(desk.canRequest({ mentor: hr.getMentor(row.id), memberId: 'nobody' }).reason,
+  assert.equal((await hr.searchMentors({})).total, 0, 'searchMentors filters on active/state');
+  assert.equal((await desk.canRequest({ mentor: await hr.getMentor(row.id), memberId: 'nobody' })).reason,
     'unlisted');
-  assert.equal(sync.pendingCount(), 1, 'it is in the steward queue instead');
+  assert.equal(await sync.pendingCount(), 1, 'it is in the steward queue instead');
 });
 
 test('Airtable saying Vetted does not list anybody', async () => {
   airtable([record('recAAA', { Vetted: true })]);
   await sync.sync();
-  const row = getDb().prepare('SELECT * FROM hr_mentors').get();
+  const row = (await (await getDb()).prepare('SELECT * FROM hr_mentors').get());
   assert.equal(row.state, 'pending',
     'a checkbox in a spreadsheet is somebody note to themselves, not gate A');
   assert.equal(row.vetted, 0);
@@ -100,26 +99,26 @@ test('Airtable saying Vetted does not list anybody', async () => {
 test('a steward listing them is what makes them askable', async () => {
   airtable([record('recAAA')]);
   await sync.sync();
-  const row = getDb().prepare('SELECT * FROM hr_mentors').get();
+  const row = (await (await getDb()).prepare('SELECT * FROM hr_mentors').get());
 
-  sync.rule({ mentorId: row.id, decision: 'list', actorId: 'steward1' });
-  const listed = hr.getMentor(row.id);
+  await sync.rule({ mentorId: row.id, decision: 'list', actorId: 'steward1' });
+  const listed = await hr.getMentor(row.id);
   assert.equal(listed.state, 'listed');
   assert.equal(listed.vetted, 1);
-  assert.equal(hr.searchMentors({}).total, 1);
+  assert.equal((await hr.searchMentors({})).total, 1);
 });
 
 test('a rejection keeps the row so the next sweep does not re-add it', async () => {
   airtable([record('recAAA')]);
   await sync.sync();
-  const row = getDb().prepare('SELECT * FROM hr_mentors').get();
-  sync.rule({ mentorId: row.id, decision: 'reject', actorId: 'steward1', note: 'not a real org' });
+  const row = (await (await getDb()).prepare('SELECT * FROM hr_mentors').get());
+  await sync.rule({ mentorId: row.id, decision: 'reject', actorId: 'steward1', note: 'not a real org' });
 
   await sync.sync();
-  const after = getDb().prepare('SELECT * FROM hr_mentors').all();
+  const after = (await (await getDb()).prepare('SELECT * FROM hr_mentors').all());
   assert.equal(after.length, 1, 'still one row');
   assert.equal(after[0].state, 'rejected', 'and a sweep must not resurrect it as a new submission');
-  assert.equal(sync.pendingCount(), 0);
+  assert.equal(await sync.pendingCount(), 0);
 });
 
 /* ========================================================= untrusted input */
@@ -127,7 +126,7 @@ test('a rejection keeps the row so the next sweep does not re-add it', async () 
 test('a booking link that is not a booking page is dropped', async () => {
   airtable([record('recAAA', { Scheduler: 'https://linkedin.com/in/someone' })]);
   await sync.sync();
-  const row = getDb().prepare('SELECT * FROM hr_mentors').get();
+  const row = (await (await getDb()).prepare('SELECT * FROM hr_mentors').get());
   assert.equal(row.scheduler, '', 'the host allowlist is the whole defence here');
 });
 
@@ -143,13 +142,13 @@ test('the allowlist is the one the importer uses, not a second copy', () => {
 test('a malformed address is dropped rather than stored', async () => {
   airtable([record('recAAA', { Email: 'not an address' })]);
   await sync.sync();
-  assert.equal(desk.contactFor(getDb().prepare('SELECT id FROM hr_mentors').get().id), '');
+  assert.equal(await desk.contactFor((await (await getDb()).prepare('SELECT id FROM hr_mentors').get()).id), '');
 });
 
 test('an unrecognised consent mode falls back to ask-me', async () => {
   airtable([record('recAAA', { 'Consent Mode': 'whatever they like' })]);
   await sync.sync();
-  assert.equal(getDb().prepare('SELECT consent_mode FROM hr_mentors').get().consent_mode, 'ask-me',
+  assert.equal((await (await getDb()).prepare('SELECT consent_mode FROM hr_mentors').get()).consent_mode, 'ask-me',
     'a form field nobody understood must not become a claim about consent');
 });
 
@@ -163,7 +162,7 @@ test('re-running matches on the Airtable id and updates in place', async () => {
 
   assert.equal(second.created, 0);
   assert.equal(second.updated, 1);
-  const rows = getDb().prepare('SELECT * FROM hr_mentors').all();
+  const rows = (await (await getDb()).prepare('SELECT * FROM hr_mentors').all());
   assert.equal(rows.length, 1, 'one person, one row');
   assert.equal(rows[0].role, 'Head of regulatory');
 });
@@ -173,39 +172,39 @@ test('a mentor who changes their name keeps their row', async () => {
   await sync.sync();
   airtable([record('recAAA', { Name: 'Dana Okonkwo-Reed' })]);
   await sync.sync();
-  const rows = getDb().prepare('SELECT * FROM hr_mentors').all();
+  const rows = (await (await getDb()).prepare('SELECT * FROM hr_mentors').all());
   assert.equal(rows.length, 1, 'the record id survives a rename; a name slug would not');
   assert.equal(rows[0].name, 'Dana Okonkwo-Reed');
 });
 
 test('a row imported before this column existed is adopted, not duplicated', async () => {
-  hr.upsertMentor({ name: 'Dana Okonkwo', role: 'Old role', source: 'import' });
+  await hr.upsertMentor({ name: 'Dana Okonkwo', role: 'Old role', source: 'import' });
   airtable([record('recAAA')]);
   const result = await sync.sync();
   assert.equal(result.created, 0, 'matched on the name slug fallback');
-  assert.equal(getDb().prepare('SELECT COUNT(*) AS n FROM hr_mentors').get().n, 1);
+  assert.equal((await (await getDb()).prepare('SELECT COUNT(*) AS n FROM hr_mentors').get()).n, 1);
 });
 
 test('a listed mentor is not un-listed by a sweep', async () => {
   airtable([record('recAAA')]);
   await sync.sync();
-  const id = getDb().prepare('SELECT id FROM hr_mentors').get().id;
-  sync.rule({ mentorId: id, decision: 'list', actorId: 'steward1' });
+  const id = (await (await getDb()).prepare('SELECT id FROM hr_mentors').get()).id;
+  await sync.rule({ mentorId: id, decision: 'list', actorId: 'steward1' });
 
   await sync.sync();
-  assert.equal(hr.getMentor(id).state, 'listed',
+  assert.equal((await hr.getMentor(id)).state, 'listed',
     'editing a form must not undo a steward');
 });
 
 test('a blank field does not wipe the link or the address', async () => {
   airtable([record('recAAA')]);
   await sync.sync();
-  const id = getDb().prepare('SELECT id FROM hr_mentors').get().id;
+  const id = (await (await getDb()).prepare('SELECT id FROM hr_mentors').get()).id;
 
   airtable([record('recAAA', { Scheduler: '', Email: '' })]);
   await sync.sync();
-  assert.equal(desk.schedulerFor(id), 'https://cal.com/dana/30min');
-  assert.equal(desk.contactFor(id), 'dana@example.org',
+  assert.equal(await desk.schedulerFor(id), 'https://cal.com/dana/30min');
+  assert.equal(await desk.contactFor(id), 'dana@example.org',
     'Airtable omitting a field must not remove the only way to reach them');
 });
 
@@ -214,14 +213,14 @@ test('a blank field does not wipe the link or the address', async () => {
 test('an Airtable outage changes nothing at all', async () => {
   airtable([record('recAAA')]);
   await sync.sync();
-  const before = getDb().prepare('SELECT COUNT(*) AS n FROM hr_mentors').get().n;
+  const before = (await (await getDb()).prepare('SELECT COUNT(*) AS n FROM hr_mentors').get()).n;
 
   globalThis.fetch = async () => ({ ok: false, status: 503, json: async () => ({}) });
   const result = await sync.sync();
 
   assert.equal(result.ok, false);
   assert.match(result.error, /503/);
-  assert.equal(getDb().prepare('SELECT COUNT(*) AS n FROM hr_mentors').get().n, before,
+  assert.equal((await (await getDb()).prepare('SELECT COUNT(*) AS n FROM hr_mentors').get()).n, before,
     'the roster standing still is the right outcome of an outage');
 });
 
@@ -240,7 +239,7 @@ test('an empty table is refused rather than believed', async () => {
   const result = await sync.sync();
   assert.equal(result.ok, false,
     'an empty table and a wrong base id look identical, and one of them must not empty the roster');
-  assert.equal(getDb().prepare('SELECT COUNT(*) AS n FROM hr_mentors').get().n, 1);
+  assert.equal((await (await getDb()).prepare('SELECT COUNT(*) AS n FROM hr_mentors').get()).n, 1);
 });
 
 /* =========================================================== the allowlist */

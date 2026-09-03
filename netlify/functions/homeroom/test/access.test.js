@@ -10,7 +10,6 @@
  * Airtable is stubbed by replacing `globalThis.fetch`. No network.
  */
 
-process.env.HOMEROOM_DB = ':memory:';
 process.env.HOMEROOM_SECRET = 'test-secret';
 process.env.HOMEROOM_ROSTER_TOKEN = 'test-token';
 process.env.HOMEROOM_ACCESS = 'roster';
@@ -25,7 +24,7 @@ import * as hr from '../app/models.js';
 import * as roster from '../app/roster.js';
 import * as access from '../app/access.js';
 
-getDb();
+await getDb();
 
 let server;
 let base;
@@ -49,10 +48,10 @@ let ROSTER = new Map();
 let outage = false;
 let calls = 0;
 
-beforeEach(() => {
+beforeEach(async () => {
   outage = false;
   calls = 0;
-  getDb().exec('DELETE FROM hr_roster');
+  await (await getDb()).exec('DELETE FROM hr_roster');
 });
 
 globalThis.fetch = async (input, init) => {
@@ -205,7 +204,7 @@ test('an address is never stored in the clear', async () => {
   })]]]);
   await access.assess('ada@example.org');
 
-  const row = hr.rosterRow(roster.emailHash('ada@example.org'));
+  const row = await hr.rosterRow(roster.emailHash('ada@example.org'));
   assert.ok(row, 'the verdict should be cached');
   assert.equal(row.verdict, 'allow');
   assert.doesNotMatch(JSON.stringify(row), /ada@example\.org/, 'never the address itself');
@@ -245,16 +244,16 @@ test('a steward decision outranks the rule, and survives a re-check', async () =
   assert.equal(first.verdict, 'review');
 
   const hash = roster.emailHash('conflict@example.org');
-  assert.equal(hr.pendingRoster().length, 1, 'it lands in the steward queue');
+  assert.equal((await hr.pendingRoster()).length, 1, 'it lands in the steward queue');
 
-  if (!hr.getUser('thedecider')) {
-    hr.createUser({ id: 'thedecider', email: 'thedecider@example.org', passwordHash: 'x', isAdmin: true });
+  if (!await hr.getUser('thedecider')) {
+    await hr.createUser({ id: 'thedecider', email: 'thedecider@example.org', passwordHash: 'x', isAdmin: true });
   }
-  hr.decideRoster({ hash, userId: 'thedecider', decision: 'allow', note: 'Subletted all summer.' });
+  await hr.decideRoster({ hash, userId: 'thedecider', decision: 'allow', note: 'Subletted all summer.' });
   const after = await access.assess('conflict@example.org');
   assert.equal(after.verdict, 'allow');
   assert.equal(after.reason, 'steward-allow');
-  assert.equal(hr.pendingRoster().length, 0, 'and leaves the queue');
+  assert.equal((await hr.pendingRoster()).length, 0, 'and leaves the queue');
 });
 
 /* ================================================================= signup */
@@ -268,9 +267,9 @@ test('an accepted resident can create an account, and it prefills their profile'
   const { res } = await trySignup('goodresident', 'resident@example.org');
   assert.equal(res.status, 303, 'signup should succeed');
 
-  const member = hr.getMember('goodresident');
+  const member = await hr.getMember('goodresident');
   assert.equal(member.name, 'Bea Lindqvist', 'the roster fills in the name');
-  const user = hr.getUser('goodresident');
+  const user = await hr.getUser('goodresident');
   assert.match(user.roster_status, /^allow:/);
 });
 
@@ -283,7 +282,7 @@ test('an applicant is turned away, and no account is created', async () => {
   assert.equal(res.status, 403);
   const page = await res.text();
   assert.match(page, /Residents only/);
-  assert.equal(hr.getUser('nothere'), null, 'no account');
+  assert.equal(await hr.getUser('nothere'), null, 'no account');
 });
 
 test('a stranger and a rejected applicant get the same page', async () => {
@@ -304,7 +303,7 @@ test('a conflict is held, not admitted', async () => {
   })]]]);
   const { res } = await trySignup('heldback', 'held@example.org');
   assert.equal(res.status, 403);
-  assert.equal(hr.getUser('heldback'), null);
+  assert.equal(await hr.getUser('heldback'), null);
 });
 
 test('signup fails CLOSED when the roster is unreachable', async () => {
@@ -314,7 +313,7 @@ test('signup fails CLOSED when the roster is unreachable', async () => {
   const page = await res.text();
   assert.match(page, /Try again shortly/);
   assert.doesNotMatch(page, /Residents only/, 'never tell someone they do not belong on a timeout');
-  assert.equal(hr.getUser('outaged'), null, 'and never let them in on a guess');
+  assert.equal(await hr.getUser('outaged'), null, 'and never let them in on a guess');
 });
 
 /* ================================================================== login */
@@ -322,11 +321,11 @@ test('signup fails CLOSED when the roster is unreachable', async () => {
 test('login fails OPEN: an outage does not lock the house out', async () => {
   ROSTER = new Map([['staysin@example.org', [record({ Status: { name: 'Accepted' } })]]]);
   await trySignup('staysin', 'staysin@example.org');
-  assert.ok(hr.getUser('staysin'));
+  assert.ok(await hr.getUser('staysin'));
 
   // Age the account past the TTL so login re-checks, then take Airtable away.
-  getDb().prepare('UPDATE users SET roster_checked_at = 0 WHERE id = ?').run('staysin');
-  getDb().exec('DELETE FROM hr_roster');
+  (await (await getDb()).prepare('UPDATE users SET roster_checked_at = 0 WHERE id = ?').run('staysin'));
+  await (await getDb()).exec('DELETE FROM hr_roster');
   outage = true;
 
   const res = await trySignin('staysin@example.org');
@@ -336,14 +335,14 @@ test('login fails OPEN: an outage does not lock the house out', async () => {
 test('a rescinded place revokes an existing account at the next login', async () => {
   ROSTER = new Map([['later@example.org', [record({ Status: { name: 'Accepted' } })]]]);
   await trySignup('laterrescinded', 'later@example.org');
-  assert.ok(hr.getUser('laterrescinded'));
+  assert.ok(await hr.getUser('laterrescinded'));
 
   // The offer is pulled, and the cached verdict expires.
   ROSTER = new Map([['later@example.org', [record({
     Status: { name: 'Rescinded' }, 'Lifecycle Status (Computed)': 'Resident',
   })]]]);
-  getDb().prepare('UPDATE users SET roster_checked_at = 0 WHERE id = ?').run('laterrescinded');
-  getDb().exec('DELETE FROM hr_roster');
+  (await (await getDb()).prepare('UPDATE users SET roster_checked_at = 0 WHERE id = ?').run('laterrescinded'));
+  await (await getDb()).exec('DELETE FROM hr_roster');
 
   const res = await trySignin('later@example.org');
   assert.equal(res.status, 403);
@@ -353,10 +352,10 @@ test('a rescinded place revokes an existing account at the next login', async ()
 test('a steward is never locked out by the roster', async () => {
   ROSTER = new Map([['boss@example.org', [record({ Status: { name: 'Accepted' } })]]]);
   await trySignup('thesteward', 'boss@example.org');
-  getDb().prepare('UPDATE users SET is_admin = 1, roster_checked_at = 0 WHERE id = ?').run('thesteward');
+  (await (await getDb()).prepare('UPDATE users SET is_admin = 1, roster_checked_at = 0 WHERE id = ?').run('thesteward'));
 
   ROSTER = new Map();          // vanished from the roster entirely
-  getDb().exec('DELETE FROM hr_roster');
+  await (await getDb()).exec('DELETE FROM hr_roster');
 
   const res = await trySignin('boss@example.org');
   assert.equal(res.status, 303, 'the people who fix the roster must be able to reach it');
@@ -411,7 +410,7 @@ test('the front-door page is stewards only', async () => {
   const res = await call('/homeroom/stewards/access');
   assert.equal(res.status, 403);
 
-  getDb().prepare('UPDATE users SET is_admin = 1 WHERE id = ?').run('nosysteward');
+  (await (await getDb()).prepare('UPDATE users SET is_admin = 1 WHERE id = ?').run('nosysteward'));
   const allowed = await call('/homeroom/stewards/access');
   assert.equal(allowed.status, 200);
   assert.match(await allowed.text(), /Front door/);

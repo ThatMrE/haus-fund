@@ -1,8 +1,18 @@
 # Netlify Configuration for Haus Fund
 
+# The site is static apart from the functions, so the build command exists for
+# exactly one reason: /homeroom needs the `pg` driver at runtime, and nothing
+# else here would ever install it. There is no package.json at this level, so
+# Netlify runs no install of its own; without this line the function deploys
+# with no node_modules beside it and dies on `Cannot find module 'pg'` the
+# moment HOMEROOM_DATABASE_URL is set.
+#
+# --omit=dev keeps PGlite (the 26MB test-only fallback) out of the build.
+# node_modules is ignored by the publish upload wherever it sits, so this adds
+# nothing to the site itself — only to what the function bundler can find.
 [build]
   publish = "."
-  command = ""
+  command = "cd netlify/functions/homeroom && npm ci --omit=dev"
 
 # ── LP section: HTTP Basic Auth at the edge ──
 # Both paths are declared: "/lp" alone does not match the "/lp/*" pattern.
@@ -31,6 +41,16 @@
 [functions]
   directory = "netlify/functions"
   node_bundler = "esbuild"
+
+# The Postgres driver ships as-is rather than through esbuild: `pg` resolves its
+# optional native bindings at require time, and a bundler that inlines those
+# either fails the build or produces a client that cannot connect.
+[functions.homeroom]
+  external_node_modules = ["pg"]
+# PGlite is deliberately not listed here. It is the in-process fallback for the
+# test suite, a devDependency, and app/db.js imports it by a specifier the
+# bundler cannot read — so it never reaches the function, and a deploy without
+# HOMEROOM_DATABASE_URL says that in words instead of failing on a missing wasm.
 
 # ── Mentors: server-side Airtable proxy ──
 # The token stays server-side; only whitelisted mentor fields are returned.

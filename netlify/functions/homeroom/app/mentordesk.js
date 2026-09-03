@@ -76,20 +76,20 @@ const DAY = 86400;
 
 /* ------------------------------------------------------------------ audit */
 
-export function logEvent({ mentorId = null, requestId = null, actorId = null,
+export async function logEvent({ mentorId = null, requestId = null, actorId = null,
   actorKind = 'system', event, detail = '' }) {
-  getDb()
+  (await (await getDb())
     .prepare(
       `INSERT INTO hr_mentor_events (mentor_id, request_id, actor_id, actor_kind, event, detail, created_at)
        VALUES (?, ?, ?, ?, ?, ?, ?)`,
     )
-    .run(mentorId, requestId, actorId, actorKind, event, detail, nowSeconds());
+    .run(mentorId, requestId, actorId, actorKind, event, detail, nowSeconds()));
 }
 
-export function eventsFor(requestId, { limit = 50 } = {}) {
-  return getDb()
+export async function eventsFor(requestId, { limit = 50 } = {}) {
+  return (await (await getDb())
     .prepare('SELECT * FROM hr_mentor_events WHERE request_id = ? ORDER BY created_at ASC LIMIT ?')
-    .all(Number(requestId), limit);
+    .all(Number(requestId), limit));
 }
 
 /* --------------------------------------------------------------- capacity */
@@ -116,15 +116,15 @@ export function monthWindow(now = nowSeconds()) {
  * look busier — that would mean saying no once quietly reduced how often they
  * were asked again, which inverts the incentive we want.
  */
-export function capacityFor(mentor, now = nowSeconds()) {
+export async function capacityFor(mentor, now = nowSeconds()) {
   const { start, end } = monthWindow(now);
   const cap = mentor.capacity > 0 ? mentor.capacity : defaultCapacity();
-  const { used } = getDb()
+  const { used } = (await (await getDb())
     .prepare(
       `SELECT COUNT(*) AS used FROM hr_mentor_requests
        WHERE mentor_id = ? AND state = 'accepted' AND answered_at >= ? AND answered_at < ?`,
     )
-    .get(mentor.id, start, end);
+    .get(mentor.id, start, end));
   return { used, cap, full: used >= cap, resetsAt: end };
 }
 
@@ -136,7 +136,7 @@ export function capacityFor(mentor, now = nowSeconds()) {
  * Every reason is a sentence a member can act on. "No" with no explanation is
  * how a member concludes the feature is broken and stops using it.
  */
-export function canRequest({ mentor, memberId, now = nowSeconds() }) {
+export async function canRequest({ mentor, memberId, now = nowSeconds() }) {
   if (!mentor) return { ok: false, reason: 'unknown', message: 'No such mentor.' };
 
   if (mentor.state === 'paused' || (mentor.paused_until && mentor.paused_until > now)) {
@@ -145,7 +145,7 @@ export function canRequest({ mentor, memberId, now = nowSeconds() }) {
   if (mentor.state !== 'listed' || !mentor.active) {
     return { ok: false, reason: 'unlisted', message: `${mentor.name} is not taking requests.` };
   }
-  if (!schedulerFor(mentor.id)) {
+  if (!await schedulerFor(mentor.id)) {
     return {
       ok: false, reason: 'no-scheduler',
       message: `${mentor.name} has no booking link on file yet. A steward is chasing it.`,
@@ -155,14 +155,14 @@ export function canRequest({ mentor, memberId, now = nowSeconds() }) {
   // ten days later looking like a mentor who ignored it. Refusing up front is
   // both honest and the thing that makes the onboarding form worth building:
   // the roster imported today has no addresses at all.
-  if (!hasContact(mentor.id) && mentor.consent_mode === 'ask-me') {
+  if (!await hasContact(mentor.id) && mentor.consent_mode === 'ask-me') {
     return {
       ok: false, reason: 'no-contact',
       message: `${mentor.name} has no contact address on file yet, so we cannot ask them.`,
     };
   }
 
-  const open = openRequest(mentor.id, memberId);
+  const open = await openRequest(mentor.id, memberId);
   if (open) {
     return {
       ok: false, reason: 'already-open', requestId: open.id,
@@ -172,13 +172,13 @@ export function canRequest({ mentor, memberId, now = nowSeconds() }) {
     };
   }
 
-  const recentDecline = getDb()
+  const recentDecline = (await (await getDb())
     .prepare(
       `SELECT answered_at FROM hr_mentor_requests
        WHERE mentor_id = ? AND member_id = ? AND state = 'declined'
        ORDER BY answered_at DESC LIMIT 1`,
     )
-    .get(mentor.id, memberId);
+    .get(mentor.id, memberId));
   if (recentDecline?.answered_at && recentDecline.answered_at + reaskDays() * DAY > now) {
     return {
       ok: false, reason: 'cooldown',
@@ -186,7 +186,7 @@ export function canRequest({ mentor, memberId, now = nowSeconds() }) {
     };
   }
 
-  const capacity = capacityFor(mentor, now);
+  const capacity = await capacityFor(mentor, now);
   if (capacity.full) {
     return {
       ok: false, reason: 'at-capacity', capacity,
@@ -194,7 +194,7 @@ export function canRequest({ mentor, memberId, now = nowSeconds() }) {
     };
   }
 
-  const mine = memberLoad(memberId, now);
+  const mine = await memberLoad(memberId, now);
   if (mine.open >= maxOpen()) {
     return {
       ok: false, reason: 'member-open',
@@ -212,24 +212,24 @@ export function canRequest({ mentor, memberId, now = nowSeconds() }) {
 }
 
 /** A member's own load: what is outstanding, and what they have spent. */
-export function memberLoad(memberId, now = nowSeconds()) {
+export async function memberLoad(memberId, now = nowSeconds()) {
   const { start, end } = monthWindow(now);
-  const db = getDb();
-  const { open } = db
+  const db = await getDb();
+  const { open } = (await db
     .prepare("SELECT COUNT(*) AS open FROM hr_mentor_requests WHERE member_id = ? AND state = 'sent'")
-    .get(memberId);
-  const { monthly } = db
+    .get(memberId));
+  const { monthly } = (await db
     .prepare(
       `SELECT COUNT(*) AS monthly FROM hr_mentor_requests
        WHERE member_id = ? AND created_at >= ? AND created_at < ?`,
     )
-    .get(memberId, start, end);
+    .get(memberId, start, end));
   return { open, monthly };
 }
 
 /** A live request between these two: still waiting, or accepted with time left. */
-export function openRequest(mentorId, memberId, now = nowSeconds()) {
-  return getDb()
+export async function openRequest(mentorId, memberId, now = nowSeconds()) {
+  return (await (await getDb())
     .prepare(
       `SELECT r.* FROM hr_mentor_requests r
        WHERE r.mentor_id = ? AND r.member_id = ?
@@ -239,7 +239,7 @@ export function openRequest(mentorId, memberId, now = nowSeconds()) {
                               WHERE g.request_id = r.id AND g.revoked = 0 AND g.expires_at > ?)))
        ORDER BY r.created_at DESC LIMIT 1`,
     )
-    .get(mentorId, memberId, now) ?? null;
+    .get(mentorId, memberId, now)) ?? null;
 }
 
 /* ------------------------------------------------------------- the secret */
@@ -252,8 +252,8 @@ export function openRequest(mentorId, memberId, now = nowSeconds()) {
  * cannot leak it by accident — which is exactly how it leaked before, through
  * a `SELECT m.*` that nobody re-read when /homeroom/api/mentors was added.
  */
-export function schedulerFor(mentorId) {
-  const row = getDb().prepare('SELECT scheduler FROM hr_mentors WHERE id = ?').get(Number(mentorId));
+export async function schedulerFor(mentorId) {
+  const row = (await (await getDb()).prepare('SELECT scheduler FROM hr_mentors WHERE id = ?').get(Number(mentorId)));
   return row?.scheduler || '';
 }
 
@@ -264,13 +264,13 @@ export function schedulerFor(mentorId) {
  * that ends up in a template or a JSON response — that is the exact mistake
  * `scheduler` made. It is not in MENTOR_FIELDS, so asking for it is a decision.
  */
-export function contactFor(mentorId) {
-  const row = getDb().prepare('SELECT email FROM hr_mentors WHERE id = ?').get(Number(mentorId));
+export async function contactFor(mentorId) {
+  const row = (await (await getDb()).prepare('SELECT email FROM hr_mentors WHERE id = ?').get(Number(mentorId)));
   return row?.email || '';
 }
 
-export function hasContact(mentorId) {
-  return !!contactFor(mentorId);
+export async function hasContact(mentorId) {
+  return !!await contactFor(mentorId);
 }
 
 /* -------------------------------------------------------------- requests */
@@ -294,27 +294,28 @@ const hashToken = (token) => createHash('sha256').update(String(token)).digest('
  * would like one. Forcing the round trip on them wastes the exact thing this
  * system exists to protect.
  */
-export function createRequest({ mentor, memberId, track = '', need, whyThem = '',
+export async function createRequest({ mentor, memberId, track = '', need, whyThem = '',
   tried = '', askingFor = '' }) {
   const now = nowSeconds();
   const token = randomBytes(32).toString('hex');
 
-  return transaction((db) => {
+  return await transaction(async (db) => {
     const auto = autoAccepts(mentor, track);
-    const info = db
+    // RETURNING rather than lastInsertRowid, which Postgres does not have.
+    const row = (await db
       .prepare(
         `INSERT INTO hr_mentor_requests
            (mentor_id, member_id, track, need, why_them, tried, asking_for,
             state, auto, token_hash, token_expires, created_at, answered_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id`,
       )
-      .run(mentor.id, memberId, track, need, whyThem, tried, askingFor,
+      .get(mentor.id, memberId, track, need, whyThem, tried, askingFor,
         auto ? 'accepted' : 'sent', auto ? 1 : 0,
-        hashToken(token), now + requestDays() * DAY, now, auto ? now : null);
-    const id = Number(info.lastInsertRowid);
+        hashToken(token), now + requestDays() * DAY, now, auto ? now : null));
+    const id = Number(row.id);
 
     let grant = null;
-    if (auto) grant = insertGrant(db, { requestId: id, mentorId: mentor.id, memberId, now });
+    if (auto) grant = await insertGrant(db, { requestId: id, mentorId: mentor.id, memberId, now });
 
     return { id, token, auto, grant };
   });
@@ -327,25 +328,25 @@ function autoAccepts(mentor, track) {
   return !!track && tracks.includes(track);
 }
 
-function insertGrant(db, { requestId, mentorId, memberId, now }) {
+async function insertGrant(db, { requestId, mentorId, memberId, now }) {
   const id = randomBytes(18).toString('hex');
-  db.prepare(
+  ((await db.prepare(
     `INSERT INTO hr_mentor_grants (id, request_id, mentor_id, member_id, expires_at, created_at)
      VALUES (?, ?, ?, ?, ?, ?)`,
-  ).run(id, requestId, mentorId, memberId, now + grantDays() * DAY, now);
+  ).run(id, requestId, mentorId, memberId, now + grantDays() * DAY, now)));
   return { id, expiresAt: now + grantDays() * DAY };
 }
 
-export function getRequest(id) {
-  return getDb().prepare('SELECT * FROM hr_mentor_requests WHERE id = ?').get(Number(id)) ?? null;
+export async function getRequest(id) {
+  return (await (await getDb()).prepare('SELECT * FROM hr_mentor_requests WHERE id = ?').get(Number(id))) ?? null;
 }
 
 /** Look a mentor token up without spending it. */
-export function findByToken(token) {
+export async function findByToken(token) {
   if (!token) return null;
-  const row = getDb()
+  const row = (await (await getDb())
     .prepare('SELECT * FROM hr_mentor_requests WHERE token_hash = ?')
-    .get(hashToken(token));
+    .get(hashToken(token)));
   return row ?? null;
 }
 
@@ -361,12 +362,12 @@ export function findByToken(token) {
  * race the last slot of the month between the requests being written and the
  * mentor working through their inbox. First accept wins.
  */
-export function answerRequest({ token, decision, note = '', pauseDays = 0 }) {
+export async function answerRequest({ token, decision, note = '', pauseDays = 0 }) {
   const now = nowSeconds();
   const hash = hashToken(token);
 
-  return transaction((db) => {
-    const request = db.prepare('SELECT * FROM hr_mentor_requests WHERE token_hash = ?').get(hash);
+  return await transaction(async (db) => {
+    const request = (await db.prepare('SELECT * FROM hr_mentor_requests WHERE token_hash = ?').get(hash));
     if (!request) return { ok: false, reason: 'unknown' };
 
     // Already answered: show them what they said rather than an error. A
@@ -375,44 +376,44 @@ export function answerRequest({ token, decision, note = '', pauseDays = 0 }) {
       return { ok: false, reason: 'already', request, answered: request.state };
     }
 
-    const mentor = db.prepare('SELECT * FROM hr_mentors WHERE id = ?').get(request.mentor_id);
+    const mentor = (await db.prepare('SELECT * FROM hr_mentors WHERE id = ?').get(request.mentor_id));
     if (!mentor) return { ok: false, reason: 'unknown' };
 
     const late = !!request.token_expires && request.token_expires < now;
 
     if (decision === 'accept') {
       const { start, end } = monthWindow(now);
-      const { used } = db
+      const { used } = (await db
         .prepare(
           `SELECT COUNT(*) AS used FROM hr_mentor_requests
            WHERE mentor_id = ? AND state = 'accepted' AND answered_at >= ? AND answered_at < ?`,
         )
-        .get(mentor.id, start, end);
+        .get(mentor.id, start, end));
       const cap = mentor.capacity > 0 ? mentor.capacity : defaultCapacity();
       if (used >= cap) return { ok: false, reason: 'at-capacity', request, mentor, used, cap };
 
-      db.prepare("UPDATE hr_mentor_requests SET state = 'accepted', answered_at = ? WHERE id = ?")
-        .run(now, request.id);
-      const grant = insertGrant(db, {
+      (await db.prepare("UPDATE hr_mentor_requests SET state = 'accepted', answered_at = ? WHERE id = ?")
+        .run(now, request.id));
+      const grant = await insertGrant(db, {
         requestId: request.id, mentorId: mentor.id, memberId: request.member_id, now,
       });
       return { ok: true, decision: 'accept', request, mentor, grant, late };
     }
 
     const paused = decision === 'later' && pauseDays > 0;
-    db.prepare(
+    (await db.prepare(
       `UPDATE hr_mentor_requests
        SET state = 'declined', answered_at = ?, decline_note = ?, paused_mentor = ?
        WHERE id = ?`,
-    ).run(now, String(note || '').slice(0, 500), paused ? 1 : 0, request.id);
+    ).run(now, String(note || '').slice(0, 500), paused ? 1 : 0, request.id));
 
     if (paused) {
       // "Not right now" pauses them as well as declining. The honest button for
       // a mentor who is buried, and the one that stops them having to keep
       // saying no. Outstanding grants survive — someone already told yes should
       // not lose their link because the mentor went quiet afterwards.
-      db.prepare("UPDATE hr_mentors SET state = 'paused', paused_until = ? WHERE id = ?")
-        .run(now + pauseDays * DAY, mentor.id);
+      (await db.prepare("UPDATE hr_mentors SET state = 'paused', paused_until = ? WHERE id = ?")
+        .run(now + pauseDays * DAY, mentor.id));
     }
 
     return { ok: true, decision: paused ? 'later' : 'decline', request, mentor, late, paused };
@@ -420,15 +421,15 @@ export function answerRequest({ token, decision, note = '', pauseDays = 0 }) {
 }
 
 /** Withdrawn by the member. Kills the grant too, if one was issued. */
-export function withdrawRequest(id, memberId) {
+export async function withdrawRequest(id, memberId) {
   const now = nowSeconds();
-  return transaction((db) => {
-    const request = db.prepare('SELECT * FROM hr_mentor_requests WHERE id = ?').get(Number(id));
+  return await transaction(async (db) => {
+    const request = (await db.prepare('SELECT * FROM hr_mentor_requests WHERE id = ?').get(Number(id)));
     if (!request || request.member_id !== memberId) return null;
     if (!['sent', 'accepted'].includes(request.state)) return request;
-    db.prepare("UPDATE hr_mentor_requests SET state = 'withdrawn', answered_at = ? WHERE id = ?")
-      .run(now, request.id);
-    db.prepare('UPDATE hr_mentor_grants SET revoked = 1 WHERE request_id = ?').run(request.id);
+    (await db.prepare("UPDATE hr_mentor_requests SET state = 'withdrawn', answered_at = ? WHERE id = ?")
+      .run(now, request.id));
+    (await db.prepare('UPDATE hr_mentor_grants SET revoked = 1 WHERE request_id = ?').run(request.id));
     return { ...request, state: 'withdrawn' };
   });
 }
@@ -441,30 +442,30 @@ export function withdrawRequest(id, memberId) {
  * not run. Called on the pages that read requests, which is often enough for a
  * ten-day window.
  */
-export function expireStale(now = nowSeconds()) {
-  const info = getDb()
+export async function expireStale(now = nowSeconds()) {
+  const info = (await (await getDb())
     .prepare(
       `UPDATE hr_mentor_requests SET state = 'expired', answered_at = ?
        WHERE state = 'sent' AND token_expires IS NOT NULL AND token_expires < ?`,
     )
-    .run(now, now);
+    .run(now, now));
   return Number(info.changes || 0);
 }
 
 /* ---------------------------------------------------------------- grants */
 
-export function getGrant(id) {
-  return getDb().prepare('SELECT * FROM hr_mentor_grants WHERE id = ?').get(String(id)) ?? null;
+export async function getGrant(id) {
+  return (await (await getDb()).prepare('SELECT * FROM hr_mentor_grants WHERE id = ?').get(String(id))) ?? null;
 }
 
-export function liveGrantFor(requestId, now = nowSeconds()) {
-  return getDb()
+export async function liveGrantFor(requestId, now = nowSeconds()) {
+  return (await (await getDb())
     .prepare(
       `SELECT * FROM hr_mentor_grants
        WHERE request_id = ? AND revoked = 0 AND expires_at > ?
        ORDER BY created_at DESC LIMIT 1`,
     )
-    .get(Number(requestId), now) ?? null;
+    .get(Number(requestId), now)) ?? null;
 }
 
 /**
@@ -474,74 +475,79 @@ export function liveGrantFor(requestId, now = nowSeconds()) {
  * email from three weeks ago stops working even though its link still looks
  * fine, which is the property that makes the window mean anything.
  */
-export function redeemGrant({ grantId, memberId, mentorId, now = nowSeconds() }) {
-  const grant = getGrant(grantId);
+export async function redeemGrant({ grantId, memberId, mentorId, now = nowSeconds() }) {
+  const grant = await getGrant(grantId);
   if (!grant) return { ok: false, reason: 'unknown' };
   if (grant.member_id !== memberId) return { ok: false, reason: 'not-yours' };
   if (mentorId && grant.mentor_id !== mentorId) return { ok: false, reason: 'not-yours' };
   if (grant.revoked) return { ok: false, reason: 'revoked' };
   if (grant.expires_at <= now) return { ok: false, reason: 'expired' };
 
-  const url = schedulerFor(grant.mentor_id);
+  const url = await schedulerFor(grant.mentor_id);
   if (!url) return { ok: false, reason: 'no-scheduler' };
 
-  getDb()
+  (await (await getDb())
     .prepare('UPDATE hr_mentor_grants SET clicks = clicks + 1, first_click = COALESCE(first_click, ?) WHERE id = ?')
-    .run(now, grant.id);
+    .run(now, grant.id));
   return { ok: true, url, grant };
 }
 
-export function revokeGrantsForMentor(mentorId) {
-  const info = getDb()
+export async function revokeGrantsForMentor(mentorId) {
+  const info = (await (await getDb())
     .prepare('UPDATE hr_mentor_grants SET revoked = 1 WHERE mentor_id = ? AND revoked = 0')
-    .run(Number(mentorId));
+    .run(Number(mentorId)));
   return Number(info.changes || 0);
 }
 
 /* --------------------------------------------------------------- reading */
 
 /** A member's own requests, newest first, with the mentor and any live grant. */
-export function requestsFor(memberId, { limit = 50, now = nowSeconds() } = {}) {
-  expireStale(now);
-  const rows = getDb()
+export async function requestsFor(memberId, { limit = 50, now = nowSeconds() } = {}) {
+  await expireStale(now);
+  const rows = (await (await getDb())
     .prepare(
       `SELECT r.*, m.name AS mentor_name, m.slug AS mentor_slug, m.org AS mentor_org
        FROM hr_mentor_requests r
        JOIN hr_mentors m ON m.id = r.mentor_id
        WHERE r.member_id = ? ORDER BY r.created_at DESC LIMIT ?`,
     )
-    .all(memberId, limit);
-  return rows.map((row) => ({ ...row, grant: row.state === 'accepted' ? liveGrantFor(row.id, now) : null }));
+    .all(memberId, limit));
+  // Promise.all, not a bare map: an async callback returns promises, and the
+  // caller renders whatever it is handed.
+  return Promise.all(rows.map(async (row) => ({
+    ...row,
+    grant: row.state === 'accepted' ? await liveGrantFor(row.id, now) : null,
+  })));
 }
 
-export function outcomeFor(requestId) {
-  return getDb().prepare('SELECT * FROM hr_mentor_outcomes WHERE request_id = ?')
-    .get(Number(requestId)) ?? null;
+export async function outcomeFor(requestId) {
+  return (await (await getDb()).prepare('SELECT * FROM hr_mentor_outcomes WHERE request_id = ?')
+    .get(Number(requestId))) ?? null;
 }
 
-export function logOutcome({ requestId, met, useful = null, note = '' }) {
+export async function logOutcome({ requestId, met, useful = null, note = '' }) {
   const now = nowSeconds();
-  transaction((db) => {
-    db.prepare(
+  await transaction(async (db) => {
+    (await db.prepare(
       `INSERT INTO hr_mentor_outcomes (request_id, met, useful, note, logged_at)
        VALUES (?, ?, ?, ?, ?)
        ON CONFLICT(request_id) DO UPDATE SET met = excluded.met, useful = excluded.useful,
          note = excluded.note, logged_at = excluded.logged_at`,
-    ).run(Number(requestId), met ? 1 : 0, useful, String(note || '').slice(0, 1000), now);
+    ).run(Number(requestId), met ? 1 : 0, useful, String(note || '').slice(0, 1000), now));
     if (met) {
-      db.prepare(
+      (await db.prepare(
         `UPDATE hr_mentors SET sessions = sessions + 1
          WHERE id = (SELECT mentor_id FROM hr_mentor_requests WHERE id = ?)`,
-      ).run(Number(requestId));
+      ).run(Number(requestId)));
     }
   });
 }
 
 /** For /homeroom/health: the numbers that say whether the desk is working. */
-export function deskStats(now = nowSeconds()) {
-  const db = getDb();
+export async function deskStats(now = nowSeconds()) {
+  const db = await getDb();
   const { start, end } = monthWindow(now);
-  const one = (sql, ...params) => Object.values(db.prepare(sql).get(...params))[0];
+  const one = async (sql, ...params) => Object.values(((await db.prepare(sql).get(...params))))[0];
   return {
     gate: gateEnabled(),
     listed: one("SELECT COUNT(*) FROM hr_mentors WHERE state = 'listed' AND active = 1"),

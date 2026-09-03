@@ -187,7 +187,7 @@ netlify/functions/homeroom/
 │   ├── routes.js         every members-only surface
 │   ├── models.js         data layer for all of it
 │   ├── schema.js         the hr_ tables
-│   ├── db.js             accounts, sessions, reset tokens, migrations, transactions
+│   ├── db.js             Postgres: two drivers, the schema, transactions
 │   ├── auth.js           scrypt hashing, sessions, CSRF, password resets
 │   ├── mail.js           the one message this app sends
 │   ├── supabase.js       durable storage for publishing to /news (no SDK)
@@ -290,13 +290,14 @@ because the steward already made the call.
 ### Where invites live, and why it matters
 
 In Supabase, when `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY` and
-`HOMEROOM_INVITE_SECRET` are all set. Homeroom's SQLite file is on the
-container's `/tmp`, so an invite minted on one container is invisible to the
-next — the link would work only if the person happened to click it while that
-same container was still warm. An invite that works by luck is not an invite.
+`HOMEROOM_INVITE_SECRET` are all set. That predates the database move and is
+now belt and braces: `hr_invites` in Postgres would be durable too. The Supabase
+table keeps one property the local one cannot — the RLS and the `security
+definer` functions mean an invite can be redeemed without the app holding any
+privileged credential — so it stays the primary store.
 
-Without those, it falls back to a local `hr_invites` table, and the steward page
-says so in a banner rather than pretending the links will last.
+Without those, it falls back to the local `hr_invites` table, which is now
+durable as well; the steward page still says which store is in use.
 
 ### What reaches Supabase
 
@@ -476,10 +477,12 @@ outranks it, so the next weekly re-check does not quietly undo their work.
 
 | Variable | Default | Notes |
 | --- | --- | --- |
-| `HOMEROOM_DB` | `/tmp/haus-homeroom.db` | SQLite file. |
+| `HOMEROOM_DATABASE_URL` | — | Postgres connection string. Use Supabase's **transaction pooler** (port 6543). Without it the app opens an in-process Postgres that does not outlive the container, and `/homeroom/health` says so. |
+| `HOMEROOM_DB_POOL` | `3` | Connections per container. Small on purpose: every container holds its own pool. |
+| `HOMEROOM_DB_SSL_STRICT` | — | `1` to verify Supabase's certificate chain. Off by default because the CA bundle is not shipped to the function; the connection is encrypted either way. |
 | `HOMEROOM_SECRET` | random per boot | Set in production, or CSRF tokens rotate on restart and every open form breaks. |
 | `HOMEROOM_STATIC_BASE` | `/homeroom-assets` | Where the stylesheet and client script are served from. |
-| `HOMEROOM_SEED` | — | What a cold container fills itself with. Unset: the full sample network, including ten invented accounts sharing a documented password — for reviewing the design, never for production. `real`: only the researched reference data (perks, capital map, atlas, manual, channels) and no accounts. `off`: nothing, in which case pair it with `HOMEROOM_ACCESS=closed` or a roster token, because with no accounts the first signup is made a steward. |
+| `HOMEROOM_SEED` | — | What an **empty database** is filled with, once. Unset: the full sample network, including ten invented accounts sharing a documented password — for reviewing the design, never for production. `real`: only the researched reference data (perks, capital map, atlas, manual) and no accounts. `off`: nothing, in which case pair it with `HOMEROOM_ACCESS=closed` or a roster token, because with no accounts the first signup is made a steward. |
 
 ### The steward account
 
@@ -526,11 +529,12 @@ resets a local account's password and ends its open sessions.
 
 ### Accounts (Supabase Auth)
 
-By default Homeroom holds its own passwords, in the SQLite database on the
-container's `/tmp` — which means an account lasts until the next cold start.
-Setting `HOMEROOM_AUTH=supabase` moves the credential to Supabase, which is
-durable, and brings the one piece of account management this app has never had:
-a password-reset email that is actually sent.
+By default Homeroom holds its own passwords, hashed with scrypt in its own
+`users` table. Setting `HOMEROOM_AUTH=supabase` moves the credential to Supabase
+Auth instead, which brings the one piece of account management this app cannot
+do itself: a password-reset email that is actually sent. Both are durable now
+that the database is — the reason to prefer Supabase is the mail, not the
+storage.
 
 | Variable | Notes |
 | --- | --- |
@@ -703,31 +707,81 @@ time, or a cold container puts them back.
 bookable, set `vetted` and a `scheduler` — which should happen only after the
 person has actually said yes.
 
-## Storage: read this before inviting anyone
+## Storage
 
-Netlify functions have an ephemeral filesystem. The database lives in `/tmp`,
-which means **a cold container starts from nothing**: accounts, posts, replies
-and bookings do not survive, and two concurrent containers do not share state.
-The sample network is re-seeded automatically, so the page looks right, which is
-exactly what makes this easy to miss.
+The database is **Postgres**, reached over the network, and it outlives the
+containers. That was not always true: Homeroom ran on a SQLite file in the
+function's `/tmp`, where a cold container started from nothing, two concurrent
+containers shared no state, and the sample network re-seeded itself so the page
+still looked right — which is what made it easy to miss.
 
-That is fine for reviewing the design and the flows. It is not fine for a
-network people are asked to put their fundraising notes into. Before launch,
-storage has to move to something durable — either run the app as a single
-process against a real volume (it is one Node process and one SQLite file), or
-swap `db.js` for a hosted Postgres instance. Everything above `db.js` is written
-against a small query surface, so the second option is a contained change, and
-the Supabase project this repository is already linked to is the obvious target.
+```
+HOMEROOM_DATABASE_URL   postgres://…@…pooler.supabase.com:6543/postgres
+```
 
-Two things in this build are affected by that and should be read as provisional
-until it is done:
+**Use the transaction pooler (port 6543), not the database directly (5432).**
+A function scales out to many containers and Postgres counts connections; the
+pooler exists for exactly this shape of traffic. It does not support named
+prepared statements, which is why every query here is sent unnamed.
 
-- **Publishing to /news already crosses the line**, which is why it is the one
-  surface that writes to Supabase rather than SQLite. The local
-  `hr_news_submissions` row is only a receipt.
-- **The Luma sweep runs in its own container**, so what it writes is not
-  guaranteed to be the database the web container reads. Harmless (a container
-  re-syncs on its own next boot) but genuinely useful only after the move.
+Without the variable the app opens an in-process Postgres instead and
+`/homeroom/health` says so under `database`:
 
-Set `HOMEROOM_SEED=off` at the same time, or the sample members will reappear
-next to the real ones.
+```json
+"database": { "driver": "pglite", "durable": false,
+              "warning": "HOMEROOM_DATABASE_URL is not set, so this is an
+                          in-process database that disappears with the container." }
+```
+
+### Two drivers, one dialect
+
+| | |
+| --- | --- |
+| `pg` | Supabase in production, any Postgres locally |
+| PGlite | Postgres compiled to WebAssembly, in this process, for the tests |
+
+`npm test` therefore still needs nothing installed and no server running — the
+property that keeps a suite being run — while executing against real Postgres
+rather than a lookalike. There is one SQL dialect in this codebase on purpose:
+two would drift, and the drift would be found in production.
+
+PGlite is a devDependency (26MB of WebAssembly does not belong in a function
+bundle), and `pg` is marked `external_node_modules` in `netlify.toml` so esbuild
+ships it as-is rather than inlining its optional native bindings.
+
+### What the port had to change
+
+Everything above `db.js` was written against a small query surface, which is why
+this was a change of plumbing rather than a rewrite. Call sites still write `?`
+placeholders; `prepare()` rewrites them to `$1..$n`, skipping quoted strings and
+comments so a question mark inside a LIKE pattern survives.
+
+Four things were genuine dialect differences rather than mechanical edits, and
+each was a silent behaviour change waiting to happen:
+
+- **`LIKE` folds case in SQLite and does not in Postgres.** Every search box in
+  the app relied on the old behaviour, so they use `ILIKE`.
+- **`lastInsertRowid` does not exist.** Inserts that need their id ask for it
+  with `RETURNING id`.
+- **`GROUP BY` is strict.** SQLite let a bare column ride along and picked an
+  arbitrary row; the one query doing that now groups by what it meant to.
+- **A dead `helpful` column** on `hr_funder_reviews` collided with the computed
+  vote count of the same name. SQLite resolved the ambiguity silently and
+  Postgres refuses to guess, which is how it was found. The column is gone.
+
+### Consequences worth knowing
+
+- **Seeding now runs once**, on a genuinely empty database, rather than on every
+  cold container. `HOMEROOM_SEED=real` on an already-seeded database does
+  nothing.
+- **The Luma sweep writes where the web containers read.** It runs in its own
+  container, so before the move anything it imported was invisible to every
+  other one.
+- **A password changed inside Homeroom now sticks.** It used to live on one
+  container. The steward variables remain the source of truth for a *fresh*
+  database, so keep them in step.
+- **Sessions still do not survive a restart unless `HOMEROOM_SECRET` is set** —
+  that is a signing key, not storage, and it defaults to random per boot.
+
+Set `HOMEROOM_SEED=off` once the real data is loaded, or the sample members
+reappear next to the real ones on a fresh database.
