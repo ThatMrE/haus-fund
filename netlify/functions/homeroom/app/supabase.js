@@ -1,16 +1,17 @@
 /**
  * Supabase — the durable half of Homeroom.
  *
- * WHY IT EXISTS. This was the first thing to leave the container's /tmp, back
- * when the rest of Homeroom still lived there, because losing a row here is not
- * merely annoying but visible to the public: a member publishing to
- * haus.fund/news.
+ * WHY IT EXISTS. The README says the quiet part already: Netlify functions have
+ * an ephemeral filesystem, the SQLite database lives in /tmp, and a cold
+ * container starts from nothing. That is fine for a demo and unacceptable for
+ * anything a member is asked to write down and expect to still be there.
  *
- * It stays separate now that Homeroom's own database is Postgres, for a reason
- * that has nothing to do with durability: this table belongs to the news app,
- * which reads and publishes from it independently. The local row is a receipt,
- * so a member can see the state of their own submission when Supabase is
- * unreachable.
+ * This module is the first thing to cross that line, and it does it for the one
+ * surface where losing a row is not merely annoying but visible to the public:
+ * a member publishing to haus.fund/news. The submission goes to Supabase, which
+ * is durable and shared across containers, and the local SQLite row is only a
+ * receipt so the member can see the state of their own submission when Supabase
+ * is unreachable.
  *
  * NO SDK. The same rule as the rest of this app: zero npm dependencies. Supabase
  * speaks PostgREST over plain HTTPS and `fetch` is built in, so an SDK would buy

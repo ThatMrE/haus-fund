@@ -186,7 +186,7 @@ export async function sync({ hostId, windowDays = 180, maxPages = 10 } = {}) {
     }
     for (const event of result.events) {
       seen++;
-      const outcome = await hr.upsertExternalEvent({ source: 'luma', hostId: host, ...event });
+      const outcome = hr.upsertExternalEvent({ source: 'luma', hostId: host, ...event });
       if (outcome.created) created++;
       else updated++;
     }

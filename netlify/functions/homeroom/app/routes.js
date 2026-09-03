@@ -53,11 +53,11 @@ const LIMITS = {
 
 /* ------------------------------------------------------------- plumbing */
 
-export async function render(ctx, content, { title, description, status = 200, flash, error, subnav } = {}) {
+export function render(ctx, content, { title, description, status = 200, flash, error, subnav } = {}) {
   ctx.badges = ctx.user
     ? {
-        messages: await bf.unreadMessageCount(ctx.user.id),
-        notifications: await bf.unreadNotificationCount(ctx.user.id) + await bf.pendingIntroCount(ctx.user.id),
+        messages: bf.unreadMessageCount(ctx.user.id),
+        notifications: bf.unreadNotificationCount(ctx.user.id) + bf.pendingIntroCount(ctx.user.id),
       }
     : {};
   sendHtml(
@@ -74,8 +74,8 @@ export async function render(ctx, content, { title, description, status = 200, f
   );
 }
 
-const notFound = async (ctx) => await render(ctx, views.notFoundPage(), { title: 'Not found', status: 404 });
-const oops = async (ctx, message, status = 400) => await render(ctx, views.errorPage(message), { title: 'Error', status });
+const notFound = (ctx) => render(ctx, views.notFoundPage(), { title: 'Not found', status: 404 });
+const oops = (ctx, message, status = 400) => render(ctx, views.errorPage(message), { title: 'Error', status });
 
 function seeOther(ctx, location) {
   ctx.res.writeHead(303, { location });
@@ -89,16 +89,16 @@ function safeGoto(value, fallback = '/homeroom') {
 }
 
 /** Members-only: no session, no network. */
-async function gate(ctx) {
+function gate(ctx) {
   if (ctx.user) {
-    await bf.ensureMember(ctx.user.id);
+    bf.ensureMember(ctx.user.id);
     return true;
   }
   if (ctx.req.method === 'POST') {
     seeOther(ctx, `/homeroom/login?next=${encodeURIComponent(ctx.fullPath || '/homeroom')}`);
     return false;
   }
-  await render(ctx, views.gatePage(ctx, { stats: await bf.networkStats() }), { title: 'Members only' });
+  render(ctx, views.gatePage(ctx, { stats: bf.networkStats() }), { title: 'Members only' });
   return false;
 }
 
@@ -121,24 +121,24 @@ const trimmed = (value, max) => String(value || '').trim().slice(0, max);
 
 /* -------------------------------------------------------------- the feed */
 
-async function homeHandler(ctx) {
-  const member = await bf.ensureMember(ctx.user.id);
-  await bf.touchMember(ctx.user.id);
-  const onboarding = await bf.onboardingProgress(ctx.user.id);
-  await render(
+function homeHandler(ctx) {
+  const member = bf.ensureMember(ctx.user.id);
+  bf.touchMember(ctx.user.id);
+  const onboarding = bf.onboardingProgress(ctx.user.id);
+  render(
     ctx,
     views.homePage(ctx, {
       member,
-      stats: await bf.networkStats(),
-      upcomingSlots: await bf.listSlots({ upcoming: true, limit: 5 }),
-      upcomingEvents: await bf.listEvents({ upcoming: true, limit: 6 }),
-      myOrgs: await bf.userOrgs(ctx.user.id),
-      deals: (await bf.listDeals({ limit: 6 })).deals,
-      funders: (await bf.listFunders({ limit: 5 })).funders,
-      mentors: (await bf.searchMentors({ limit: 5 })).mentors,
-      modules: await bf.listModules({ limit: 5 }),
-      updates: await bf.recentUpdates(4),
-      intros: (await bf.introsFor(ctx.user.id)).incoming.filter((i) => i.status === 'pending'),
+      stats: bf.networkStats(),
+      upcomingSlots: bf.listSlots({ upcoming: true, limit: 5 }),
+      upcomingEvents: bf.listEvents({ upcoming: true, limit: 6 }),
+      myOrgs: bf.userOrgs(ctx.user.id),
+      deals: bf.listDeals({ limit: 6 }).deals,
+      funders: bf.listFunders({ limit: 5 }).funders,
+      mentors: bf.searchMentors({ limit: 5 }).mentors,
+      modules: bf.listModules({ limit: 5 }),
+      updates: bf.recentUpdates(4),
+      intros: bf.introsFor(ctx.user.id).incoming.filter((i) => i.status === 'pending'),
       onboardingComplete: onboarding.complete,
       onboardingLeft: onboarding.total - onboarding.done,
     }),
@@ -148,7 +148,7 @@ async function homeHandler(ctx) {
 
 /* ------------------------------------------------------------- directory */
 
-async function peopleHandler(ctx) {
+function peopleHandler(ctx) {
   const page = pageParam(ctx);
   const filters = {
     q: ctx.query.get('q') || '',
@@ -157,36 +157,36 @@ async function peopleHandler(ctx) {
     location: ctx.query.get('location') || '',
     open: ctx.query.get('open') || '',
   };
-  const { members, total } = await bf.searchMembers({ ...filters, limit: PER_PAGE, offset: offsetFor(page) });
+  const { members, total } = bf.searchMembers({ ...filters, limit: PER_PAGE, offset: offsetFor(page) });
   const qs = new URLSearchParams(Object.entries(filters).filter(([, v]) => v)).toString();
-  await render(
+  render(
     ctx,
     views.peoplePage(ctx, {
       members, total, page, filters,
-      tags: await bf.expertiseCloud(30),
-      cohortList: await bf.cohorts(),
+      tags: bf.expertiseCloud(30),
+      cohortList: bf.cohorts(),
       basePath: `/homeroom/people${qs ? `?${qs}` : ''}`,
     }),
     { title: 'Directory', subnav: views.subnav(views.YEARBOOK_TABS, 'directory') },
   );
 }
 
-async function memberHandler(ctx, { handle }) {
-  const profile = await bf.getMember(handle);
+function memberHandler(ctx, { handle }) {
+  const profile = bf.getMember(handle);
   if (!profile) return notFound(ctx);
   const isSelf = ctx.user.id.toLowerCase() === profile.user_id.toLowerCase();
-  const outgoing = (await bf.introsFor(ctx.user.id)).outgoing;
-  await render(
+  const outgoing = bf.introsFor(ctx.user.id).outgoing;
+  render(
     ctx,
     views.memberPage(ctx, {
       profile,
-      orgs: await bf.userOrgs(profile.user_id),
-      slots: await bf.listSlots({ upcoming: true, hostId: profile.user_id, limit: 5 }),
+      orgs: bf.userOrgs(profile.user_id),
+      slots: bf.listSlots({ upcoming: true, hostId: profile.user_id, limit: 5 }),
       isSelf,
       introSent: outgoing.some((i) => i.target_id === profile.user_id && i.status === 'pending'),
       canRequestIntro: !isSelf && !!profile.open_intros
         && !outgoing.some((i) => i.target_id === profile.user_id && i.status === 'pending'),
-      threadId: isSelf ? null : await bf.findDirectThread(ctx.user.id, profile.user_id),
+      threadId: isSelf ? null : bf.findDirectThread(ctx.user.id, profile.user_id),
     }),
     { title: profile.name || profile.user_id },
   );
@@ -195,7 +195,7 @@ async function memberHandler(ctx, { handle }) {
 async function settingsSubmit(ctx) {
   const { fields } = await readBody(ctx.req);
   if (!csrfOk(ctx, fields)) return;
-  await bf.updateMember(ctx.user.id, {
+  bf.updateMember(ctx.user.id, {
     name: trimmed(fields.name, 80),
     headline: trimmed(fields.headline, 140),
     org: trimmed(fields.org, 80),
@@ -230,8 +230,8 @@ async function passwordSubmit(ctx) {
   if (!csrfOk(ctx, fields)) return;
 
   const authMode = sbAuth.configured() ? 'supabase' : 'local';
-  const back = async (error) => await render(ctx, views.settingsPage(ctx, {
-    member: await bf.ensureMember(ctx.user.id), passwordError: error, authMode,
+  const back = (error) => render(ctx, views.settingsPage(ctx, {
+    member: bf.ensureMember(ctx.user.id), passwordError: error, authMode,
   }), { title: 'Your profile', status: error ? 400 : 200 });
 
   // Per account rather than per address: guessing a current password should not
@@ -245,7 +245,7 @@ async function passwordSubmit(ctx) {
   const weak = validatePassword(next);
   if (weak) return back(weak);
 
-  const account = await bf.getUser(ctx.user.id);
+  const account = bf.getUser(ctx.user.id);
   const current = String(fields.current || '');
 
   if (authMode === 'supabase') {
@@ -265,13 +265,13 @@ async function passwordSubmit(ctx) {
     await sbAuth.signOut(signedIn.session.accessToken);
   } else {
     if (!verifyPassword(current, account.password_hash)) return back('That current password is wrong.');
-    await bf.setPassword(ctx.user.id, hashPassword(next));
+    bf.setPassword(ctx.user.id, hashPassword(next));
   }
 
   // Everything else this account had open, gone — then a fresh session, so the
   // person who just changed it is not signed out by their own change.
-  await destroyAllSessions(ctx.user.id);
-  const token = await createSession(ctx.user.id);
+  destroyAllSessions(ctx.user.id);
+  const token = createSession(ctx.user.id);
   const proto = String(ctx.req.headers['x-forwarded-proto'] || '').split(',')[0].trim();
   ctx.res.writeHead(303, {
     location: '/homeroom/settings?password=1',
@@ -282,7 +282,7 @@ async function passwordSubmit(ctx) {
 
 /* ------------------------------------------------------------------ labs */
 
-async function labsHandler(ctx) {
+function labsHandler(ctx) {
   const page = pageParam(ctx);
   const filters = {
     q: ctx.query.get('q') || '',
@@ -290,24 +290,24 @@ async function labsHandler(ctx) {
     stage: ctx.query.get('stage') || '',
     tag: ctx.query.get('tag') || '',
   };
-  const { orgs, total } = await bf.searchOrgs({ ...filters, limit: PER_PAGE, offset: offsetFor(page) });
+  const { orgs, total } = bf.searchOrgs({ ...filters, limit: PER_PAGE, offset: offsetFor(page) });
   const qs = new URLSearchParams(Object.entries(filters).filter(([, v]) => v)).toString();
-  await render(ctx, views.labsPage(ctx, { orgs, total, page, filters, basePath: `/homeroom/labs${qs ? `?${qs}` : ''}` }),
+  render(ctx, views.labsPage(ctx, { orgs, total, page, filters, basePath: `/homeroom/labs${qs ? `?${qs}` : ''}` }),
     { title: 'Labs' });
 }
 
-async function labHandler(ctx, { slug }) {
-  const org = await bf.getOrg(slug);
+function labHandler(ctx, { slug }) {
+  const org = bf.getOrg(slug);
   if (!org) return notFound(ctx);
-  await render(
+  render(
     ctx,
     views.labPage(ctx, {
       org,
-      team: await bf.orgTeam(org.id),
-      updates: await bf.orgUpdates(org.id, { limit: 10 }),
-      jobs: (await bf.listJobs({ orgId: org.id, limit: 10 })).jobs,
-      isMember: await bf.isOrgMember(org.id, ctx.user.id),
-      isAdmin: await bf.isOrgAdmin(org.id, ctx.user.id) || !!ctx.user.is_admin,
+      team: bf.orgTeam(org.id),
+      updates: bf.orgUpdates(org.id, { limit: 10 }),
+      jobs: bf.listJobs({ orgId: org.id, limit: 10 }).jobs,
+      isMember: bf.isOrgMember(org.id, ctx.user.id),
+      isAdmin: bf.isOrgAdmin(org.id, ctx.user.id) || !!ctx.user.is_admin,
     }),
     { title: org.name },
   );
@@ -335,37 +335,37 @@ async function labCreate(ctx) {
   if (limited(ctx, 'create', LIMITS.create)) return;
   const patch = labFields(fields);
   if (patch.name.length < 2) {
-    return await render(ctx, views.labFormPage(ctx, { error: 'A lab needs a name.' }), { status: 400 });
+    return render(ctx, views.labFormPage(ctx, { error: 'A lab needs a name.' }), { status: 400 });
   }
-  const id = await bf.createOrg({ ...patch, createdBy: ctx.user.id });
-  seeOther(ctx, `/homeroom/lab/${(await bf.getOrg(id)).slug}`);
+  const id = bf.createOrg({ ...patch, createdBy: ctx.user.id });
+  seeOther(ctx, `/homeroom/lab/${bf.getOrg(id).slug}`);
 }
 
 async function labEdit(ctx, { slug }) {
-  const org = await bf.getOrg(slug);
+  const org = bf.getOrg(slug);
   if (!org) return notFound(ctx);
-  if (!await bf.isOrgAdmin(org.id, ctx.user.id) && !ctx.user.is_admin) return oops(ctx, 'Only lab admins can edit this.', 403);
+  if (!bf.isOrgAdmin(org.id, ctx.user.id) && !ctx.user.is_admin) return oops(ctx, 'Only lab admins can edit this.', 403);
   const { fields } = await readBody(ctx.req);
   if (!csrfOk(ctx, fields)) return;
   const patch = labFields(fields);
   if (patch.name.length < 2) {
-    return await render(ctx, views.labFormPage(ctx, { org, error: 'A lab needs a name.' }), { status: 400 });
+    return render(ctx, views.labFormPage(ctx, { org, error: 'A lab needs a name.' }), { status: 400 });
   }
-  await bf.updateOrg(org.id, patch);
+  bf.updateOrg(org.id, patch);
   seeOther(ctx, `/homeroom/lab/${org.slug}`);
 }
 
 async function labUpdatePost(ctx, { slug }) {
-  const org = await bf.getOrg(slug);
+  const org = bf.getOrg(slug);
   if (!org) return notFound(ctx);
-  if (!await bf.isOrgMember(org.id, ctx.user.id)) return oops(ctx, 'Only the team can post updates.', 403);
+  if (!bf.isOrgMember(org.id, ctx.user.id)) return oops(ctx, 'Only the team can post updates.', 403);
   const { fields } = await readBody(ctx.req);
   if (!csrfOk(ctx, fields)) return;
   const body = trimmed(fields.body, 8000);
   if (!body) {
-    return await render(ctx, views.updateFormPage(ctx, { org, error: 'Write something.' }), { status: 400 });
+    return render(ctx, views.updateFormPage(ctx, { org, error: 'Write something.' }), { status: 400 });
   }
-  await bf.createUpdate({
+  bf.createUpdate({
     orgId: org.id,
     authorId: ctx.user.id,
     period: trimmed(fields.period, 40),
@@ -378,30 +378,30 @@ async function labUpdatePost(ctx, { slug }) {
 
 /* ----------------------------------------------------------------- deals */
 
-async function perksHandler(ctx) {
+function perksHandler(ctx) {
   const category = ctx.query.get('category') || '';
   const q = ctx.query.get('q') || '';
-  const { deals, total } = await bf.listDeals({ category, q, limit: 300 });
-  const claimed = new Set((await bf.myClaims(ctx.user.id)).map((d) => d.id));
+  const { deals, total } = bf.listDeals({ category, q, limit: 300 });
+  const claimed = new Set(bf.myClaims(ctx.user.id).map((d) => d.id));
   // Category counts come from the unfiltered set, so the filter bar does not
   // collapse to one option as soon as you use it.
   const counts = {};
-  for (const perk of (await bf.listDeals({ limit: 500 })).deals) {
+  for (const perk of bf.listDeals({ limit: 500 }).deals) {
     counts[perk.category] = (counts[perk.category] || 0) + 1;
   }
-  await render(ctx, views.perksPage(ctx, { perks: deals, total, category, q, claimed, counts }),
+  render(ctx, views.perksPage(ctx, { perks: deals, total, category, q, claimed, counts }),
     { title: 'Perks' });
 }
 
-async function perkHandler(ctx, { slug }) {
-  const perk = await bf.getDeal(slug);
+function perkHandler(ctx, { slug }) {
+  const perk = bf.getDeal(slug);
   if (!perk) return notFound(ctx);
-  await render(
+  render(
     ctx,
     views.perkPage(ctx, {
       perk,
-      claimed: await bf.hasClaimed(perk.id, ctx.user.id),
-      claimCount: await bf.dealClaimCount(perk.id),
+      claimed: bf.hasClaimed(perk.id, ctx.user.id),
+      claimCount: bf.dealClaimCount(perk.id),
     }),
     { title: `${perk.vendor} — perk` },
   );
@@ -422,50 +422,50 @@ async function dealCreate(ctx) {
     url: fields.url ? normalizeUrl(fields.url) : null,
   };
   if (!values.vendor || values.title.length < 4) {
-    return await render(ctx, views.dealFormPage(ctx, { values, error: 'Vendor and a real description, please.' }), { status: 400 });
+    return render(ctx, views.dealFormPage(ctx, { values, error: 'Vendor and a real description, please.' }), { status: 400 });
   }
-  const id = await bf.createDeal({ ...values, postedBy: ctx.user.id });
-  seeOther(ctx, `/homeroom/deal/${(await bf.getDeal(id)).slug}`);
+  const id = bf.createDeal({ ...values, postedBy: ctx.user.id });
+  seeOther(ctx, `/homeroom/deal/${bf.getDeal(id).slug}`);
 }
 
 /* --------------------------------------------------------------- funders */
 
-async function fundersHandler(ctx) {
+function fundersHandler(ctx) {
   const page = pageParam(ctx);
   const filters = {
     q: ctx.query.get('q') || '',
     kind: ctx.query.get('kind') || '',
     sort: ctx.query.get('sort') || 'rating',
   };
-  const { funders, total } = await bf.listFunders({ ...filters, limit: PER_PAGE, offset: offsetFor(page) });
+  const { funders, total } = bf.listFunders({ ...filters, limit: PER_PAGE, offset: offsetFor(page) });
   const qs = new URLSearchParams(Object.entries(filters).filter(([, v]) => v)).toString();
-  await render(
+  render(
     ctx,
     views.fundersPage(ctx, {
       funders, total, page, filters,
-      tracked: new Set((await bf.pipeline(ctx.user.id)).map((row) => row.funder_id)),
+      tracked: new Set(bf.pipeline(ctx.user.id).map((row) => row.funder_id)),
       basePath: `/homeroom/funders${qs ? `?${qs}` : ''}`,
     }),
     { title: 'Funders' },
   );
 }
 
-async function funderHandler(ctx, { slug }) {
-  const funder = await bf.getFunder(slug);
+function funderHandler(ctx, { slug }) {
+  const funder = bf.getFunder(slug);
   if (!funder) return notFound(ctx);
-  const reviews = await bf.funderReviews(funder.id, { sort: ctx.query.get('sort') === 'recent' ? 'recent' : 'helpful' });
+  const reviews = bf.funderReviews(funder.id, { sort: ctx.query.get('sort') === 'recent' ? 'recent' : 'helpful' });
   const ids = reviews.map((r) => r.id);
-  await render(
+  render(
     ctx,
     views.funderPage(ctx, {
       funder,
       reviews,
-      comments: await bf.reviewComments(ids),
-      myHelpful: await bf.helpfulIds(ctx.user.id, ids),
-      tags: await bf.funderTagCloud(funder.id),
-      myReview: await bf.myReview(funder.id, ctx.user.id),
-      entry: await bf.pipelineEntry(ctx.user.id, funder.id),
-      orgs: await bf.userOrgs(ctx.user.id),
+      comments: bf.reviewComments(ids),
+      myHelpful: bf.helpfulIds(ctx.user.id, ids),
+      tags: bf.funderTagCloud(funder.id),
+      myReview: bf.myReview(funder.id, ctx.user.id),
+      entry: bf.pipelineEntry(ctx.user.id, funder.id),
+      orgs: bf.userOrgs(ctx.user.id),
     }),
     { title: funder.name },
   );
@@ -487,20 +487,20 @@ async function funderCreate(ctx) {
     dilutive: !checkbox(fields.nondilutive),
   };
   if (values.name.length < 2) {
-    return await render(ctx, views.funderFormPage(ctx, { values, error: 'Name it.' }), { status: 400 });
+    return render(ctx, views.funderFormPage(ctx, { values, error: 'Name it.' }), { status: 400 });
   }
-  const id = await bf.createFunder({ ...values, addedBy: ctx.user.id });
-  seeOther(ctx, `/homeroom/funder/${(await bf.getFunder(id)).slug}`);
+  const id = bf.createFunder({ ...values, addedBy: ctx.user.id });
+  seeOther(ctx, `/homeroom/funder/${bf.getFunder(id).slug}`);
 }
 
 async function reviewSubmit(ctx, { slug }) {
-  const funder = await bf.getFunder(slug);
+  const funder = bf.getFunder(slug);
   if (!funder) return notFound(ctx);
   const { fields } = await readBody(ctx.req);
   if (!csrfOk(ctx, fields)) return;
   const rating = clampInt(fields.rating, 1, 5, 0);
   if (!rating) return oops(ctx, 'Pick a rating between 1 and 5.');
-  await bf.upsertReview({
+  bf.upsertReview({
     funderId: funder.id,
     userId: ctx.user.id,
     rating,
@@ -514,15 +514,15 @@ async function reviewSubmit(ctx, { slug }) {
 }
 
 async function trackSubmit(ctx, { slug }) {
-  const funder = await bf.getFunder(slug);
+  const funder = bf.getFunder(slug);
   if (!funder) return notFound(ctx);
   const { fields } = await readBody(ctx.req);
   if (!csrfOk(ctx, fields)) return;
   const orgId = Number(fields.org) || null;
-  await bf.upsertPipeline({
+  bf.upsertPipeline({
     userId: ctx.user.id,
     funderId: funder.id,
-    orgId: orgId && await bf.isOrgMember(orgId, ctx.user.id) ? orgId : null,
+    orgId: orgId && bf.isOrgMember(orgId, ctx.user.id) ? orgId : null,
     status: bf.labelFor(bf.PIPELINE_STATUSES, fields.status) ? fields.status : 'researching',
     amount: trimmed(fields.amount, 60),
     notes: trimmed(fields.notes, 4000),
@@ -532,24 +532,24 @@ async function trackSubmit(ctx, { slug }) {
 
 /* ----------------------------------------------------------- office hours */
 
-async function hoursHandler(ctx) {
-  const slots = await bf.listSlots({ upcoming: true, limit: 60 });
-  await render(
+function hoursHandler(ctx) {
+  const slots = bf.listSlots({ upcoming: true, limit: 60 });
+  render(
     ctx,
     views.hoursPage(ctx, {
       slots: slots.filter((s) => s.host_id !== ctx.user.id),
-      mine: await bf.myBookings(ctx.user.id),
+      mine: bf.myBookings(ctx.user.id),
       hosting: slots.filter((s) => s.host_id === ctx.user.id),
     }),
     { title: 'Office hours', subnav: views.subnav(views.MENTOR_TABS, 'hours') },
   );
 }
 
-async function slotHandler(ctx, { id }) {
-  const slot = await bf.getSlot(id);
+function slotHandler(ctx, { id }) {
+  const slot = bf.getSlot(id);
   if (!slot) return notFound(ctx);
-  const bookings = await bf.slotBookings(slot.id);
-  await render(
+  const bookings = bf.slotBookings(slot.id);
+  render(
     ctx,
     views.slotPage(ctx, {
       slot,
@@ -567,14 +567,14 @@ async function slotCreate(ctx) {
   if (limited(ctx, 'create', LIMITS.create)) return;
   const startsAt = parseWhen(fields.starts_at);
   const title = trimmed(fields.title, 120);
-  const fail = async (message) =>
-    await render(ctx, views.slotFormPage(ctx, { error: message, defaultStart: fields.starts_at || defaultStart() }),
+  const fail = (message) =>
+    render(ctx, views.slotFormPage(ctx, { error: message, defaultStart: fields.starts_at || defaultStart() }),
       { status: 400 });
   if (title.length < 4) return fail('Say what the session is for.');
   if (!startsAt) return fail('That start time did not parse.');
   if (startsAt < nowSeconds()) return fail('Pick a time in the future.');
   const format = fields.format === 'group' ? 'group' : 'one-on-one';
-  const id = await bf.createSlot({
+  const id = bf.createSlot({
     hostId: ctx.user.id,
     title,
     description: trimmed(fields.description, 4000),
@@ -585,46 +585,46 @@ async function slotCreate(ctx) {
     place: trimmed(fields.place, 200),
     topics: trimmed(fields.topics, 140),
   });
-  await bf.updateMember(ctx.user.id, { open_hours: true });
+  bf.updateMember(ctx.user.id, { open_hours: true });
   seeOther(ctx, `/homeroom/hours/${id}`);
 }
 
 /* ------------------------------------------------------------------ jobs */
 
-async function jobsHandler(ctx) {
+function jobsHandler(ctx) {
   const page = pageParam(ctx);
   const filters = {
     q: ctx.query.get('q') || '',
     discipline: ctx.query.get('discipline') || '',
     remote: ctx.query.get('remote') === '1',
   };
-  const { jobs, total } = await bf.listJobs({ ...filters, limit: PER_PAGE, offset: offsetFor(page) });
+  const { jobs, total } = bf.listJobs({ ...filters, limit: PER_PAGE, offset: offsetFor(page) });
   const params = new URLSearchParams();
   if (filters.q) params.set('q', filters.q);
   if (filters.discipline) params.set('discipline', filters.discipline);
   if (filters.remote) params.set('remote', '1');
   const qs = params.toString();
-  await render(
+  render(
     ctx,
     views.jobsPage(ctx, {
       jobs, total, page, filters,
-      canPost: (await bf.userOrgs(ctx.user.id)).length > 0,
+      canPost: bf.userOrgs(ctx.user.id).length > 0,
       basePath: `/homeroom/jobs${qs ? `?${qs}` : ''}`,
     }),
     { title: 'Jobs' },
   );
 }
 
-async function jobHandler(ctx, { id }) {
-  const job = await bf.getJob(id);
+function jobHandler(ctx, { id }) {
+  const job = bf.getJob(id);
   if (!job) return notFound(ctx);
-  const canManage = await bf.isOrgAdmin(job.org_id, ctx.user.id) || job.posted_by === ctx.user.id;
-  await render(
+  const canManage = bf.isOrgAdmin(job.org_id, ctx.user.id) || job.posted_by === ctx.user.id;
+  render(
     ctx,
     views.jobPage(ctx, {
       job,
-      applied: await bf.hasApplied(job.id, ctx.user.id),
-      applicants: canManage ? await bf.jobApplicants(job.id) : [],
+      applied: bf.hasApplied(job.id, ctx.user.id),
+      applicants: canManage ? bf.jobApplicants(job.id) : [],
       canManage,
     }),
     { title: job.title },
@@ -634,7 +634,7 @@ async function jobHandler(ctx, { id }) {
 async function jobCreate(ctx) {
   const { fields } = await readBody(ctx.req);
   if (!csrfOk(ctx, fields)) return;
-  const orgs = await bf.userOrgs(ctx.user.id);
+  const orgs = bf.userOrgs(ctx.user.id);
   const orgId = Number(fields.org) || 0;
   const values = {
     org: fields.org, title: trimmed(fields.title, 120),
@@ -643,11 +643,11 @@ async function jobCreate(ctx) {
     equity: trimmed(fields.equity, 40), description: trimmed(fields.description, 12_000),
     tags: fields.tags || '',
   };
-  const fail = async (message) =>
-    await render(ctx, views.jobFormPage(ctx, { orgs, values, error: message }), { status: 400 });
-  if (!await bf.isOrgMember(orgId, ctx.user.id)) return fail('Pick a lab you are listed with.');
+  const fail = (message) =>
+    render(ctx, views.jobFormPage(ctx, { orgs, values, error: message }), { status: 400 });
+  if (!bf.isOrgMember(orgId, ctx.user.id)) return fail('Pick a lab you are listed with.');
   if (values.title.length < 3) return fail('The role needs a title.');
-  const id = await bf.createJob({
+  const id = bf.createJob({
     orgId,
     postedBy: ctx.user.id,
     title: values.title,
@@ -665,28 +665,28 @@ async function jobCreate(ctx) {
 
 /* ---------------------------------------------------------------- events */
 
-async function eventsHandler(ctx) {
+function eventsHandler(ctx) {
   const kind = ctx.query.get('kind') || '';
-  await render(
+  render(
     ctx,
     views.eventsPage(ctx, {
-      events: await bf.listEvents({ upcoming: true, kind }),
-      past: await bf.listEvents({ upcoming: false, kind, limit: 6 }),
+      events: bf.listEvents({ upcoming: true, kind }),
+      past: bf.listEvents({ upcoming: false, kind, limit: 6 }),
       kind,
     }),
     { title: 'Events', subnav: views.subnav(views.EVENT_TABS, 'list') },
   );
 }
 
-async function eventHandler(ctx, { id }) {
-  const event = await bf.getEvent(id);
+function eventHandler(ctx, { id }) {
+  const event = bf.getEvent(id);
   if (!event) return notFound(ctx);
-  await render(
+  render(
     ctx,
     views.eventPage(ctx, {
       event,
-      attendees: await bf.eventAttendees(event.id),
-      myStatus: await bf.myRsvp(event.id, ctx.user.id),
+      attendees: bf.eventAttendees(event.id),
+      myStatus: bf.myRsvp(event.id, ctx.user.id),
       isHost: event.host_id === ctx.user.id,
     }),
     { title: event.title },
@@ -699,12 +699,12 @@ async function eventCreate(ctx) {
   if (limited(ctx, 'create', LIMITS.create)) return;
   const startsAt = parseWhen(fields.starts_at);
   const title = trimmed(fields.title, 140);
-  const fail = async (message) =>
-    await render(ctx, views.eventFormPage(ctx, { error: message, defaultStart: fields.starts_at || defaultStart() }),
+  const fail = (message) =>
+    render(ctx, views.eventFormPage(ctx, { error: message, defaultStart: fields.starts_at || defaultStart() }),
       { status: 400 });
   if (title.length < 4) return fail('Give the event a title.');
   if (!startsAt) return fail('That start time did not parse.');
-  const id = await bf.createEvent({
+  const id = bf.createEvent({
     hostId: ctx.user.id,
     title,
     description: trimmed(fields.description, 8000),
@@ -715,36 +715,36 @@ async function eventCreate(ctx) {
     url: fields.url ? normalizeUrl(fields.url) : null,
     capacity: clampInt(fields.capacity, 0, 10_000, 0),
   });
-  await bf.rsvp(id, ctx.user.id, 'going');
+  bf.rsvp(id, ctx.user.id, 'going');
   seeOther(ctx, `/homeroom/event/${id}`);
 }
 
 /* --------------------------------------------------------------- library */
 
-async function libraryHandler(ctx) {
+function libraryHandler(ctx) {
   const filters = { q: ctx.query.get('q') || '', track: ctx.query.get('track') || '' };
   const { modules } = filters.q || filters.track
-    ? await bf.listModules({ ...filters, userId: ctx.user.id })
+    ? bf.listModules({ ...filters, userId: ctx.user.id })
     : { modules: [] };
-  await render(
+  render(
     ctx,
     views.libraryPage(ctx, {
-      tracks: await bf.tracks(),
-      progress: await bf.progressSummary(ctx.user.id),
+      tracks: bf.tracks(),
+      progress: bf.progressSummary(ctx.user.id),
       modules,
       filters,
-      entries: (await bf.listLibrary({ limit: 12 })).entries,
+      entries: bf.listLibrary({ limit: 12 }).entries,
       sequence: S26_SEQUENCE,
     }),
     { title: 'Library', subnav: views.subnav(views.LIBRARY_TABS, 'manual') },
   );
 }
 
-async function libraryEntryHandler(ctx, { slug }) {
-  const entry = await bf.getLibraryEntry(slug);
+function libraryEntryHandler(ctx, { slug }) {
+  const entry = bf.getLibraryEntry(slug);
   if (!entry) return notFound(ctx);
-  await bf.bumpReads(entry.id);
-  await render(ctx, views.libraryEntryPage(ctx, { entry }), { title: entry.title });
+  bf.bumpReads(entry.id);
+  render(ctx, views.libraryEntryPage(ctx, { entry }), { title: entry.title });
 }
 
 async function libraryCreate(ctx) {
@@ -759,11 +759,11 @@ async function libraryCreate(ctx) {
     tags: fields.tags || '',
   };
   if (values.title.length < 4 || values.body.length < 40) {
-    return await render(ctx, views.libraryFormPage(ctx, { values, error: 'A title and something worth reading, please.' }),
+    return render(ctx, views.libraryFormPage(ctx, { values, error: 'A title and something worth reading, please.' }),
       { status: 400 });
   }
-  const id = await bf.createLibraryEntry({ ...values, tags: bf.parseTags(values.tags, 8).join(','), authorId: ctx.user.id });
-  seeOther(ctx, `/homeroom/library/${(await bf.getLibraryEntry(id)).slug}`);
+  const id = bf.createLibraryEntry({ ...values, tags: bf.parseTags(values.tags, 8).join(','), authorId: ctx.user.id });
+  seeOther(ctx, `/homeroom/library/${bf.getLibraryEntry(id).slug}`);
 }
 
 /* ---------------------------------------------------------------- intros */
@@ -771,18 +771,18 @@ async function libraryCreate(ctx) {
 async function introCreate(ctx) {
   const { fields } = await readBody(ctx.req);
   if (!csrfOk(ctx, fields)) return;
-  const target = await bf.getMember(fields.to);
+  const target = bf.getMember(fields.to);
   if (!target) return notFound(ctx);
   if (target.user_id === ctx.user.id) return oops(ctx, 'You already know yourself.');
   if (!target.open_intros) return oops(ctx, 'That member is not taking intro requests.', 403);
   const reason = trimmed(fields.reason, 2000);
   if (reason.length < 20) {
-    return await render(ctx, views.introFormPage(ctx, { target, error: 'Say more than that — twenty characters minimum.' }),
+    return render(ctx, views.introFormPage(ctx, { target, error: 'Say more than that — twenty characters minimum.' }),
       { status: 400 });
   }
-  const result = await bf.requestIntro({ requesterId: ctx.user.id, targetId: target.user_id, reason });
+  const result = bf.requestIntro({ requesterId: ctx.user.id, targetId: target.user_id, reason });
   if (!result.ok) return oops(ctx, result.error);
-  await bf.notify({
+  bf.notify({
     userId: target.user_id,
     kind: 'intro',
     actorId: ctx.user.id,
@@ -793,15 +793,15 @@ async function introCreate(ctx) {
 }
 
 async function introResolve(ctx, { id }) {
-  const intro = await bf.getIntro(id);
+  const intro = bf.getIntro(id);
   if (!intro) return notFound(ctx);
   if (intro.target_id !== ctx.user.id) return oops(ctx, 'Not yours to answer.', 403);
   const { fields } = await readBody(ctx.req);
   if (!csrfOk(ctx, fields)) return;
   const decision = fields.decision === 'accepted' ? 'accepted' : 'declined';
-  const result = await bf.resolveIntro(intro.id, decision);
+  const result = bf.resolveIntro(intro.id, decision);
   if (result?.threadId) {
-    await bf.notify({
+    bf.notify({
       userId: intro.requester_id,
       kind: 'intro',
       actorId: ctx.user.id,
@@ -810,7 +810,7 @@ async function introResolve(ctx, { id }) {
     });
     return seeOther(ctx, `/homeroom/messages/${result.threadId}`);
   }
-  await bf.notify({
+  bf.notify({
     userId: intro.requester_id,
     kind: 'intro',
     actorId: ctx.user.id,
@@ -822,24 +822,24 @@ async function introResolve(ctx, { id }) {
 
 /* -------------------------------------------------------------- messages */
 
-async function threadHandler(ctx, { id }) {
-  const thread = await bf.getThread(id, ctx.user.id);
+function threadHandler(ctx, { id }) {
+  const thread = bf.getThread(id, ctx.user.id);
   if (!thread) return notFound(ctx);
-  await bf.markThreadRead(thread.id, ctx.user.id);
-  await render(ctx, views.threadPage(ctx, { thread }), { title: thread.subject || 'Thread' });
+  bf.markThreadRead(thread.id, ctx.user.id);
+  render(ctx, views.threadPage(ctx, { thread }), { title: thread.subject || 'Thread' });
 }
 
 async function threadReply(ctx, { id }) {
-  const thread = await bf.getThread(id, ctx.user.id);
+  const thread = bf.getThread(id, ctx.user.id);
   if (!thread) return notFound(ctx);
   const { fields } = await readBody(ctx.req);
   if (!csrfOk(ctx, fields)) return;
   if (limited(ctx, 'message', LIMITS.message)) return;
   const text = trimmed(fields.text, 12_000);
   if (text) {
-    await bf.sendMessage({ threadId: thread.id, senderId: ctx.user.id, body: text });
+    bf.sendMessage({ threadId: thread.id, senderId: ctx.user.id, body: text });
     for (const member of thread.members) {
-      await bf.notify({
+      bf.notify({
         userId: member,
         kind: 'message',
         actorId: ctx.user.id,
@@ -858,14 +858,14 @@ async function messageCreate(ctx) {
   const handles = String(fields.to || '')
     .split(',').map((h) => h.trim()).filter(Boolean).slice(0, 12);
   const text = trimmed(fields.text, 12_000);
-  const fail = async (message) =>
-    await render(ctx, views.newMessagePage(ctx, { to: fields.to || '', error: message }), { status: 400 });
+  const fail = (message) =>
+    render(ctx, views.newMessagePage(ctx, { to: fields.to || '', error: message }), { status: 400 });
   if (!handles.length) return fail('Who is it for?');
   if (!text) return fail('Write something.');
 
   const members = [];
   for (const handle of handles) {
-    const member = await bf.getMember(handle);
+    const member = bf.getMember(handle);
     if (!member) return fail(`No member called “${handle}”.`);
     if (member.user_id !== ctx.user.id) members.push(member.user_id);
   }
@@ -873,11 +873,11 @@ async function messageCreate(ctx) {
 
   const subject = trimmed(fields.subject, 120);
   const threadId = members.length === 1 && !subject
-    ? await bf.openDirectThread(ctx.user.id, members[0])
-    : await bf.createThread({ createdBy: ctx.user.id, subject, memberIds: members });
-  await bf.sendMessage({ threadId, senderId: ctx.user.id, body: text });
+    ? bf.openDirectThread(ctx.user.id, members[0])
+    : bf.createThread({ createdBy: ctx.user.id, subject, memberIds: members });
+  bf.sendMessage({ threadId, senderId: ctx.user.id, body: text });
   for (const member of members) {
-    await bf.notify({
+    bf.notify({
       userId: member,
       kind: 'message',
       actorId: ctx.user.id,
@@ -914,7 +914,7 @@ const publicMember = (member) => ({
 
 /* ------------------------------------------------------------ yearbook */
 
-async function yearbookHandler(ctx) {
+function yearbookHandler(ctx) {
   const page = pageParam(ctx);
   const filters = {
     q: ctx.query.get('q') || '',
@@ -922,30 +922,30 @@ async function yearbookHandler(ctx) {
     house: ctx.query.get('house') || '',
     tag: ctx.query.get('tag') || '',
   };
-  const { members, total } = await bf.yearbookWall({ ...filters, limit: 60, offset: (page - 1) * 60 });
+  const { members, total } = bf.yearbookWall({ ...filters, limit: 60, offset: (page - 1) * 60 });
   const qs = new URLSearchParams(Object.entries(filters).filter(([, v]) => v)).toString();
-  await render(
+  render(
     ctx,
     views.yearbookPage(ctx, {
       members, total, page, filters,
-      cohorts: await bf.wallCohorts(),
-      houseList: await bf.houses(),
-      mine: await bf.getYearbook(ctx.user.id),
+      cohorts: bf.wallCohorts(),
+      houseList: bf.houses(),
+      mine: bf.getYearbook(ctx.user.id),
       basePath: `/homeroom/yearbook${qs ? `?${qs}` : ''}`,
     }),
     { title: 'Yearbook', subnav: views.subnav(views.YEARBOOK_TABS, 'wall') },
   );
 }
 
-async function yearbookEntryHandler(ctx, { handle }) {
-  const member = await bf.getMember(handle);
+function yearbookEntryHandler(ctx, { handle }) {
+  const member = bf.getMember(handle);
   if (!member) return notFound(ctx);
-  const signs = await bf.signatures(member.user_id);
-  await render(
+  const signs = bf.signatures(member.user_id);
+  render(
     ctx,
     views.yearbookEntryPage(ctx, {
       member,
-      entry: await bf.getYearbook(member.user_id),
+      entry: bf.getYearbook(member.user_id),
       signs,
       mySign: signs.find((s) => s.author_id === ctx.user.id) || null,
       canSign: member.user_id !== ctx.user.id,
@@ -957,7 +957,7 @@ async function yearbookEntryHandler(ctx, { handle }) {
 async function yearbookSubmit(ctx) {
   const { fields } = await readBody(ctx.req);
   if (!csrfOk(ctx, fields)) return;
-  await bf.upsertYearbook(ctx.user.id, {
+  bf.upsertYearbook(ctx.user.id, {
     cohort: trimmed(fields.cohort, 20),
     house: trimmed(fields.house, 40),
     venture: trimmed(fields.venture, 80),
@@ -969,13 +969,13 @@ async function yearbookSubmit(ctx) {
     site_url: normalizeUrl(fields.site_url) || '',
   });
   // Keep the profile's cohort in step, so the directory and the wall agree.
-  if (trimmed(fields.cohort, 20)) await bf.updateMember(ctx.user.id, { cohort: trimmed(fields.cohort, 20) });
+  if (trimmed(fields.cohort, 20)) bf.updateMember(ctx.user.id, { cohort: trimmed(fields.cohort, 20) });
   seeOther(ctx, `/homeroom/yearbook/${encodeURIComponent(ctx.user.id)}`);
 }
 
 /* --------------------------------------------------------------- atlas */
 
-async function atlasHandler(ctx) {
+function atlasHandler(ctx) {
   const page = pageParam(ctx);
   const filters = {
     q: ctx.query.get('q') || '',
@@ -985,23 +985,23 @@ async function atlasHandler(ctx) {
     kind: ctx.query.get('kind') || '',
     capability: ctx.query.get('capability') || '',
   };
-  const { labs, total } = await bf.searchLabs({ ...filters, limit: 60, offset: (page - 1) * 60 });
+  const { labs, total } = bf.searchLabs({ ...filters, limit: 60, offset: (page - 1) * 60 });
   const qs = new URLSearchParams(Object.entries(filters).filter(([, v]) => v)).toString();
-  await render(
+  render(
     ctx,
     views.atlasPage(ctx, {
       labs, total, filters, page,
-      facets: await bf.atlasFacets(),
+      facets: bf.atlasFacets(),
       basePath: `/homeroom/labs${qs ? `?${qs}` : ''}`,
     }),
     { title: 'Biolab Atlas', subnav: views.subnav(views.LAB_TABS, 'atlas') },
   );
 }
 
-async function atlasLabHandler(ctx, { slug }) {
-  const lab = await bf.getLab(slug);
+function atlasLabHandler(ctx, { slug }) {
+  const lab = bf.getLab(slug);
   if (!lab) return notFound(ctx);
-  await render(ctx, views.atlasLabPage(ctx, { lab, reports: await bf.labReports(lab.id) }), { title: lab.name });
+  render(ctx, views.atlasLabPage(ctx, { lab, reports: bf.labReports(lab.id) }), { title: lab.name });
 }
 
 async function atlasLabCreate(ctx) {
@@ -1010,10 +1010,10 @@ async function atlasLabCreate(ctx) {
   if (limited(ctx, 'create', LIMITS.create)) return;
   const name = trimmed(fields.name, 120);
   if (!name) {
-    return await render(ctx, views.labFormAtlasPage(ctx, { error: 'A lab needs a name.', values: fields }),
+    return render(ctx, views.labFormAtlasPage(ctx, { error: 'A lab needs a name.', values: fields }),
       { title: 'Add a lab', status: 400 });
   }
-  const id = await bf.upsertLab({
+  const id = bf.upsertLab({
     name,
     city: trimmed(fields.city, 80),
     country: trimmed(fields.country, 80),
@@ -1026,13 +1026,13 @@ async function atlasLabCreate(ctx) {
     note: trimmed(fields.note, 2000),
     source: `member: ${ctx.user.id}`,
   });
-  const lab = await bf.getLab(id);
+  const lab = bf.getLab(id);
   seeOther(ctx, `/homeroom/labs/at/${lab.slug}`);
 }
 
 /* ------------------------------------------------------------- mentors */
 
-async function mentorsHandler(ctx) {
+function mentorsHandler(ctx) {
   const page = pageParam(ctx);
   const filters = {
     q: ctx.query.get('q') || '',
@@ -1041,16 +1041,16 @@ async function mentorsHandler(ctx) {
     format: ctx.query.get('format') || '',
     vetted: ctx.query.get('vetted') === '1',
   };
-  const { mentors, total } = await bf.searchMentors({ ...filters, limit: 60, offset: (page - 1) * 60 });
+  const { mentors, total } = bf.searchMentors({ ...filters, limit: 60, offset: (page - 1) * 60 });
   const qs = new URLSearchParams(
     Object.entries(filters).filter(([, v]) => v).map(([k, v]) => [k, v === true ? '1' : v]),
   ).toString();
-  await render(
+  render(
     ctx,
     views.mentorsPage(ctx, {
       mentors, total, filters, page,
-      tags: await bf.mentorTagCloud(40),
-      vettedCount: (await bf.searchMentors({ vetted: true, limit: 1 })).total,
+      tags: bf.mentorTagCloud(40),
+      vettedCount: bf.searchMentors({ vetted: true, limit: 1 }).total,
       basePath: `/homeroom/mentors${qs ? `?${qs}` : ''}`,
     }),
     { title: 'Mentors', subnav: views.subnav(views.MENTOR_TABS, 'mentors') },
@@ -1064,19 +1064,19 @@ async function mentorsHandler(ctx) {
  * URL to leak in the first place. `directLink` is populated only when the gate
  * is switched off, and only by asking for it by name.
  */
-async function deskStateFor(ctx, mentor) {
+function deskStateFor(ctx, mentor) {
   if (!desk.gateEnabled()) {
-    return { directLink: await desk.schedulerFor(mentor.id) };
+    return { directLink: desk.schedulerFor(mentor.id) };
   }
-  const open = await desk.openRequest(mentor.id, ctx.user.id);
+  const open = desk.openRequest(mentor.id, ctx.user.id);
   if (open?.state === 'accepted') {
-    const grant = await desk.liveGrantFor(open.id);
+    const grant = desk.liveGrantFor(open.id);
     if (grant) return { grant, request: open };
   }
   if (open?.state === 'sent') return { pending: open };
 
-  const verdict = await desk.canRequest({ mentor, memberId: ctx.user.id });
-  const capacity = verdict.capacity || await desk.capacityFor(mentor);
+  const verdict = desk.canRequest({ mentor, memberId: ctx.user.id });
+  const capacity = verdict.capacity || desk.capacityFor(mentor);
   return {
     canAsk: verdict.ok,
     reason: verdict.message,
@@ -1091,17 +1091,17 @@ async function deskStateFor(ctx, mentor) {
    in the list. */
 const VISIBLE_MENTOR_STATES = new Set(['listed', 'paused']);
 
-async function mentorHandler(ctx, { slug }) {
-  const mentor = await bf.getMentor(slug);
+function mentorHandler(ctx, { slug }) {
+  const mentor = bf.getMentor(slug);
   if (!mentor) return notFound(ctx);
   if (!VISIBLE_MENTOR_STATES.has(mentor.state) && !ctx.user.is_admin) return notFound(ctx);
-  await render(
+  render(
     ctx,
     views.mentorPage(ctx, {
       mentor,
-      slots: await bf.mentorSlots(mentor.id),
-      member: mentor.user_id ? await bf.getMember(mentor.user_id) : null,
-      desk: await deskStateFor(ctx, mentor),
+      slots: bf.mentorSlots(mentor.id),
+      member: mentor.user_id ? bf.getMember(mentor.user_id) : null,
+      desk: deskStateFor(ctx, mentor),
     }),
     { title: mentor.name },
   );
@@ -1109,18 +1109,18 @@ async function mentorHandler(ctx, { slug }) {
 
 /* ------------------------------------------------------------ calendar */
 
-async function calendarHandler(ctx) {
+function calendarHandler(ctx) {
   const now = new Date();
   const year = clampInt(ctx.query.get('y'), 2000, 2100, now.getUTCFullYear());
   const month = clampInt(ctx.query.get('m'), 0, 11, now.getUTCMonth());
   const start = Math.floor(Date.UTC(year, month, 1) / 1000);
   const end = Math.floor(Date.UTC(year, month + 1, 1) / 1000);
-  const sync = await bf.lastSync('luma');
-  await render(
+  const sync = bf.lastSync('luma');
+  render(
     ctx,
     views.calendarPage(ctx, {
       year, month,
-      events: await bf.eventsBetween(start, end),
+      events: bf.eventsBetween(start, end),
       kind: ctx.query.get('kind') || '',
       luma: {
         configured: luma.configured(),
@@ -1141,8 +1141,8 @@ async function calendarHandler(ctx) {
  * publishes only title, time and place — never the description or the attendee
  * list, because a calendar file gets forwarded far more casually than a page.
  */
-async function icsHandler(ctx) {
-  const events = await bf.listEvents({ upcoming: true, limit: 200 });
+function icsHandler(ctx) {
+  const events = bf.listEvents({ upcoming: true, limit: 200 });
   const stamp = (seconds) => new Date(seconds * 1000).toISOString().replace(/[-:]|\.\d{3}/g, '');
   const escape = (text) => String(text || '').replace(/([,;\\])/g, '\\$1').replace(/\n/g, '\\n');
   const lines = [
@@ -1183,26 +1183,26 @@ async function lumaSyncHandler(ctx) {
 
 /* -------------------------------------------------------------- library */
 
-async function trackHandler(ctx, { slug }) {
-  const track = await bf.getTrack(slug);
+function trackHandler(ctx, { slug }) {
+  const track = bf.getTrack(slug);
   if (!track) return notFound(ctx);
-  const { modules } = await bf.listModules({ track: slug, userId: ctx.user.id });
-  const stat = (await bf.progressSummary(ctx.user.id)).byTrack.find((row) => row.track === slug)
+  const { modules } = bf.listModules({ track: slug, userId: ctx.user.id });
+  const stat = bf.progressSummary(ctx.user.id).byTrack.find((row) => row.track === slug)
     || { total: modules.length, done: 0 };
-  await render(ctx, views.trackPage(ctx, { track, modules, stat }), { title: track.title });
+  render(ctx, views.trackPage(ctx, { track, modules, stat }), { title: track.title });
 }
 
-async function moduleHandler(ctx, { slug }) {
-  const module = await bf.getModule(slug);
+function moduleHandler(ctx, { slug }) {
+  const module = bf.getModule(slug);
   if (!module) return notFound(ctx);
-  const track = await bf.getTrack(module.track);
-  const { modules } = await bf.listModules({ track: module.track, userId: ctx.user.id });
-  await bf.bumpModuleReads(module.id);
-  await render(
+  const track = bf.getTrack(module.track);
+  const { modules } = bf.listModules({ track: module.track, userId: ctx.user.id });
+  bf.bumpModuleReads(module.id);
+  render(
     ctx,
     views.modulePage(ctx, {
       module, track,
-      progress: await bf.getProgress(ctx.user.id, module.id),
+      progress: bf.getProgress(ctx.user.id, module.id),
       neighbours: modules,
     }),
     { title: module.title },
@@ -1212,10 +1212,10 @@ async function moduleHandler(ctx, { slug }) {
 async function progressSubmit(ctx, { slug }) {
   const { fields } = await readBody(ctx.req);
   if (!csrfOk(ctx, fields)) return;
-  const module = await bf.getModule(slug);
+  const module = bf.getModule(slug);
   if (!module) return notFound(ctx);
   const state = ['started', 'done', 'none'].includes(fields.state) ? fields.state : 'started';
-  await bf.setProgress({
+  bf.setProgress({
     userId: ctx.user.id,
     moduleId: module.id,
     state,
@@ -1235,13 +1235,13 @@ function stewardsOnly(ctx) {
 
 /* ------------------------------------------------------------- onboarding */
 
-async function welcomeHandler(ctx) {
-  await render(
+function welcomeHandler(ctx) {
+  render(
     ctx,
     views.welcomePage(ctx, {
-      member: await bf.ensureMember(ctx.user.id),
-      progress: await bf.onboardingProgress(ctx.user.id),
-      stats: await bf.networkStats(),
+      member: bf.ensureMember(ctx.user.id),
+      progress: bf.onboardingProgress(ctx.user.id),
+      stats: bf.networkStats(),
     }),
     { title: 'Welcome' },
   );
@@ -1252,7 +1252,7 @@ async function welcomeHandler(ctx) {
 async function invitesHandler(ctx, { minted = null, error = null, flash = null } = {}) {
   if (!stewardsOnly(ctx)) return;
   const listed = await invites.list({ limit: 100 });
-  await render(
+  render(
     ctx,
     views.invitesPage(ctx, {
       invites: listed.invites,
@@ -1273,10 +1273,10 @@ async function inviteCreate(ctx) {
 
   const email = invites.normalizeEmail(fields.email);
   if (!email.includes('@')) {
-    return await invitesHandler(ctx, { error: 'That does not look like an email address.' });
+    return invitesHandler(ctx, { error: 'That does not look like an email address.' });
   }
-  if (await bf.getUserByEmail(email)) {
-    return await invitesHandler(ctx, { error: `${email} already has an account.` });
+  if (bf.getUserByEmail(email)) {
+    return invitesHandler(ctx, { error: `${email} already has an account.` });
   }
 
   /*
@@ -1296,7 +1296,7 @@ async function inviteCreate(ctx) {
   const blocking = assessment.verdict === 'deny' || assessment.verdict === 'review';
   const override = fields.override === '1';
   if (blocking && !override) {
-    return await invitesHandler(ctx, {
+    return invitesHandler(ctx, {
       error: `The roster says "${assessment.verdict}: ${assessment.reason}" for ${email}. `
         + 'Tick the override box to send it anyway — it will be recorded against the invite.',
     });
@@ -1310,9 +1310,9 @@ async function inviteCreate(ctx) {
       : `${assessment.verdict}:${assessment.reason}`,
     ttlDays: clampInt(fields.days, 14, 1, 90),
   });
-  if (!created.ok) return await invitesHandler(ctx, { error: created.error });
+  if (!created.ok) return invitesHandler(ctx, { error: created.error });
 
-  return await invitesHandler(ctx, {
+  return invitesHandler(ctx, {
     minted: {
       email,
       url: invites.inviteUrl(origin(ctx), created.token),
@@ -1326,8 +1326,8 @@ async function inviteRevoke(ctx, { id }) {
   if (!csrfOk(ctx, fields)) return;
   if (!stewardsOnly(ctx)) return;
   const result = await invites.revoke(id);
-  if (!result.ok) return await invitesHandler(ctx, { error: result.error });
-  return await invitesHandler(ctx, {
+  if (!result.ok) return invitesHandler(ctx, { error: result.error });
+  return invitesHandler(ctx, {
     flash: result.revoked ? 'Invite revoked. That link no longer works.'
       : 'Nothing to revoke — it was already used or revoked.',
   });
@@ -1342,17 +1342,17 @@ function origin(ctx) {
 
 async function accessAdminHandler(ctx, lookup = null) {
   if (!stewardsOnly(ctx)) return;
-  await render(
+  render(
     ctx,
     views.accessAdminPage(ctx, {
-      counts: await bf.rosterCounts(),
+      counts: bf.rosterCounts(),
       mode: roster.accessMode(),
       // Actually probe it. A steward opening this page is usually here because
       // somebody cannot get in, and "is the door wired up" is the first thing
       // they need — a banner that assumes it is fine would be worse than none.
       health: await roster.health(),
-      pending: await bf.pendingRoster(),
-      recent: await bf.recentRoster({ limit: 40 }),
+      pending: bf.pendingRoster(),
+      recent: bf.recentRoster({ limit: 40 }),
       lookup,
     }),
     { title: 'Front door' },
@@ -1380,10 +1380,10 @@ async function accessLookupHandler(ctx) {
 /* -------------------------------------------------------------- publish */
 
 async function publishHandler(ctx) {
-  await render(
+  render(
     ctx,
     views.publishPage(ctx, {
-      submissions: await bf.newsSubmissions(ctx.user.id),
+      submissions: bf.newsSubmissions(ctx.user.id),
       supabase: await supabase.health(),
     }),
     { title: 'Publish to news' },
@@ -1408,10 +1408,10 @@ async function publishSubmit(ctx) {
     body: trimmed(fields.body, 20_000),
     topic: trimmed(fields.topic, 40) || 'general',
   };
-  const fail = async (message) => await render(
+  const fail = (message) => render(
     ctx,
     views.publishPage(ctx, {
-      submissions: await bf.newsSubmissions(ctx.user.id), supabase: { configured: supabase.configured(), reachable: true },
+      submissions: bf.newsSubmissions(ctx.user.id), supabase: { configured: supabase.configured(), reachable: true },
       error: message, values,
     }),
     { title: 'Publish to news', status: 400 },
@@ -1420,22 +1420,22 @@ async function publishSubmit(ctx) {
   if (!values.title) return fail('It needs a headline.');
   if (!values.url && !values.body) return fail('Give it a link or some context — ideally both.');
 
-  const id = await bf.recordNewsSubmission({ userId: ctx.user.id, ...values });
+  const id = bf.recordNewsSubmission({ userId: ctx.user.id, ...values });
   const result = await supabase.submitToNews({ handle: ctx.user.id, ...values });
 
   if (!result.ok) {
-    await bf.updateNewsSubmission(id, { status: 'failed', error: result.error });
+    bf.updateNewsSubmission(id, { status: 'failed', error: result.error });
     return fail(result.unconfigured
       ? 'Publishing is not configured yet — your submission was saved here and can be sent once it is.'
       : `Could not reach the feed: ${result.error}`);
   }
 
   const remoteId = Array.isArray(result.data) ? result.data[0]?.id : result.data?.id;
-  await bf.updateNewsSubmission(id, { status: 'queued', remoteId: remoteId ? String(remoteId) : null });
-  await render(
+  bf.updateNewsSubmission(id, { status: 'queued', remoteId: remoteId ? String(remoteId) : null });
+  render(
     ctx,
     views.publishPage(ctx, {
-      submissions: await bf.newsSubmissions(ctx.user.id),
+      submissions: bf.newsSubmissions(ctx.user.id),
       supabase: { configured: true, reachable: true },
       sent: true,
     }),
@@ -1465,25 +1465,25 @@ function defaultStart() {
  *     scanner rather than by a mentor.
  */
 
-async function mentorRequestForm(ctx, { slug }, error = null, values = {}) {
-  const mentor = await bf.getMentor(slug);
+function mentorRequestForm(ctx, { slug }, error = null, values = {}) {
+  const mentor = bf.getMentor(slug);
   if (!mentor) return notFound(ctx);
-  const verdict = await desk.canRequest({ mentor, memberId: ctx.user.id });
+  const verdict = desk.canRequest({ mentor, memberId: ctx.user.id });
   if (!verdict.ok && !error) {
     // Never render a form that cannot be submitted. Send them back to the
     // profile, which already explains the reason in context.
     return seeOther(ctx, `/homeroom/mentor/${mentor.slug}`);
   }
-  await render(ctx, views.requestFormPage(ctx, {
+  render(ctx, views.requestFormPage(ctx, {
     mentor,
-    capacity: verdict.capacity || await desk.capacityFor(mentor),
+    capacity: verdict.capacity || desk.capacityFor(mentor),
     error,
     values,
   }), { title: `Ask ${mentor.name}`, subnav: views.subnav(views.MENTOR_TABS, 'mentors') });
 }
 
 async function mentorRequestCreate(ctx, fields, params) {
-  const mentor = await bf.getMentor(params.slug);
+  const mentor = bf.getMentor(params.slug);
   if (!mentor) return notFound(ctx);
 
   const values = {
@@ -1494,18 +1494,18 @@ async function mentorRequestCreate(ctx, fields, params) {
     asking_for: trimmed(fields.asking_for, 80),
   };
 
-  const verdict = await desk.canRequest({ mentor, memberId: ctx.user.id });
-  if (!verdict.ok) return await mentorRequestForm(ctx, params, verdict.message, values);
+  const verdict = desk.canRequest({ mentor, memberId: ctx.user.id });
+  if (!verdict.ok) return mentorRequestForm(ctx, params, verdict.message, values);
   if (values.need.length < 40) {
-    return await mentorRequestForm(ctx, params,
+    return mentorRequestForm(ctx, params,
       'Say more about what you need — 40 characters is not enough for them to answer.', values);
   }
   if (values.why_them.length < 20) {
-    return await mentorRequestForm(ctx, params,
+    return mentorRequestForm(ctx, params,
       'Say why this person. It is the difference between a request and a mail merge.', values);
   }
 
-  const created = await desk.createRequest({
+  const created = desk.createRequest({
     mentor,
     memberId: ctx.user.id,
     track: values.track,
@@ -1515,16 +1515,16 @@ async function mentorRequestCreate(ctx, fields, params) {
     askingFor: values.asking_for,
   });
 
-  await desk.logEvent({
+  desk.logEvent({
     mentorId: mentor.id, requestId: created.id, actorId: ctx.user.id, actorKind: 'member',
     event: 'requested', detail: created.auto ? 'auto-accepted per consent mode' : '',
   });
 
-  const member = await bf.getMember(ctx.user.id);
-  const to = await desk.contactFor(mentor.id);
+  const member = bf.getMember(ctx.user.id);
+  const to = desk.contactFor(mentor.id);
   const message = mentormail.requestMessage({
     mentor, to, member, request: values, token: created.token,
-    capacity: await desk.capacityFor(mentor),
+    capacity: desk.capacityFor(mentor),
   });
   await mentormail.deliver(created.auto
     // The mentor said "do not ask me". Tell them it happened; do not ask.
@@ -1535,16 +1535,16 @@ async function mentorRequestCreate(ctx, fields, params) {
 }
 
 /** The grant redirect. The only path from a member to a scheduler URL. */
-async function mentorBook(ctx, { slug, grant }) {
-  const mentor = await bf.getMentor(slug);
-  const result = await desk.redeemGrant({
+function mentorBook(ctx, { slug, grant }) {
+  const mentor = bf.getMentor(slug);
+  const result = desk.redeemGrant({
     grantId: grant, memberId: ctx.user.id, mentorId: mentor?.id,
   });
   if (!result.ok) {
-    return await render(ctx, views.grantGonePage(ctx, { mentor, reason: result.reason }),
+    return render(ctx, views.grantGonePage(ctx, { mentor, reason: result.reason }),
       { title: 'Link no longer works', status: 410 });
   }
-  await desk.logEvent({
+  desk.logEvent({
     mentorId: result.grant.mentor_id, requestId: result.grant.request_id,
     actorId: ctx.user.id, actorKind: 'member', event: 'booking-opened',
   });
@@ -1558,24 +1558,24 @@ async function mentorBook(ctx, { slug, grant }) {
 
 /* --- the mentor's side: no account, no session, token in the URL --------- */
 
-async function mentorTokenPage(ctx, { token }) {
-  const request = await desk.findByToken(token);
+function mentorTokenPage(ctx, { token }) {
+  const request = desk.findByToken(token);
   if (!request) {
     return sendHtml(ctx.res, views.mentorTokenGonePage({ reason: 'unknown' }), { status: 404 });
   }
   if (request.state !== 'sent') {
     return sendHtml(ctx.res, views.mentorTokenGonePage({ reason: 'already' }), { status: 410 });
   }
-  const mentor = await bf.getMentor(request.mentor_id);
-  const member = await bf.getMember(request.member_id) || { user_id: request.member_id };
+  const mentor = bf.getMentor(request.mentor_id);
+  const member = bf.getMember(request.member_id) || { user_id: request.member_id };
   sendHtml(ctx.res, views.mentorRequestPage({
-    mentor, request, member, capacity: await desk.capacityFor(mentor), token,
+    mentor, request, member, capacity: desk.capacityFor(mentor), token,
   }));
 }
 
 async function mentorTokenAnswer(ctx, { token }, decision) {
   const { fields } = await readBody(ctx.req);
-  const result = await desk.answerRequest({
+  const result = desk.answerRequest({
     token,
     decision,
     note: trimmed(fields.note, 200),
@@ -1588,13 +1588,13 @@ async function mentorTokenAnswer(ctx, { token }, decision) {
   }
 
   const { mentor, request } = result;
-  await desk.logEvent({
+  desk.logEvent({
     mentorId: mentor.id, requestId: request.id, actorKind: 'mentor',
     event: result.decision, detail: result.late ? 'answered after the window closed' : '',
   });
 
   if (result.decision === 'accept') {
-    await bf.notify({
+    bf.notify({
       userId: request.member_id, kind: 'intro',
       text: `${mentor.name} said yes — your booking link is ready`,
       href: '/homeroom/mentors/requests',
@@ -1604,7 +1604,7 @@ async function mentorTokenAnswer(ctx, { token }, decision) {
     // buried is saying "stop sending me requests", not "take back the yes I
     // already gave someone else" — and the member holding that grant did
     // nothing wrong. Pausing stops new requests; it does not cancel a yes.
-    await bf.notify({
+    bf.notify({
       userId: request.member_id, kind: 'intro',
       text: `${mentor.name} passed on your request`,
       href: '/homeroom/mentors/requests',
@@ -1624,19 +1624,19 @@ async function mentorTokenAnswer(ctx, { token }, decision) {
  * links live in mail that gateways pre-fetch.
  */
 
-async function mentorStanding(ctx, { token }) {
-  const row = await mentorlife.findToken(token);
+function mentorStanding(ctx, { token }) {
+  const row = mentorlife.findToken(token);
   if (!row) return sendHtml(ctx.res, views.mentorTokenGonePage({ reason: 'unknown' }), { status: 404 });
-  const mentor = await bf.getMentor(row.mentor_id);
+  const mentor = bf.getMentor(row.mentor_id);
   if (!mentor) return sendHtml(ctx.res, views.mentorTokenGonePage({ reason: 'unknown' }), { status: 404 });
   sendHtml(ctx.res, views.mentorStandingPage({ mentor, token, state: mentor.state }));
 }
 
 async function mentorStandingAction(ctx, { token }, action) {
   await readBody(ctx.req);
-  const result = action === 'confirm' ? await mentorlife.confirm(token)
-    : action === 'pause' ? await mentorlife.pause(token, { days: 90 })
-    : await mentorlife.withdraw(token);
+  const result = action === 'confirm' ? mentorlife.confirm(token)
+    : action === 'pause' ? mentorlife.pause(token, { days: 90 })
+    : mentorlife.withdraw(token);
 
   if (!result.ok) {
     return sendHtml(ctx.res, views.mentorTokenGonePage({ reason: result.reason }), { status: 404 });
@@ -1646,15 +1646,15 @@ async function mentorStandingAction(ctx, { token }, action) {
 
 /* --------------------------------------------------- mentor desk: steward */
 
-async function mentorAdminHandler(ctx, { error = null, flash = null } = {}) {
+function mentorAdminHandler(ctx, { error = null, flash = null } = {}) {
   if (!stewardsOnly(ctx)) return;
-  const status = await mentorsync.status();
-  await render(ctx, views.mentorAdminPage(ctx, {
-    pending: await mentorsync.pendingSubmissions(),
+  const status = mentorsync.status();
+  render(ctx, views.mentorAdminPage(ctx, {
+    pending: mentorsync.pendingSubmissions(),
     status,
-    stuck: await mentorsync.stuckRequests(),
+    stuck: mentorsync.stuckRequests(),
     roster: status.byState,
-    metrics: await mentorlife.metrics(),
+    metrics: mentorlife.metrics(),
     error,
     flash,
   }), { title: 'Mentor desk' });
@@ -1665,7 +1665,7 @@ async function mentorSyncNow(ctx) {
   const result = await mentorsync.sync();
   // Fail closed and say so. The roster is untouched either way, which is the
   // property worth being loud about: a failed sync is not a smaller roster.
-  await mentorAdminHandler(ctx, result.ok
+  mentorAdminHandler(ctx, result.ok
     ? { flash: `${result.seen} seen, ${result.created} new, ${result.updated} updated.` }
     : { error: `${result.error} Nothing was changed.` });
 }
@@ -1681,19 +1681,19 @@ function action(fn) {
 const ROUTES = [
   ['GET', '/homeroom', homeHandler],
   /* ---- yearbook ---- */
-  ['GET', '/homeroom/yearbook/edit', async (ctx) => await render(ctx, views.yearbookFormPage(ctx, {
-    entry: await bf.getYearbook(ctx.user.id), member: await bf.ensureMember(ctx.user.id),
+  ['GET', '/homeroom/yearbook/edit', (ctx) => render(ctx, views.yearbookFormPage(ctx, {
+    entry: bf.getYearbook(ctx.user.id), member: bf.ensureMember(ctx.user.id),
   }), { title: 'Your yearbook entry', subnav: views.subnav(views.YEARBOOK_TABS, 'mine') })],
   ['POST', '/homeroom/yearbook/edit', yearbookSubmit],
   ['GET', '/homeroom/yearbook', yearbookHandler],
-  ['POST', '/homeroom/yearbook/:handle/sign', action(async (ctx, fields, p) => {
-    const target = await bf.getMember(p.handle);
+  ['POST', '/homeroom/yearbook/:handle/sign', action((ctx, fields, p) => {
+    const target = bf.getMember(p.handle);
     if (!target) return notFound(ctx);
-    const result = await bf.signYearbook({
+    const result = bf.signYearbook({
       userId: target.user_id, authorId: ctx.user.id, body: trimmed(fields.body, 600),
     });
     if (!result.ok) return oops(ctx, result.error);
-    await bf.notify({
+    bf.notify({
       userId: target.user_id,
       kind: 'signature',
       actorId: ctx.user.id,
@@ -1706,8 +1706,8 @@ const ROUTES = [
 
   ['GET', '/homeroom/people', peopleHandler],
   ['GET', '/homeroom/p/:handle', memberHandler],
-  ['GET', '/homeroom/settings', async (ctx) => await render(ctx, views.settingsPage(ctx, {
-    member: await bf.ensureMember(ctx.user.id),
+  ['GET', '/homeroom/settings', (ctx) => render(ctx, views.settingsPage(ctx, {
+    member: bf.ensureMember(ctx.user.id),
     saved: ctx.query.get('saved') === '1',
     passwordSaved: ctx.query.get('password') === '1',
     authMode: sbAuth.configured() ? 'supabase' : 'local',
@@ -1715,19 +1715,19 @@ const ROUTES = [
   ['POST', '/homeroom/settings', settingsSubmit],
   ['POST', '/homeroom/password', passwordSubmit],
 
-  ['GET', '/homeroom/labs/new', async (ctx) => await render(ctx, views.labFormAtlasPage(ctx, {}),
+  ['GET', '/homeroom/labs/new', (ctx) => render(ctx, views.labFormAtlasPage(ctx, {}),
     { title: 'Add a lab', subnav: views.subnav(views.LAB_TABS, 'atlas') })],
   ['POST', '/homeroom/labs/new', atlasLabCreate],
-  ['GET', '/homeroom/labs/cores', async (ctx) => await render(ctx, views.coresPage(ctx),
+  ['GET', '/homeroom/labs/cores', (ctx) => render(ctx, views.coresPage(ctx),
     { title: 'Core Facility Finder', subnav: views.subnav(views.LAB_TABS, 'cores'), wide: true })],
   ['GET', '/homeroom/labs/member', labsHandler],
-  ['GET', '/homeroom/labs/member/new', async (ctx) => await render(ctx, views.labFormPage(ctx, {}),
+  ['GET', '/homeroom/labs/member/new', (ctx) => render(ctx, views.labFormPage(ctx, {}),
     { title: 'Add your lab' })],
   ['POST', '/homeroom/labs/member/new', labCreate],
-  ['POST', '/homeroom/labs/at/:slug/report', action(async (ctx, fields, p) => {
-    const lab = await bf.getLab(p.slug);
+  ['POST', '/homeroom/labs/at/:slug/report', action((ctx, fields, p) => {
+    const lab = bf.getLab(p.slug);
     if (!lab) return notFound(ctx);
-    const result = await bf.reportLab({
+    const result = bf.reportLab({
       labId: lab.id, userId: ctx.user.id,
       status: String(fields.status || ''), body: trimmed(fields.body, 2000),
     });
@@ -1736,48 +1736,48 @@ const ROUTES = [
   })],
   ['GET', '/homeroom/labs/at/:slug', atlasLabHandler],
   ['GET', '/homeroom/labs', atlasHandler],
-  ['GET', '/homeroom/lab/:slug/edit', async (ctx, p) => {
-    const org = await bf.getOrg(p.slug);
+  ['GET', '/homeroom/lab/:slug/edit', (ctx, p) => {
+    const org = bf.getOrg(p.slug);
     if (!org) return notFound(ctx);
-    if (!await bf.isOrgAdmin(org.id, ctx.user.id) && !ctx.user.is_admin) return oops(ctx, 'Only lab admins can edit this.', 403);
-    await render(ctx, views.labFormPage(ctx, { org }), { title: `Edit ${org.name}` });
+    if (!bf.isOrgAdmin(org.id, ctx.user.id) && !ctx.user.is_admin) return oops(ctx, 'Only lab admins can edit this.', 403);
+    render(ctx, views.labFormPage(ctx, { org }), { title: `Edit ${org.name}` });
   }],
   ['POST', '/homeroom/lab/:slug/edit', labEdit],
-  ['GET', '/homeroom/lab/:slug/update', async (ctx, p) => {
-    const org = await bf.getOrg(p.slug);
+  ['GET', '/homeroom/lab/:slug/update', (ctx, p) => {
+    const org = bf.getOrg(p.slug);
     if (!org) return notFound(ctx);
-    if (!await bf.isOrgMember(org.id, ctx.user.id)) return oops(ctx, 'Only the team can post updates.', 403);
-    await render(ctx, views.updateFormPage(ctx, { org }), { title: `Update from ${org.name}` });
+    if (!bf.isOrgMember(org.id, ctx.user.id)) return oops(ctx, 'Only the team can post updates.', 403);
+    render(ctx, views.updateFormPage(ctx, { org }), { title: `Update from ${org.name}` });
   }],
   ['POST', '/homeroom/lab/:slug/update', labUpdatePost],
-  ['POST', '/homeroom/lab/:slug/join', action(async (ctx, fields, p) => {
-    const org = await bf.getOrg(p.slug);
+  ['POST', '/homeroom/lab/:slug/join', action((ctx, fields, p) => {
+    const org = bf.getOrg(p.slug);
     if (!org) return notFound(ctx);
-    await bf.joinOrg(org.id, ctx.user.id);
+    bf.joinOrg(org.id, ctx.user.id);
     seeOther(ctx, `/homeroom/lab/${org.slug}`);
   })],
-  ['POST', '/homeroom/lab/:slug/leave', action(async (ctx, fields, p) => {
-    const org = await bf.getOrg(p.slug);
+  ['POST', '/homeroom/lab/:slug/leave', action((ctx, fields, p) => {
+    const org = bf.getOrg(p.slug);
     if (!org) return notFound(ctx);
-    await bf.leaveOrg(org.id, ctx.user.id);
+    bf.leaveOrg(org.id, ctx.user.id);
     seeOther(ctx, `/homeroom/lab/${org.slug}`);
   })],
   ['GET', '/homeroom/lab/:slug', labHandler],
 
-  ['GET', '/homeroom/perks/new', async (ctx) => await render(ctx, views.dealFormPage(ctx, {}), { title: 'Add a perk' })],
+  ['GET', '/homeroom/perks/new', (ctx) => render(ctx, views.dealFormPage(ctx, {}), { title: 'Add a perk' })],
   ['POST', '/homeroom/perks/new', dealCreate],
   ['GET', '/homeroom/perks', perksHandler],
-  ['POST', '/homeroom/perk/:slug/claim', action(async (ctx, fields, p) => {
-    const perk = await bf.getDeal(p.slug);
+  ['POST', '/homeroom/perk/:slug/claim', action((ctx, fields, p) => {
+    const perk = bf.getDeal(p.slug);
     if (!perk) return notFound(ctx);
-    await bf.claimDeal(perk.id, ctx.user.id);
+    bf.claimDeal(perk.id, ctx.user.id);
     seeOther(ctx, `/homeroom/perk/${perk.slug}`);
   })],
-  ['POST', '/homeroom/perk/:slug/code', action(async (ctx, fields, p) => {
+  ['POST', '/homeroom/perk/:slug/code', action((ctx, fields, p) => {
     if (!ctx.user.is_admin) return oops(ctx, 'Stewards only.', 403);
-    const perk = await bf.getDeal(p.slug);
+    const perk = bf.getDeal(p.slug);
     if (!perk) return notFound(ctx);
-    await bf.setDealCode(perk.id, trimmed(fields.code, 120));
+    bf.setDealCode(perk.id, trimmed(fields.code, 120));
     seeOther(ctx, `/homeroom/perk/${perk.slug}`);
   })],
   ['GET', '/homeroom/perk/:slug', perkHandler],
@@ -1787,67 +1787,60 @@ const ROUTES = [
   ['GET', '/homeroom/deals/new', (ctx) => seeOther(ctx, '/homeroom/perks/new')],
   ['GET', '/homeroom/deal/:slug', (ctx, p) => seeOther(ctx, `/homeroom/perk/${encodeURIComponent(p.slug)}`)],
 
-  ['GET', '/homeroom/funders/new', async (ctx) => await render(ctx, views.funderFormPage(ctx, {}), { title: 'Add a funder' })],
+  ['GET', '/homeroom/funders/new', (ctx) => render(ctx, views.funderFormPage(ctx, {}), { title: 'Add a funder' })],
   ['POST', '/homeroom/funders/new', funderCreate],
   ['GET', '/homeroom/funders', fundersHandler],
-  ['GET', '/homeroom/pipeline', async (ctx) => await render(ctx, views.pipelinePage(ctx, { rows: await bf.pipeline(ctx.user.id) }),
+  ['GET', '/homeroom/pipeline', (ctx) => render(ctx, views.pipelinePage(ctx, { rows: bf.pipeline(ctx.user.id) }),
     { title: 'Pipeline' })],
   ['POST', '/homeroom/funder/:slug/review', reviewSubmit],
-  ['POST', '/homeroom/review/:id/helpful', action(async (ctx, fields, p) => {
-    const review = await bf.getReview(Number(p.id));
+  ['POST', '/homeroom/review/:id/helpful', action((ctx, fields, p) => {
+    const review = bf.getReview(Number(p.id));
     if (!review) return notFound(ctx);
     if (review.user_id === ctx.user.id) return oops(ctx, 'You cannot vouch for your own review.', 403);
-    await bf.toggleReviewHelpful(review.id, ctx.user.id);
+    bf.toggleReviewHelpful(review.id, ctx.user.id);
     seeOther(ctx, safeGoto(fields.goto, '/homeroom/funders'));
   })],
-  ['POST', '/homeroom/review/:id/comment', action(async (ctx, fields, p) => {
-    const review = await bf.getReview(Number(p.id));
+  ['POST', '/homeroom/review/:id/comment', action((ctx, fields, p) => {
+    const review = bf.getReview(Number(p.id));
     if (!review) return notFound(ctx);
     if (limited(ctx, 'comment', LIMITS.comment)) return;
-    const result = await bf.addReviewComment({
+    const result = bf.addReviewComment({
       reviewId: review.id, authorId: ctx.user.id,
       body: trimmed(fields.body, 4000), anonymous: checkbox(fields.anonymous),
     });
     if (!result.ok) return oops(ctx, result.error);
     seeOther(ctx, safeGoto(fields.goto, '/homeroom/funders'));
   })],
-  ['POST', '/homeroom/review/comment/:id/delete', action(async (ctx, fields, p) => {
-    if (!await bf.deleteReviewComment(Number(p.id), ctx.user.id, { isAdmin: !!ctx.user.is_admin })) {
+  ['POST', '/homeroom/review/comment/:id/delete', action((ctx, fields, p) => {
+    if (!bf.deleteReviewComment(Number(p.id), ctx.user.id, { isAdmin: !!ctx.user.is_admin })) {
       return oops(ctx, 'Not yours to delete.', 403);
     }
     seeOther(ctx, safeGoto(fields.goto, '/homeroom/funders'));
   })],
   ['POST', '/homeroom/funder/:slug/track', trackSubmit],
-  ['POST', '/homeroom/funder/:slug/untrack', action(async (ctx, fields, p) => {
-    const funder = await bf.getFunder(p.slug);
+  ['POST', '/homeroom/funder/:slug/untrack', action((ctx, fields, p) => {
+    const funder = bf.getFunder(p.slug);
     if (!funder) return notFound(ctx);
-    await bf.removePipeline(ctx.user.id, funder.id);
+    bf.removePipeline(ctx.user.id, funder.id);
     seeOther(ctx, `/homeroom/funder/${funder.slug}`);
   })],
   ['GET', '/homeroom/funder/:slug', funderHandler],
 
   ['GET', '/homeroom/mentors', mentorsHandler],
-  ['GET', '/homeroom/mentors/requests', async (ctx) => {
-    // Each row's outcome is its own read, so they go out together rather than
-    // one after another — this list is as long as the member's history.
-    const requests = await Promise.all(
-      (await desk.requestsFor(ctx.user.id))
-        .map(async (r) => ({ ...r, outcome: await desk.outcomeFor(r.id) })),
-    );
-    await render(ctx, views.myRequestsPage(ctx, { requests }),
-      { title: 'Your mentor requests', subnav: views.subnav(views.MENTOR_TABS, 'requests') });
-  }],
-  ['GET', '/homeroom/mentor/:slug/request', async (ctx, p) => await mentorRequestForm(ctx, p)],
+  ['GET', '/homeroom/mentors/requests', (ctx) => render(ctx, views.myRequestsPage(ctx, {
+    requests: desk.requestsFor(ctx.user.id).map((r) => ({ ...r, outcome: desk.outcomeFor(r.id) })),
+  }), { title: 'Your mentor requests', subnav: views.subnav(views.MENTOR_TABS, 'requests') })],
+  ['GET', '/homeroom/mentor/:slug/request', (ctx, p) => mentorRequestForm(ctx, p)],
   ['POST', '/homeroom/mentor/:slug/request', action(mentorRequestCreate)],
   ['GET', '/homeroom/mentor/:slug/book/:grant', mentorBook],
-  ['POST', '/homeroom/mentor/request/:id/withdraw', action(async (ctx, fields, p) => {
-    await desk.withdrawRequest(p.id, ctx.user.id);
+  ['POST', '/homeroom/mentor/request/:id/withdraw', action((ctx, fields, p) => {
+    desk.withdrawRequest(p.id, ctx.user.id);
     seeOther(ctx, '/homeroom/mentors/requests');
   })],
-  ['POST', '/homeroom/mentor/request/:id/outcome', action(async (ctx, fields, p) => {
-    const request = await desk.getRequest(p.id);
+  ['POST', '/homeroom/mentor/request/:id/outcome', action((ctx, fields, p) => {
+    const request = desk.getRequest(p.id);
     if (!request || request.member_id !== ctx.user.id) return notFound(ctx);
-    await desk.logOutcome({
+    desk.logOutcome({
       requestId: request.id,
       met: checkbox(fields.met),
       useful: clampInt(fields.useful, 1, 5, null),
@@ -1859,24 +1852,24 @@ const ROUTES = [
   /* The mentor's own three pages. No session: see homeroomRoute below. */
   ['GET', '/homeroom/m/:token', mentorTokenPage],
   ['GET', '/homeroom/me/:token', mentorStanding],
-  ['POST', '/homeroom/me/:token/confirm', async (ctx, p) => await mentorStandingAction(ctx, p, 'confirm')],
-  ['POST', '/homeroom/me/:token/pause', async (ctx, p) => await mentorStandingAction(ctx, p, 'pause')],
-  ['POST', '/homeroom/me/:token/withdraw', async (ctx, p) => await mentorStandingAction(ctx, p, 'withdraw')],
-  ['POST', '/homeroom/m/:token/accept', async (ctx, p) => await mentorTokenAnswer(ctx, p, 'accept')],
-  ['POST', '/homeroom/m/:token/decline', async (ctx, p) => await mentorTokenAnswer(ctx, p, 'decline')],
-  ['POST', '/homeroom/m/:token/later', async (ctx, p) => await mentorTokenAnswer(ctx, p, 'later')],
+  ['POST', '/homeroom/me/:token/confirm', (ctx, p) => mentorStandingAction(ctx, p, 'confirm')],
+  ['POST', '/homeroom/me/:token/pause', (ctx, p) => mentorStandingAction(ctx, p, 'pause')],
+  ['POST', '/homeroom/me/:token/withdraw', (ctx, p) => mentorStandingAction(ctx, p, 'withdraw')],
+  ['POST', '/homeroom/m/:token/accept', (ctx, p) => mentorTokenAnswer(ctx, p, 'accept')],
+  ['POST', '/homeroom/m/:token/decline', (ctx, p) => mentorTokenAnswer(ctx, p, 'decline')],
+  ['POST', '/homeroom/m/:token/later', (ctx, p) => mentorTokenAnswer(ctx, p, 'later')],
 
   ['GET', '/homeroom/mentor/:slug', mentorHandler],
 
-  ['GET', '/homeroom/hours/new', async (ctx) => await render(ctx, views.slotFormPage(ctx, { defaultStart: defaultStart() }),
+  ['GET', '/homeroom/hours/new', (ctx) => render(ctx, views.slotFormPage(ctx, { defaultStart: defaultStart() }),
     { title: 'Offer office hours', subnav: views.subnav(views.MENTOR_TABS, 'hours') })],
   ['POST', '/homeroom/hours/new', slotCreate],
   ['GET', '/homeroom/hours', hoursHandler],
-  ['POST', '/homeroom/hours/:id/book', action(async (ctx, fields, p) => {
-    const result = await bf.bookSlot(Number(p.id), ctx.user.id, trimmed(fields.question, 2000));
+  ['POST', '/homeroom/hours/:id/book', action((ctx, fields, p) => {
+    const result = bf.bookSlot(Number(p.id), ctx.user.id, trimmed(fields.question, 2000));
     if (!result.ok) return oops(ctx, result.error);
     if (result.hostId) {
-      await bf.notify({
+      bf.notify({
         userId: result.hostId,
         kind: 'booking',
         actorId: ctx.user.id,
@@ -1886,16 +1879,16 @@ const ROUTES = [
     }
     seeOther(ctx, `/homeroom/hours/${p.id}`);
   })],
-  ['POST', '/homeroom/hours/:id/unbook', action(async (ctx, fields, p) => {
-    await bf.cancelBooking(Number(p.id), ctx.user.id);
+  ['POST', '/homeroom/hours/:id/unbook', action((ctx, fields, p) => {
+    bf.cancelBooking(Number(p.id), ctx.user.id);
     seeOther(ctx, `/homeroom/hours/${p.id}`);
   })],
-  ['POST', '/homeroom/hours/:id/cancel', action(async (ctx, fields, p) => {
-    const slot = await bf.getSlot(p.id);
+  ['POST', '/homeroom/hours/:id/cancel', action((ctx, fields, p) => {
+    const slot = bf.getSlot(p.id);
     if (!slot) return notFound(ctx);
     if (slot.host_id !== ctx.user.id && !ctx.user.is_admin) return oops(ctx, 'Only the host can cancel.', 403);
-    for (const booking of await bf.slotBookings(slot.id)) {
-      await bf.notify({
+    for (const booking of bf.slotBookings(slot.id)) {
+      bf.notify({
         userId: booking.user_id,
         kind: 'booking',
         actorId: ctx.user.id,
@@ -1903,23 +1896,23 @@ const ROUTES = [
         href: `/homeroom/hours/${slot.id}`,
       });
     }
-    await bf.cancelSlot(slot.id);
+    bf.cancelSlot(slot.id);
     seeOther(ctx, '/homeroom/hours');
   })],
   ['GET', '/homeroom/hours/:id', slotHandler],
 
-  ['GET', '/homeroom/jobs/new', async (ctx) => {
-    const orgs = await bf.userOrgs(ctx.user.id);
+  ['GET', '/homeroom/jobs/new', (ctx) => {
+    const orgs = bf.userOrgs(ctx.user.id);
     if (!orgs.length) return oops(ctx, 'Add your lab first — roles hang off a lab.', 400);
-    await render(ctx, views.jobFormPage(ctx, { orgs, values: Object.fromEntries(ctx.query) }), { title: 'Post a role' });
+    render(ctx, views.jobFormPage(ctx, { orgs, values: Object.fromEntries(ctx.query) }), { title: 'Post a role' });
   }],
   ['POST', '/homeroom/jobs/new', jobCreate],
   ['GET', '/homeroom/jobs', jobsHandler],
-  ['POST', '/homeroom/job/:id/apply', action(async (ctx, fields, p) => {
-    const job = await bf.getJob(p.id);
+  ['POST', '/homeroom/job/:id/apply', action((ctx, fields, p) => {
+    const job = bf.getJob(p.id);
     if (!job || job.closed) return notFound(ctx);
-    await bf.applyToJob(job.id, ctx.user.id, trimmed(fields.note, 4000));
-    await bf.notify({
+    bf.applyToJob(job.id, ctx.user.id, trimmed(fields.note, 4000));
+    bf.notify({
       userId: job.posted_by,
       kind: 'application',
       actorId: ctx.user.id,
@@ -1928,50 +1921,50 @@ const ROUTES = [
     });
     seeOther(ctx, `/homeroom/job/${job.id}`);
   })],
-  ['POST', '/homeroom/job/:id/close', action(async (ctx, fields, p) => {
-    const job = await bf.getJob(p.id);
+  ['POST', '/homeroom/job/:id/close', action((ctx, fields, p) => {
+    const job = bf.getJob(p.id);
     if (!job) return notFound(ctx);
-    if (job.posted_by !== ctx.user.id && !await bf.isOrgAdmin(job.org_id, ctx.user.id)) {
+    if (job.posted_by !== ctx.user.id && !bf.isOrgAdmin(job.org_id, ctx.user.id)) {
       return oops(ctx, 'Not yours to close.', 403);
     }
-    await bf.closeJob(job.id, !job.closed);
+    bf.closeJob(job.id, !job.closed);
     seeOther(ctx, `/homeroom/job/${job.id}`);
   })],
   ['GET', '/homeroom/job/:id', jobHandler],
 
-  ['GET', '/homeroom/events/new', async (ctx) => await render(ctx, views.eventFormPage(ctx, { defaultStart: defaultStart() }),
+  ['GET', '/homeroom/events/new', (ctx) => render(ctx, views.eventFormPage(ctx, { defaultStart: defaultStart() }),
     { title: 'Add an event' })],
   ['POST', '/homeroom/events/new', eventCreate],
   ['GET', '/homeroom/events/list', eventsHandler],
   ['POST', '/homeroom/events/sync', lumaSyncHandler],
   ['GET', '/homeroom/events.ics', icsHandler],
   ['GET', '/homeroom/events', calendarHandler],
-  ['POST', '/homeroom/event/:id/rsvp', action(async (ctx, fields, p) => {
-    const event = await bf.getEvent(p.id);
+  ['POST', '/homeroom/event/:id/rsvp', action((ctx, fields, p) => {
+    const event = bf.getEvent(p.id);
     if (!event) return notFound(ctx);
     const status = ['going', 'maybe', 'none'].includes(fields.status) ? fields.status : 'going';
-    if (status === 'going' && event.capacity && event.going >= event.capacity && await bf.myRsvp(event.id, ctx.user.id) !== 'going') {
+    if (status === 'going' && event.capacity && event.going >= event.capacity && bf.myRsvp(event.id, ctx.user.id) !== 'going') {
       return oops(ctx, 'That event is full.');
     }
-    await bf.rsvp(event.id, ctx.user.id, status);
+    bf.rsvp(event.id, ctx.user.id, status);
     seeOther(ctx, `/homeroom/event/${event.id}`);
   })],
-  ['POST', '/homeroom/event/:id/cancel', action(async (ctx, fields, p) => {
-    const event = await bf.getEvent(p.id);
+  ['POST', '/homeroom/event/:id/cancel', action((ctx, fields, p) => {
+    const event = bf.getEvent(p.id);
     if (!event) return notFound(ctx);
     if (event.host_id !== ctx.user.id && !ctx.user.is_admin) return oops(ctx, 'Only the host can cancel.', 403);
-    await bf.cancelEvent(event.id);
+    bf.cancelEvent(event.id);
     seeOther(ctx, `/homeroom/event/${event.id}`);
   })],
   ['GET', '/homeroom/event/:id', eventHandler],
 
-  ['GET', '/homeroom/library/new', async (ctx) => await render(ctx, views.libraryFormPage(ctx, {}), { title: 'Write for the library' })],
+  ['GET', '/homeroom/library/new', (ctx) => render(ctx, views.libraryFormPage(ctx, {}), { title: 'Write for the library' })],
   ['POST', '/homeroom/library/new', libraryCreate],
-  ['GET', '/homeroom/library/tree', async (ctx) => await render(ctx, views.treePage(ctx, {
+  ['GET', '/homeroom/library/tree', (ctx) => render(ctx, views.treePage(ctx, {
     moduleCount: LIBRARY_MODULES.length, nodeCount: SKILL_TREE_NODES,
   }), { title: 'Skill tree', subnav: views.subnav(views.LIBRARY_TABS, 'tree'), wide: true })],
-  ['GET', '/homeroom/library/notes', async (ctx) => await render(ctx, views.deliverablesPage(ctx, {
-    rows: await bf.deliverables(ctx.user.id), progress: await bf.progressSummary(ctx.user.id),
+  ['GET', '/homeroom/library/notes', (ctx) => render(ctx, views.deliverablesPage(ctx, {
+    rows: bf.deliverables(ctx.user.id), progress: bf.progressSummary(ctx.user.id),
   }), { title: 'Your deliverables', subnav: views.subnav(views.LIBRARY_TABS, 'notes') })],
   ['GET', '/homeroom/library/track/:slug', trackHandler],
   ['GET', '/homeroom/library/module/:slug', moduleHandler],
@@ -1981,92 +1974,92 @@ const ROUTES = [
   /* Member-written entries used to live at /library/:slug. Keep those links. */
   ['GET', '/homeroom/library/:slug', libraryEntryHandler],
 
-  ['GET', '/homeroom/intros/new', async (ctx) => {
-    const target = await bf.getMember(ctx.query.get('to'));
+  ['GET', '/homeroom/intros/new', (ctx) => {
+    const target = bf.getMember(ctx.query.get('to'));
     if (!target) return notFound(ctx);
-    await render(ctx, views.introFormPage(ctx, { target }), { title: 'Request an intro' });
+    render(ctx, views.introFormPage(ctx, { target }), { title: 'Request an intro' });
   }],
   ['POST', '/homeroom/intros/new', introCreate],
   ['POST', '/homeroom/intros/:id/resolve', introResolve],
-  ['GET', '/homeroom/intros', async (ctx) => await render(ctx, views.introsPage(ctx, await bf.introsFor(ctx.user.id)), { title: 'Intros' })],
+  ['GET', '/homeroom/intros', (ctx) => render(ctx, views.introsPage(ctx, bf.introsFor(ctx.user.id)), { title: 'Intros' })],
 
-  ['GET', '/homeroom/messages/new', async (ctx) => await render(ctx, views.newMessagePage(ctx, { to: ctx.query.get('to') || '' }),
+  ['GET', '/homeroom/messages/new', (ctx) => render(ctx, views.newMessagePage(ctx, { to: ctx.query.get('to') || '' }),
     { title: 'New message' })],
   ['POST', '/homeroom/messages/new', messageCreate],
-  ['GET', '/homeroom/messages', async (ctx) => await render(ctx, views.messagesPage(ctx, { threads: await bf.threadsFor(ctx.user.id) }),
+  ['GET', '/homeroom/messages', (ctx) => render(ctx, views.messagesPage(ctx, { threads: bf.threadsFor(ctx.user.id) }),
     { title: 'Messages' })],
   ['GET', '/homeroom/messages/:id', threadHandler],
   ['POST', '/homeroom/messages/:id', threadReply],
 
-  ['GET', '/homeroom/notifications', async (ctx) => {
-    const items = await bf.notifications(ctx.user.id);
-    await render(ctx, views.notificationsPage(ctx, { items }), { title: 'Notifications' });
-    await bf.markNotificationsRead(ctx.user.id);
+  ['GET', '/homeroom/notifications', (ctx) => {
+    const items = bf.notifications(ctx.user.id);
+    render(ctx, views.notificationsPage(ctx, { items }), { title: 'Notifications' });
+    bf.markNotificationsRead(ctx.user.id);
   }],
-  ['GET', '/homeroom/search', async (ctx) => {
+  ['GET', '/homeroom/search', (ctx) => {
     const query = (ctx.query.get('q') || '').trim().slice(0, 120);
-    const results = await bf.globalSearch(query);
-    await render(ctx, views.searchPage(ctx, { query, results }),
+    const results = bf.globalSearch(query);
+    render(ctx, views.searchPage(ctx, { query, results }),
       { title: query ? `Search: ${query}` : 'Search' });
   }],
   ['GET', '/homeroom/welcome', welcomeHandler],
-  ['GET', '/homeroom/stewards/invites', async (ctx) => await invitesHandler(ctx)],
+  ['GET', '/homeroom/stewards/invites', (ctx) => invitesHandler(ctx)],
   ['POST', '/homeroom/stewards/invites', inviteCreate],
   ['POST', '/homeroom/stewards/invites/:id/revoke', inviteRevoke],
-  ['GET', '/homeroom/stewards/mentors', async (ctx) => await mentorAdminHandler(ctx)],
+  ['GET', '/homeroom/stewards/mentors', (ctx) => mentorAdminHandler(ctx)],
   ['POST', '/homeroom/stewards/mentors/sync', action(mentorSyncNow)],
-  ['POST', '/homeroom/stewards/mentors/:id/rule', action(async (ctx, fields, p) => {
+  ['POST', '/homeroom/stewards/mentors/:id/rule', action((ctx, fields, p) => {
     if (!stewardsOnly(ctx)) return;
     const decision = fields.decision === 'list' ? 'list' : 'reject';
     const note = trimmed(fields.note, 300);
     // A rejection without a reason is a decision the next steward cannot read.
     if (decision === 'reject' && !note) {
-      return await mentorAdminHandler(ctx, { error: 'Say why, so the next steward is not guessing.' });
+      return mentorAdminHandler(ctx, { error: 'Say why, so the next steward is not guessing.' });
     }
-    const ruled = await mentorsync.rule({ mentorId: p.id, decision, actorId: ctx.user.id, note });
+    const ruled = mentorsync.rule({ mentorId: p.id, decision, actorId: ctx.user.id, note });
     if (!ruled) return notFound(ctx);
     seeOther(ctx, '/homeroom/stewards/mentors');
   })],
-  ['GET', '/homeroom/stewards/access', async (ctx) => await accessAdminHandler(ctx)],
+  ['GET', '/homeroom/stewards/access', (ctx) => accessAdminHandler(ctx)],
   ['POST', '/homeroom/stewards/access/lookup', accessLookupHandler],
-  ['POST', '/homeroom/stewards/access/:hash/decide', action(async (ctx, fields, p) => {
+  ['POST', '/homeroom/stewards/access/:hash/decide', action((ctx, fields, p) => {
     if (!stewardsOnly(ctx)) return;
     const decision = fields.decision === 'allow' ? 'allow' : 'deny';
-    const row = await bf.rosterRow(p.hash);
+    const row = bf.rosterRow(p.hash);
     if (!row) return notFound(ctx);
-    await bf.decideRoster({ hash: p.hash, userId: ctx.user.id, decision, note: trimmed(fields.note, 500) });
+    bf.decideRoster({ hash: p.hash, userId: ctx.user.id, decision, note: trimmed(fields.note, 500) });
     seeOther(ctx, '/homeroom/stewards/access');
   })],
 
   ['GET', '/homeroom/publish', publishHandler],
   ['POST', '/homeroom/publish', publishSubmit],
 
-  ['GET', '/homeroom/about', async (ctx) => await render(ctx, views.aboutPage(ctx, { stats: await bf.networkStats() }), { title: 'About' })],
+  ['GET', '/homeroom/about', (ctx) => render(ctx, views.aboutPage(ctx, { stats: bf.networkStats() }), { title: 'About' })],
 
-  ['GET', '/homeroom/api/mentors', async (ctx) => {
-    const { mentors, total } = await bf.searchMentors({
+  ['GET', '/homeroom/api/mentors', (ctx) => {
+    const { mentors, total } = bf.searchMentors({
       q: ctx.query.get('q') || '', track: ctx.query.get('track') || '',
       tag: ctx.query.get('tag') || '', vetted: ctx.query.get('vetted') === '1',
       limit: clampInt(ctx.query.get('limit'), 1, 200, 60),
     });
     sendJson(ctx.res, { ok: true, total, mentors });
   }],
-  ['GET', '/homeroom/api/atlas', async (ctx) => sendJson(ctx.res, {
+  ['GET', '/homeroom/api/atlas', (ctx) => sendJson(ctx.res, {
     ok: true,
-    ...await bf.searchLabs({
+    ...bf.searchLabs({
       q: ctx.query.get('q') || '', region: ctx.query.get('region') || '',
       status: ctx.query.get('status') || '', limit: clampInt(ctx.query.get('limit'), 1, 500, 200),
     }),
   })],
-  ['GET', '/homeroom/api/perks', async (ctx) => sendJson(ctx.res, {
-    ok: true, ...await bf.listDeals({ category: ctx.query.get('category') || '', limit: 300 }),
+  ['GET', '/homeroom/api/perks', (ctx) => sendJson(ctx.res, {
+    ok: true, ...bf.listDeals({ category: ctx.query.get('category') || '', limit: 300 }),
   })],
-  ['GET', '/homeroom/api/library', async (ctx) => sendJson(ctx.res, {
-    ok: true, tracks: await bf.tracks(),
-    ...await bf.listModules({ track: ctx.query.get('track') || '', q: ctx.query.get('q') || '', userId: ctx.user.id }),
+  ['GET', '/homeroom/api/library', (ctx) => sendJson(ctx.res, {
+    ok: true, tracks: bf.tracks(),
+    ...bf.listModules({ track: ctx.query.get('track') || '', q: ctx.query.get('q') || '', userId: ctx.user.id }),
   })],
-  ['GET', '/homeroom/api/members', async (ctx) => {
-    const { members, total } = await bf.searchMembers({
+  ['GET', '/homeroom/api/members', (ctx) => {
+    const { members, total } = bf.searchMembers({
       q: ctx.query.get('q') || '',
       tag: ctx.query.get('tag') || '',
       cohort: ctx.query.get('cohort') || '',
@@ -2074,19 +2067,19 @@ const ROUTES = [
     });
     sendJson(ctx.res, { ok: true, total, members: members.map(publicMember) });
   }],
-  ['GET', '/homeroom/api/member/:handle', async (ctx, p) => {
-    const member = await bf.getMember(p.handle);
+  ['GET', '/homeroom/api/member/:handle', (ctx, p) => {
+    const member = bf.getMember(p.handle);
     if (!member) return sendJson(ctx.res, { ok: false, error: 'not found' }, { status: 404 });
     sendJson(ctx.res, { ok: true, member: publicMember(member) });
   }],
-  ['GET', '/homeroom/api/labs', async (ctx) => {
-    const { orgs, total } = await bf.searchOrgs({ q: ctx.query.get('q') || '', kind: ctx.query.get('kind') || '' });
+  ['GET', '/homeroom/api/labs', (ctx) => {
+    const { orgs, total } = bf.searchOrgs({ q: ctx.query.get('q') || '', kind: ctx.query.get('kind') || '' });
     sendJson(ctx.res, { ok: true, total, labs: orgs });
   }],
-  ['GET', '/homeroom/api/deals', async (ctx) => sendJson(ctx.res, { ok: true, ...await bf.listDeals({ category: ctx.query.get('category') || '' }) })],
-  ['GET', '/homeroom/api/funders', async (ctx) => sendJson(ctx.res, { ok: true, ...await bf.listFunders({ q: ctx.query.get('q') || '' }) })],
-  ['GET', '/homeroom/api/search', async (ctx) => sendJson(ctx.res, {
-    ok: true, results: await bf.globalSearch(ctx.query.get('q') || ''),
+  ['GET', '/homeroom/api/deals', (ctx) => sendJson(ctx.res, { ok: true, ...bf.listDeals({ category: ctx.query.get('category') || '' }) })],
+  ['GET', '/homeroom/api/funders', (ctx) => sendJson(ctx.res, { ok: true, ...bf.listFunders({ q: ctx.query.get('q') || '' }) })],
+  ['GET', '/homeroom/api/search', (ctx) => sendJson(ctx.res, {
+    ok: true, results: bf.globalSearch(ctx.query.get('q') || ''),
   })],
 ];
 
@@ -2132,10 +2125,10 @@ export function homeroomRoute(method, pathname) {
     if (route.isApi) {
       // The API answers in JSON even when it is turning you away.
       if (!ctx.user) return sendJson(ctx.res, { ok: false, error: 'members only' }, { status: 401 });
-      await bf.ensureMember(ctx.user.id);
+      bf.ensureMember(ctx.user.id);
     } else if (route.isPublic) {
-      if (ctx.user) await bf.ensureMember(ctx.user.id);
-    } else if (!await gate(ctx)) {
+      if (ctx.user) bf.ensureMember(ctx.user.id);
+    } else if (!gate(ctx)) {
       return;
     }
     await route.handler(ctx, params);
@@ -2148,10 +2141,10 @@ export function isHomeroomPath(pathname) {
 }
 
 /** 404 in Homeroom chrome, so an unknown /homeroom path does not fall back to the news layout. */
-export async function homeroomNotFound(ctx) {
+export function homeroomNotFound(ctx) {
   if (ctx.path.startsWith('/homeroom/api/')) {
     return sendJson(ctx.res, { ok: false, error: 'not found' }, { status: 404 });
   }
-  if (ctx.user) await bf.ensureMember(ctx.user.id);
+  if (ctx.user) bf.ensureMember(ctx.user.id);
   notFound(ctx);
 }

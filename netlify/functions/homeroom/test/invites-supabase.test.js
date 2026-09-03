@@ -15,6 +15,7 @@
  * /homeroom/health reports at runtime.
  */
 
+process.env.HOMEROOM_DB = ':memory:';
 process.env.HOMEROOM_SECRET = 'test-secret';
 process.env.HOMEROOM_ACCESS = 'closed';
 process.env.HOMEROOM_INVITE_SECRET = 'a-long-random-invite-secret';
@@ -30,7 +31,7 @@ import * as hr from '../app/models.js';
 import * as invites from '../app/invites.js';
 import { hashPassword, createSession } from '../app/auth.js';
 
-await getDb();
+getDb();
 
 /* ============================================================== the stub */
 
@@ -222,8 +223,8 @@ test('the token never leaves this process', async () => {
 test('redeeming is atomic across the RPC too', async () => {
   const created = await invites.create({ email: `race${uniq()}@example.org`, invitedBy: 's' });
   const [first, second] = await Promise.all([
-    await invites.redeem(created.token, 'racer-one'),
-    await invites.redeem(created.token, 'racer-two'),
+    invites.redeem(created.token, 'racer-one'),
+    invites.redeem(created.token, 'racer-two'),
   ]);
   const winners = [first, second].filter((r) => r.invite);
   assert.equal(winners.length, 1, 'exactly one of two simultaneous claims may win');
@@ -295,14 +296,14 @@ test('the whole join flow works end to end on Supabase', async () => {
 
   assert.equal(res.status, 303);
   assert.equal(res.headers.get('location'), '/homeroom/welcome');
-  assert.equal((await hr.getUser('sbjoiner')).email, email);
+  assert.equal(hr.getUser('sbjoiner').email, email);
   assert.equal((await invites.peek(created.token)).invite.status, 'redeemed');
 });
 
 test('the steward page does not warn when the store is durable', async () => {
-  await hr.createUser({ id: 'sbsteward', email: 'sbsteward@haus.fund', passwordHash: hashPassword('x'.repeat(12)), isAdmin: true });
-  await hr.ensureMember('sbsteward', { name: 'Steward' });
-  const token = await createSession('sbsteward');
+  hr.createUser({ id: 'sbsteward', email: 'sbsteward@haus.fund', passwordHash: hashPassword('x'.repeat(12)), isAdmin: true });
+  hr.ensureMember('sbsteward', { name: 'Steward' });
+  const token = createSession('sbsteward');
   const html = await (await fetch(`${base}/homeroom/stewards/invites`, {
     headers: { cookie: `homeroom_session=${token}` },
   })).text();

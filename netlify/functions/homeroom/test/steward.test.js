@@ -9,6 +9,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
+process.env.HOMEROOM_DB = ':memory:';
 
 const { ensureSteward, stewardFromEnv } = await import('../app/steward.js');
 const { hashPassword, verifyPassword } = await import('../app/auth.js');
@@ -29,8 +30,8 @@ const envFor = (handle, extra = {}) => ({
 
 /* ------------------------------------------------------------ reading env */
 
-test('does nothing at all when HOMEROOM_STEWARD is unset', async () => {
-  const result = await ensureSteward({ env: {} });
+test('does nothing at all when HOMEROOM_STEWARD is unset', () => {
+  const result = ensureSteward({ env: {} });
   assert.equal(result.status, 'skipped');
 });
 
@@ -94,57 +95,57 @@ test('refuses an unusable email', () => {
   assert.match(config.error, /HOMEROOM_STEWARD_EMAIL is not usable/);
 });
 
-test('a misconfigured steward is an error, not a thrown exception', async () => {
+test('a misconfigured steward is an error, not a thrown exception', () => {
   // The site must still boot. A steward nobody can use beats a site nobody can.
-  const result = await ensureSteward({ env: { HOMEROOM_STEWARD: 'nosecret' } });
+  const result = ensureSteward({ env: { HOMEROOM_STEWARD: 'nosecret' } });
   assert.equal(result.status, 'error');
-  assert.ok(!await hr.getUser('nosecret'), 'no account should have been created');
+  assert.ok(!hr.getUser('nosecret'), 'no account should have been created');
 });
 
 /* -------------------------------------------------------------- creating */
 
-test('creates the account as an admin, with a profile', async () => {
+test('creates the account as an admin, with a profile', () => {
   const handle = uniq('steward');
-  const result = await ensureSteward({ env: envFor(handle) });
+  const result = ensureSteward({ env: envFor(handle) });
 
   assert.equal(result.status, 'created');
-  const user = await hr.getUser(handle);
+  const user = hr.getUser(handle);
   assert.equal(user.is_admin, 1);
   assert.equal(user.email, `${handle}@haus.fund`);
   assert.ok(verifyPassword('five-word-pass-phrase', user.password_hash));
-  assert.ok(await hr.getMember(handle), 'should have a member row, so the byline resolves');
+  assert.ok(hr.getMember(handle), 'should have a member row, so the byline resolves');
 });
 
-test('running twice is a no-op the second time', async () => {
+test('running twice is a no-op the second time', () => {
   const handle = uniq('twice');
-  assert.equal((await ensureSteward({ env: envFor(handle) })).status, 'created');
-  assert.equal((await ensureSteward({ env: envFor(handle) })).status, 'present');
+  assert.equal(ensureSteward({ env: envFor(handle) }).status, 'created');
+  assert.equal(ensureSteward({ env: envFor(handle) }).status, 'present');
 });
 
-test('promotes an existing ordinary account instead of failing', async () => {
+test('promotes an existing ordinary account instead of failing', () => {
   const handle = uniq('promoted');
-  await hr.createUser({ id: handle, email: `${handle}@haus.fund`, passwordHash: hashPassword('an-existing-password') });
-  assert.equal((await hr.getUser(handle)).is_admin, 0);
+  hr.createUser({ id: handle, email: `${handle}@haus.fund`, passwordHash: hashPassword('an-existing-password') });
+  assert.equal(hr.getUser(handle).is_admin, 0);
 
-  assert.equal((await ensureSteward({ env: envFor(handle) })).status, 'promoted');
-  assert.equal((await hr.getUser(handle)).is_admin, 1);
+  assert.equal(ensureSteward({ env: envFor(handle) }).status, 'promoted');
+  assert.equal(hr.getUser(handle).is_admin, 1);
 });
 
-test('promoting leaves the existing password alone', async () => {
+test('promoting leaves the existing password alone', () => {
   const handle = uniq('keeps');
-  await hr.createUser({ id: handle, email: `${handle}@haus.fund`, passwordHash: hashPassword('an-existing-password') });
-  await ensureSteward({ env: envFor(handle) });
+  hr.createUser({ id: handle, email: `${handle}@haus.fund`, passwordHash: hashPassword('an-existing-password') });
+  ensureSteward({ env: envFor(handle) });
 
-  const user = await hr.getUser(handle);
+  const user = hr.getUser(handle);
   assert.ok(verifyPassword('an-existing-password', user.password_hash), 'must not clobber a password set by hand');
   assert.ok(!verifyPassword('five-word-pass-phrase', user.password_hash));
 });
 
-test('refuses when the email belongs to a different account', async () => {
+test('refuses when the email belongs to a different account', () => {
   const other = uniq('owner');
-  await hr.createUser({ id: other, email: 'shared@haus.fund', passwordHash: hashPassword('an-existing-password') });
+  hr.createUser({ id: other, email: 'shared@haus.fund', passwordHash: hashPassword('an-existing-password') });
 
-  const result = await ensureSteward({ env: envFor(uniq('claimant'), { HOMEROOM_STEWARD_EMAIL: 'shared@haus.fund' }) });
+  const result = ensureSteward({ env: envFor(uniq('claimant'), { HOMEROOM_STEWARD_EMAIL: 'shared@haus.fund' }) });
   assert.equal(result.status, 'error');
   assert.match(result.message, new RegExp(other));
 });
@@ -153,20 +154,20 @@ test('refuses when the email belongs to a different account', async () => {
 
 test('--force resets the password and ends open sessions', async () => {
   const handle = uniq('rotate');
-  await ensureSteward({ env: envFor(handle) });
+  ensureSteward({ env: envFor(handle) });
 
   const { createSession } = await import('../app/auth.js');
-  await createSession(handle);
-  const open = async () => (await (await getDb()).prepare('SELECT COUNT(*) AS n FROM sessions WHERE user_id = ?').get(handle)).n;
-  assert.equal(await open(), 1);
+  createSession(handle);
+  const open = () => getDb().prepare('SELECT COUNT(*) AS n FROM sessions WHERE user_id = ?').get(handle).n;
+  assert.equal(open(), 1);
 
   const next = hashPassword('a-completely-different-phrase');
-  const result = await ensureSteward({
+  const result = ensureSteward({
     env: envFor(handle, { HOMEROOM_STEWARD_PASSWORD_HASH: next }),
     force: true,
   });
 
   assert.equal(result.status, 'reset');
-  assert.ok(verifyPassword('a-completely-different-phrase', (await hr.getUser(handle)).password_hash));
-  assert.equal(await open(), 0, 'rotating a password must not leave the old session working');
+  assert.ok(verifyPassword('a-completely-different-phrase', hr.getUser(handle).password_hash));
+  assert.equal(open(), 0, 'rotating a password must not leave the old session working');
 });

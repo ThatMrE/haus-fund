@@ -17,6 +17,7 @@
  * That is what /homeroom/health reports at runtime.
  */
 
+process.env.HOMEROOM_DB = ':memory:';
 process.env.HOMEROOM_SECRET = 'test-secret';
 process.env.HOMEROOM_ACCESS = 'open';
 process.env.HOMEROOM_AUTH = 'supabase';
@@ -31,7 +32,7 @@ import { resetRateLimits } from '../app/http.js';
 import * as hr from '../app/models.js';
 import * as sbAuth from '../app/supabase-auth.js';
 
-await getDb();
+getDb();
 
 /* ========================================================== the GoTrue stub */
 
@@ -255,7 +256,7 @@ test('signup creates the Supabase credential and a local row linked to it', asyn
   assert.equal(res.status, 303, 'should sign in straight away');
 
   assert.ok(state.users.has(email), 'Supabase should hold the credential');
-  const account = await hr.getUserByEmail(email);
+  const account = hr.getUserByEmail(email);
   assert.ok(account, 'Homeroom should hold the identity');
   assert.equal(account.supabase_id, state.users.get(email).id, 'the two should be linked');
 });
@@ -265,7 +266,7 @@ test('the password is never stored in Homeroom', async () => {
   const email = addressFor('nostore');
   await signUp(call, { email, handle: 'nostore' });
 
-  const account = await hr.getUserByEmail(email);
+  const account = hr.getUserByEmail(email);
   const { verifyPassword } = await import('../app/auth.js');
   assert.ok(!verifyPassword('a-good-passphrase', account.password_hash),
     'the local hash must not be the real password');
@@ -302,7 +303,7 @@ test('with confirmation required, signup says so instead of failing a login', as
 
   // The account exists on both sides; it simply has no key yet.
   assert.ok(state.users.has(email));
-  assert.ok(await hr.getUserByEmail(email));
+  assert.ok(hr.getUserByEmail(email));
 });
 
 /* =================================================================== login */
@@ -361,12 +362,12 @@ test('a credential made outside Homeroom gets a local row on first login', async
   state.users.set(email, {
     id: randomUUID(), email, password: 'a-good-passphrase', handle: '', confirmed: true,
   });
-  assert.equal(await hr.getUserByEmail(email), null, 'no local row yet');
+  assert.equal(hr.getUserByEmail(email), null, 'no local row yet');
 
   const res = await signIn(agent(), { email, password: 'a-good-passphrase' });
   assert.equal(res.status, 303);
 
-  const account = await hr.getUserByEmail(email);
+  const account = hr.getUserByEmail(email);
   assert.ok(account, 'the login should have created one');
   assert.equal(account.supabase_id, state.users.get(email).id);
   assert.ok(account.id.startsWith('dashboard'), `handle derived from the address, got ${account.id}`);
@@ -375,8 +376,8 @@ test('a credential made outside Homeroom gets a local row on first login', async
 test('an account that predates Supabase adopts the credential once', async () => {
   const email = addressFor('legacy');
   const { hashPassword } = await import('../app/auth.js');
-  await hr.createUser({ id: 'legacyfolk', email, passwordHash: hashPassword('the-old-local-password') });
-  await hr.ensureMember('legacyfolk', { name: 'Legacy' });
+  hr.createUser({ id: 'legacyfolk', email, passwordHash: hashPassword('the-old-local-password') });
+  hr.ensureMember('legacyfolk', { name: 'Legacy' });
 
   state.users.set(email, {
     id: randomUUID(), email, password: 'the-new-supabase-password', handle: '', confirmed: true,
@@ -384,15 +385,15 @@ test('an account that predates Supabase adopts the credential once', async () =>
 
   const res = await signIn(agent(), { email, password: 'the-new-supabase-password' });
   assert.equal(res.status, 303);
-  assert.equal((await hr.getUser('legacyfolk')).supabase_id, state.users.get(email).id,
+  assert.equal(hr.getUser('legacyfolk').supabase_id, state.users.get(email).id,
     'should link rather than create a second account');
 });
 
 test('a Supabase identity never takes over a row that is already claimed', async () => {
   const email = addressFor('contested');
   const { hashPassword } = await import('../app/auth.js');
-  await hr.createUser({ id: 'incumbent', email, passwordHash: hashPassword('whatever-it-was') });
-  await hr.linkSupabaseId('incumbent', 'some-other-supabase-uuid');
+  hr.createUser({ id: 'incumbent', email, passwordHash: hashPassword('whatever-it-was') });
+  hr.linkSupabaseId('incumbent', 'some-other-supabase-uuid');
 
   state.users.set(email, {
     id: randomUUID(), email, password: 'a-good-passphrase', handle: '', confirmed: true,
@@ -400,7 +401,7 @@ test('a Supabase identity never takes over a row that is already claimed', async
 
   const res = await signIn(agent(), { email, password: 'a-good-passphrase' });
   assert.equal(res.status, 409, 'the collision must be refused, not resolved by guessing');
-  assert.equal((await hr.getUser('incumbent')).supabase_id, 'some-other-supabase-uuid', 'unchanged');
+  assert.equal(hr.getUser('incumbent').supabase_id, 'some-other-supabase-uuid', 'unchanged');
 });
 
 test('a taken handle is derived around rather than colliding', async () => {
@@ -414,8 +415,8 @@ test('a taken handle is derived around rather than colliding', async () => {
   await signIn(agent(), { email: first, password: 'a-good-passphrase' });
   await signIn(agent(), { email: second, password: 'a-good-passphrase' });
 
-  assert.equal((await hr.getUserByEmail(first)).id, 'twins');
-  assert.equal((await hr.getUserByEmail(second)).id, 'twins2');
+  assert.equal(hr.getUserByEmail(first).id, 'twins');
+  assert.equal(hr.getUserByEmail(second).id, 'twins2');
 });
 
 /* ========================================================= password resets */

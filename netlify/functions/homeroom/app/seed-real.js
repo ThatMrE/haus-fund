@@ -56,16 +56,16 @@ import { TRACKS, LIBRARY_MODULES } from './data/curriculum.js';
  */
 export const SYSTEM_HANDLE = process.env.HOMEROOM_SYSTEM_HANDLE || 'haus';
 
-async function ensureSystemAccount(handle = SYSTEM_HANDLE) {
-  if (await hr.getUser(handle)) return handle;
-  await hr.createUser({
+function ensureSystemAccount(handle = SYSTEM_HANDLE) {
+  if (hr.getUser(handle)) return handle;
+  hr.createUser({
     id: handle,
     email: process.env.HOMEROOM_SYSTEM_EMAIL || `${handle}@haus.fund`,
     // Random and immediately discarded. This account is a byline, not a login.
     passwordHash: hashPassword(randomBytes(32).toString('hex')),
     isAdmin: false,
   });
-  await hr.ensureMember(handle, {
+  hr.ensureMember(handle, {
     name: 'Haus',
     headline: 'The house account. Owns the reference data — perks, the capital map, the atlas and the manual.',
   });
@@ -80,15 +80,15 @@ async function ensureSystemAccount(handle = SYSTEM_HANDLE) {
  * @param {boolean} options.prune   remove rows the data files no longer contain
  * @param {boolean} options.quiet   suppress the per-set counts
  */
-export async function seedReal({ as = null, prune = false, quiet = true } = {}) {
-  const db = await getDb();
-  const owner = as && await hr.getUser(as) ? as : await ensureSystemAccount();
+export function seedReal({ as = null, prune = false, quiet = true } = {}) {
+  const db = getDb();
+  const owner = as && hr.getUser(as) ? as : ensureSystemAccount();
   const stats = { owner, perks: 0, funders: 0, labs: 0, mentors: 0, tracks: 0, modules: 0, pruned: 0 };
 
   /* ---- perks ---- */
   const perkSlugs = [];
   for (const perk of PERKS) {
-    const { slug } = await hr.upsertDeal({ ...perk, postedBy: owner });
+    const { slug } = hr.upsertDeal({ ...perk, postedBy: owner });
     if (perkSlugs.includes(slug)) {
       throw new Error(`Two perks slugify to "${slug}" — one would overwrite the other. `
         + `Rename one of them in app/data/perks.js.`);
@@ -100,7 +100,7 @@ export async function seedReal({ as = null, prune = false, quiet = true } = {}) 
   /* ---- the capital map. No ratings: those come from members, only. ---- */
   const funderSlugs = [];
   for (const funder of CAPITAL_MAP) {
-    const { slug } = await hr.upsertFunder({ ...funder, addedBy: owner });
+    const { slug } = hr.upsertFunder({ ...funder, addedBy: owner });
     if (funderSlugs.includes(slug)) {
       throw new Error(`Two funders slugify to "${slug}". Rename one in app/data/funders.js.`);
     }
@@ -110,24 +110,24 @@ export async function seedReal({ as = null, prune = false, quiet = true } = {}) 
 
   /* ---- the biolab atlas ---- */
   for (const [name, city, country, region, kind, status, bsl, website, capabilities, note, source] of ATLAS_LABS) {
-    await hr.upsertLab({ name, city, country, region, kind, status, bsl, website, capabilities, note, source });
+    hr.upsertLab({ name, city, country, region, kind, status, bsl, website, capabilities, note, source });
     stats.labs++;
   }
 
   /* ---- mentors: the real ones only. The 116-strong sample roster is not
          loaded here; it lives in seed.js and is replaced by the importer. ---- */
   for (const mentor of NETWORK_MENTORS) {
-    await hr.upsertMentor(mentor);
+    hr.upsertMentor(mentor);
     stats.mentors++;
   }
 
   /* ---- the founder manual ---- */
   for (const [index, track] of TRACKS.entries()) {
-    await hr.upsertTrack(track, index);
+    hr.upsertTrack(track, index);
     stats.tracks++;
   }
   for (const [index, module] of LIBRARY_MODULES.entries()) {
-    await hr.upsertModule(module, index);
+    hr.upsertModule(module, index);
     stats.modules++;
   }
 
@@ -139,9 +139,9 @@ export async function seedReal({ as = null, prune = false, quiet = true } = {}) 
    * Modules are not pruned either — a member's progress hangs off them.
    */
   if (prune) {
-    stats.pruned += await hr.pruneBySlug('hr_deals', perkSlugs);
-    stats.pruned += await hr.pruneBySlug('hr_funders', funderSlugs);
-    stats.pruned += await hr.pruneBySlug(
+    stats.pruned += hr.pruneBySlug('hr_deals', perkSlugs);
+    stats.pruned += hr.pruneBySlug('hr_funders', funderSlugs);
+    stats.pruned += hr.pruneBySlug(
       'hr_atlas',
       db.prepare('SELECT slug FROM hr_atlas').all().map((r) => r.slug)
         .filter((slug) => ATLAS_LABS.some(([name, city]) => hr.slugify(`${name}-${city}`, 'lab') === slug)),
@@ -164,7 +164,7 @@ if (isMain) {
   const asIndex = args.indexOf('--as');
   const { closeDb } = await import('./db.js');
   try {
-    await seedReal({
+    seedReal({
       as: asIndex >= 0 ? args[asIndex + 1] : null,
       prune: args.includes('--prune'),
       quiet: false,
@@ -173,5 +173,5 @@ if (isMain) {
     console.error(`\n${err.message}\n`);
     process.exitCode = 1;
   }
-  await closeDb();
+  closeDb();
 }
