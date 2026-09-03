@@ -13,11 +13,18 @@ const TABS = [
   { href: '/homeroom/funders', label: 'Funders', match: (p) => /^\/homeroom\/(funder|pipeline|review)/.test(p) },
   { href: '/homeroom/mentors', label: 'Mentors', match: (p) => /^\/homeroom\/(mentors?|hours)/.test(p) },
   { href: '/homeroom/events', label: 'Events', match: (p) => p.startsWith('/homeroom/event') },
-  { href: '/homeroom/library', label: 'Library', match: (p) => /^\/homeroom\/(library|track|module)/.test(p) },
+  { href: '/homeroom/library', label: 'Library',
+    /* The tree lives under /library but has its own tab, so it must not light
+       this one too — otherwise two tabs read as current at once. */
+    match: (p) => /^\/homeroom\/(library|track|module)/.test(p) && p !== '/homeroom/library/tree' },
+  { href: '/homeroom/library/tree', label: 'Skill tree', match: (p) => p === '/homeroom/library/tree' },
 ];
 
 /* Ten sections is already the most a single bar carries legibly. Jobs sits in
-   the footer rather than making the nav wrap onto a ragged second row. */
+   the footer rather than making the nav wrap onto a ragged second row. The
+   skill tree is also a Library sub-tab; it earns a top-level slot because it is
+   the whole curriculum at a glance, and the bar had room after chat and the
+   forum went. */
 
 /**
  * Page chrome, in Haus livery.
