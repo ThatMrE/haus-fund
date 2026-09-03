@@ -146,12 +146,12 @@ async function main() {
     return;
   }
 
-  const db = getDb();
+  const db = await getDb();
   let imported = 0;
   db.exec('BEGIN');
   try {
     for (const mentor of mentors) {
-      hr.upsertMentor(mentor);
+      await hr.upsertMentor(mentor);
       imported++;
     }
     db.exec('COMMIT');
@@ -164,10 +164,10 @@ async function main() {
   // empty directory if the fetch or the write failed.
   let removed = 0;
   if (has('--replace-seed')) {
-    removed = db.prepare("DELETE FROM hr_mentors WHERE source = 'seed'").run().changes;
+    removed = (await db.prepare("DELETE FROM hr_mentors WHERE source = 'seed'").run()).changes;
   }
 
-  const total = db.prepare('SELECT COUNT(*) AS n FROM hr_mentors').get().n;
+  const total = (await db.prepare('SELECT COUNT(*) AS n FROM hr_mentors').get()).n;
   console.log(`Imported ${imported} mentors${removed ? `, removed ${removed} sample rows` : ''}. ${total} in the roster.`);
   if (!has('--replace-seed')) {
     console.log('Sample mentors are still present. Re-run with --replace-seed to drop them,');
@@ -175,7 +175,7 @@ async function main() {
   }
 }
 
-main()
+await main()
   .catch((err) => {
     console.error(err.message);
     process.exitCode = 1;

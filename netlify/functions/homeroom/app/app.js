@@ -26,6 +26,7 @@ import * as access from './access.js';
 import * as roster from './roster.js';
 import * as sbAuth from './supabase-auth.js';
 import * as invites from './invites.js';
+import { health as dbHealth } from './db.js';
 
 /**
  * Whether to mark the session cookie Secure.
@@ -61,7 +62,7 @@ export async function handle(req, res) {
 
   const cookies = parseCookies(req.headers.cookie || '');
   const token = cookies[SESSION_COOKIE];
-  const user = getSessionUser(token);
+  const user = await getSessionUser(token);
   const ctx = {
     req, res, url, ip,
     path: pathname,
@@ -89,12 +90,13 @@ export async function handle(req, res) {
       const { configured: lumaConfigured, calendarUrl } = await import('./luma.js');
       return sendJson(res, {
         ok: true,
-        ...hr.networkStats(),
+        ...await hr.networkStats(),
         supabase: await supabaseHealth(),
-        roster: { ...(await roster.health()), ...hr.rosterCounts() },
+        roster: { ...(await roster.health()), ...await hr.rosterCounts() },
         auth: await sbAuth.health(),
+        database: await dbHealth(),
         luma: { configured: lumaConfigured(), calendar: calendarUrl() },
-        mentors: (await import('./mentordesk.js')).deskStats(),
+        mentors: await (await import('./mentordesk.js')).deskStats(),
         invites: invites.health(),
         now: nowSeconds(),
       });
@@ -133,10 +135,10 @@ function safeNext(value, fallback = '/homeroom') {
   return value;
 }
 
-function finishLogin(ctx, userId, next) {
-  const token = createSession(userId);
-  hr.ensureMember(userId);
-  hr.touchMember(userId);
+async function finishLogin(ctx, userId, next) {
+  const token = await createSession(userId);
+  await hr.ensureMember(userId);
+  await hr.touchMember(userId);
   seeOther(ctx, safeNext(next), {
     'set-cookie': sessionCookie(token, { secure: secureCookies(ctx.req) }),
   });
@@ -154,34 +156,34 @@ function finishLogin(ctx, userId, next) {
  * consulted while HOMEROOM_AUTH=supabase, and leaving it null would make the
  * row a working passwordless account the moment anyone switched back to local.
  */
-function localAccountFor(sbUser, { handleHint = '', isAdmin = false } = {}) {
-  const linked = hr.getUserBySupabaseId(sbUser.id);
+async function localAccountFor(sbUser, { handleHint = '', isAdmin = false } = {}) {
+  const linked = await hr.getUserBySupabaseId(sbUser.id);
   if (linked) {
     // Supabase is the authority on the address; a change there should follow.
-    if (sbUser.email && linked.email !== sbUser.email) hr.setUserEmail(linked.id, sbUser.email);
-    return { account: hr.getUser(linked.id), created: false };
+    if (sbUser.email && linked.email !== sbUser.email) await hr.setUserEmail(linked.id, sbUser.email);
+    return { account: await hr.getUser(linked.id), created: false };
   }
 
-  const byEmail = hr.getUserByEmail(sbUser.email);
+  const byEmail = await hr.getUserByEmail(sbUser.email);
   if (byEmail) {
     // An account that predates the switch to Supabase, claiming its credential
     // for the first time. Only ever adopted when nothing else holds it.
     if (!byEmail.supabase_id) {
-      hr.linkSupabaseId(byEmail.id, sbUser.id);
-      return { account: hr.getUser(byEmail.id), created: false };
+      await hr.linkSupabaseId(byEmail.id, sbUser.id);
+      return { account: await hr.getUser(byEmail.id), created: false };
     }
     return { error: 'That address is already in use by another account.' };
   }
 
-  const handle = availableHandle(sbUser.handle || handleHint || sbUser.email.split('@')[0]);
-  hr.createUser({
+  const handle = await availableHandle(sbUser.handle || handleHint || sbUser.email.split('@')[0]);
+  await hr.createUser({
     id: handle,
     email: sbUser.email,
     passwordHash: hashPassword(randomBytes(32).toString('hex')),
     isAdmin,
   });
-  hr.linkSupabaseId(handle, sbUser.id);
-  return { account: hr.getUser(handle), created: true };
+  await hr.linkSupabaseId(handle, sbUser.id);
+  return { account: await hr.getUser(handle), created: true };
 }
 
 /**
@@ -192,14 +194,14 @@ function localAccountFor(sbUser, { handleHint = '', isAdmin = false } = {}) {
  * something the signup form would have accepted and add a number if taken,
  * rather than refusing the login of an account that genuinely exists.
  */
-function availableHandle(preferred) {
+async function availableHandle(preferred) {
   const base = String(preferred || '')
     .toLowerCase().replace(/[^a-z0-9_-]/g, '').replace(/^[-_]+/, '').slice(0, 20) || 'member';
   const seed = validateUsername(base) ? `m${base}`.slice(0, 20) : base;
-  if (!hr.getUser(seed)) return seed;
+  if (!await hr.getUser(seed)) return seed;
   for (let n = 2; n < 1000; n++) {
     const candidate = `${seed.slice(0, 20 - String(n).length)}${n}`;
-    if (!hr.getUser(candidate)) return candidate;
+    if (!await hr.getUser(candidate)) return candidate;
   }
   return `member-${randomBytes(4).toString('hex')}`;
 }
@@ -258,7 +260,7 @@ async function joinSubmit(ctx, token) {
   const passwordError = validatePassword(fields.password || '');
   if (passwordError) return fail(passwordError);
   if (fields.password !== fields.confirm) return fail('Those two passwords do not match.');
-  if (hr.getUser(values.handle)) return fail('That handle is taken. Pick another.');
+  if (await hr.getUser(values.handle)) return fail('That handle is taken. Pick another.');
 
   /*
    * The roster still gets a say, but only a narrow one. The steward who sent
@@ -297,27 +299,27 @@ async function joinSubmit(ctx, token) {
       // name the steward, because the fix is a new link and only they can send one.
       return auth(ctx, views.joinFailedPage(created.error, invite), { title: 'Could not finish', status: 502 });
     }
-    const { account: linked, error } = localAccountFor(created.user, { handleHint: values.handle });
+    const { account: linked, error } = await localAccountFor(created.user, { handleHint: values.handle });
     if (error) return auth(ctx, views.joinFailedPage(error, invite), { title: 'Could not finish', status: 409 });
 
-    access.bindAccount({ email: invite.email, userId: linked.id, assessment });
-    access.seedProfile(linked.id, assessment.person);
+    await access.bindAccount({ email: invite.email, userId: linked.id, assessment });
+    await access.seedProfile(linked.id, assessment.person);
     if (created.needsConfirmation) {
       return auth(ctx, views.confirmEmailPage(ctx, { email: invite.email }), { title: 'Confirm your email' });
     }
     if (created.session) await sbAuth.signOut(created.session.accessToken);
-    return finishLogin(ctx, linked.id, '/homeroom/welcome');
+    return await finishLogin(ctx, linked.id, '/homeroom/welcome');
   }
 
-  hr.createUser({
+  await hr.createUser({
     id: values.handle,
     email: invite.email,
     passwordHash: hashPassword(fields.password),
     isAdmin: false,
   });
-  access.bindAccount({ email: invite.email, userId: values.handle, assessment });
-  access.seedProfile(values.handle, assessment.person);
-  finishLogin(ctx, values.handle, '/homeroom/welcome');
+  await access.bindAccount({ email: invite.email, userId: values.handle, assessment });
+  await access.seedProfile(values.handle, assessment.person);
+  await finishLogin(ctx, values.handle, '/homeroom/welcome');
 }
 
 const AUTH_ROUTES = {
@@ -359,7 +361,7 @@ const AUTH_ROUTES = {
         return fail(result.error);
       }
 
-      const { account: linked, created, error } = localAccountFor(result.session.user);
+      const { account: linked, created, error } = await localAccountFor(result.session.user);
       if (error) return fail(error, 409);
       if (linked.banned) {
         return auth(ctx, views.loginPage(ctx, { values: { email }, next, error: 'That account is suspended.' }),
@@ -369,11 +371,11 @@ const AUTH_ROUTES = {
       // behalf at Supabase, so holding it any longer is liability without use.
       await sbAuth.signOut(result.session.accessToken);
       if (created) access.seedProfile(linked.id, {});
-      return finishLogin(ctx, linked.id, next);
+      return await finishLogin(ctx, linked.id, next);
     }
 
     /* ---- Homeroom holds the password ---- */
-    const account = hr.getUserByEmail(email);
+    const account = await hr.getUserByEmail(email);
     if (!account || !verifyPassword(fields.password || '', account.password_hash)) return fail();
     if (account.banned) {
       return auth(ctx, views.loginPage(ctx, { values: { email }, next, error: 'That account is suspended.' }),
@@ -388,14 +390,14 @@ const AUTH_ROUTES = {
       if (stale) {
         const assessment = await access.assess(account.email);
         if (!access.loginAllowed(assessment)) {
-          destroySession(ctx.token);
+          await destroySession(ctx.token);
           return auth(ctx, views.accessRevokedPage(), { title: 'Access ended', status: 403 });
         }
-        hr.setUserRoster(account.id, `${assessment.verdict}:${assessment.reason}`.slice(0, 120));
+        await hr.setUserRoster(account.id, `${assessment.verdict}:${assessment.reason}`.slice(0, 120));
       }
     }
 
-    finishLogin(ctx, account.id, next);
+    await finishLogin(ctx, account.id, next);
   },
 
   'GET /homeroom/signup': (ctx) => {
@@ -425,8 +427,8 @@ const AUTH_ROUTES = {
     if (emailError) return fail(emailError);
     const passwordError = validatePassword(fields.password || '');
     if (passwordError) return fail(passwordError);
-    if (hr.getUser(values.handle)) return fail('That handle is taken.');
-    if (hr.getUserByEmail(values.email)) {
+    if (await hr.getUser(values.handle)) return fail('That handle is taken.');
+    if (await hr.getUserByEmail(values.email)) {
       // Do not confirm that the address is already registered.
       return fail('That handle or email cannot be used. Try signing in instead.');
     }
@@ -453,7 +455,7 @@ const AUTH_ROUTES = {
     }
 
     // The first person through the door is the first steward; somebody has to be.
-    const first = hr.userCount() === 0;
+    const first = await hr.userCount() === 0;
 
     /* ---- Supabase holds the password ---- */
     if (sbAuth.configured()) {
@@ -470,13 +472,13 @@ const AUTH_ROUTES = {
         return fail(created.error);
       }
 
-      const { account: linked, error } = localAccountFor(created.user, {
+      const { account: linked, error } = await localAccountFor(created.user, {
         handleHint: values.handle,
         isAdmin: first,
       });
       if (error) return fail(error, 409);
-      access.bindAccount({ email: values.email, userId: linked.id, assessment });
-      access.seedProfile(linked.id, assessment.person);
+      await access.bindAccount({ email: values.email, userId: linked.id, assessment });
+      await access.seedProfile(linked.id, assessment.person);
 
       // With email confirmation switched on, the credential exists but cannot
       // sign in yet. Saying so beats a login that mysteriously fails.
@@ -485,25 +487,25 @@ const AUTH_ROUTES = {
           { title: 'Confirm your email' });
       }
       if (created.session) await sbAuth.signOut(created.session.accessToken);
-      return finishLogin(ctx, linked.id, '/homeroom/settings?welcome=1');
+      return await finishLogin(ctx, linked.id, '/homeroom/settings?welcome=1');
     }
 
     /* ---- Homeroom holds the password ---- */
-    hr.createUser({
+    await hr.createUser({
       id: values.handle,
       email: values.email,
       passwordHash: hashPassword(fields.password),
       isAdmin: first,
     });
-    access.bindAccount({ email: values.email, userId: values.handle, assessment });
-    access.seedProfile(values.handle, assessment.person);
-    finishLogin(ctx, values.handle, '/homeroom/settings?welcome=1');
+    await access.bindAccount({ email: values.email, userId: values.handle, assessment });
+    await access.seedProfile(values.handle, assessment.person);
+    await finishLogin(ctx, values.handle, '/homeroom/settings?welcome=1');
   },
 
   'POST /homeroom/logout': async (ctx) => {
     const { fields } = await readBody(ctx.req);
     if (ctx.user && !checkCsrf(ctx.token, fields.csrf)) return seeOther(ctx, '/homeroom');
-    destroySession(ctx.token);
+    await destroySession(ctx.token);
     seeOther(ctx, '/homeroom', { 'set-cookie': clearCookie() });
   },
 
@@ -530,10 +532,10 @@ const AUTH_ROUTES = {
       return auth(ctx, views.forgotSentPage(ctx, { email, link: null }), { title: 'Check your email' });
     }
 
-    const account = hr.getUserByEmail(email);
+    const account = await hr.getUserByEmail(email);
     let link = null;
     if (account) {
-      const token = createResetToken(account.id);
+      const token = await createResetToken(account.id);
       const base = origin(ctx);
       const resetUrl = `${base}/homeroom/reset?token=${token}`;
       const result = await sendResetEmail({ to: account.email, link: resetUrl });
@@ -543,7 +545,7 @@ const AUTH_ROUTES = {
     auth(ctx, views.forgotSentPage(ctx, { email, link }), { title: 'Check your email' });
   },
 
-  'GET /homeroom/reset': (ctx) => {
+  'GET /homeroom/reset': async (ctx) => {
     /* ---- Supabase minted the token ---- */
     //
     // GoTrue can deliver a recovery link two ways, and which one arrives
@@ -568,7 +570,7 @@ const AUTH_ROUTES = {
     }
 
     const token = ctx.query.get('token') || '';
-    if (!findResetToken(token)) return auth(ctx, views.resetExpiredPage(), { title: 'Link expired', status: 410 });
+    if (!await findResetToken(token)) return auth(ctx, views.resetExpiredPage(), { title: 'Link expired', status: 410 });
     auth(ctx, views.resetPage(ctx, { token }), { title: 'Choose a password' });
   },
 
@@ -608,14 +610,14 @@ const AUTH_ROUTES = {
       // Every Homeroom session for this account, on this container, dies with
       // the password. A reset that leaves the old session signed in has not
       // locked anybody out of anything.
-      const linked = hr.getUserBySupabaseId(updated.user.id) || hr.getUserByEmail(updated.user.email);
-      if (linked) destroyAllSessions(linked.id);
+      const linked = await hr.getUserBySupabaseId(updated.user.id) || await hr.getUserByEmail(updated.user.email);
+      if (linked) await destroyAllSessions(linked.id);
       await sbAuth.signOut(accessToken);
       return auth(ctx, views.resetDonePage(), { title: 'Password saved' });
     }
 
     /* ---- Homeroom holds the password ---- */
-    if (!findResetToken(token)) return auth(ctx, views.resetExpiredPage(), { title: 'Link expired', status: 410 });
+    if (!await findResetToken(token)) return auth(ctx, views.resetExpiredPage(), { title: 'Link expired', status: 410 });
 
     const fail = (message) =>
       auth(ctx, views.resetPage(ctx, { token, error: message }), { title: 'Choose a password', status: 400 });
@@ -624,7 +626,7 @@ const AUTH_ROUTES = {
     const passwordError = validatePassword(fields.password || '');
     if (passwordError) return fail(passwordError);
 
-    if (!consumeResetToken(token, fields.password)) return fail('That link has already been used.');
+    if (!await consumeResetToken(token, fields.password)) return fail('That link has already been used.');
     auth(ctx, views.resetDonePage(), { title: 'Password saved' });
   },
 };
@@ -637,9 +639,9 @@ function origin(ctx) {
 
 /* Housekeeping, cheap enough to run on a timer in the long-lived server and
    harmless in a function that never lives long enough to fire it. */
-setInterval(() => {
+setInterval(async () => {
   try {
-    purgeExpiredSessions();
-    purgeExpiredResets();
+    await purgeExpiredSessions();
+    await purgeExpiredResets();
   } catch { /* the next boot will do it */ }
 }, 6 * 60 * 60 * 1000).unref?.();

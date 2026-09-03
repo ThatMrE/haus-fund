@@ -6,23 +6,20 @@
  * as `pending` — listed nowhere until a steward rules on it at
  * /homeroom/stewards/mentors.
  *
- * The same caveat as luma-sync.mjs applies, and for the same reason: Homeroom's
- * SQLite file lives in /tmp, which is per-container, so what this writes is not
- * guaranteed to be the database the web container reads. It is wired up now
- * because the failure mode is harmless — a container re-syncs on its own next
- * boot — and because the alternative is remembering to come back for it after
- * the storage move.
+ * WHERE THIS WRITES. The same Postgres the web containers read. This used to
+ * carry a caveat — the SQLite file lived in /tmp, which is per-container, so
+ * what a scheduled run imported was not guaranteed to be in the database
+ * anybody browsing would see. That was written down as something to come back
+ * to after the storage move; the store has moved, and this is that.
  *
  * Fails closed and loud: with no token it logs and exits without touching the
  * roster, and a failed fetch changes nothing at all.
  */
 export default async function mentorSyncHandler() {
-  process.env.HOMEROOM_DB ||= '/tmp/haus-homeroom.db';
-
   const { getDb } = await import('./homeroom/app/db.js');
   const sync = await import('./homeroom/app/mentorsync.js');
 
-  getDb();
+  await getDb();
 
   // The lifecycle pass runs FIRST and unconditionally. Keeping the roster
   // honest — auto-pause, re-confirmation, dormancy — does not depend on

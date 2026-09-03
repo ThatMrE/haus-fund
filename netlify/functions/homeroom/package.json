@@ -19,5 +19,10 @@
     "roster:check": "node --disable-warning=ExperimentalWarning scripts/check-roster.js",
     "test": "node --disable-warning=ExperimentalWarning --test test/*.test.js"
   },
-  "dependencies": {}
+  "dependencies": {
+    "pg": "^8.23.0"
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "^0.5.8"
+  }
 }

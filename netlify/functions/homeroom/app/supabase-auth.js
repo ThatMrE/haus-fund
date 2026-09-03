@@ -3,12 +3,12 @@
  *
  * WHY THIS EXISTS
  *
- * Homeroom's database lives on the function container's /tmp: every cold
- * container starts empty and is discarded. Local accounts therefore last about
- * as long as one container, which is fine for a demo and useless for a person
- * who wants to sign in twice. Supabase is durable, already provisioned for this
- * project, and ships the parts of account management this app has never had —
- * an actual password-reset email, rather than a link written to a function log.
+ * This was written when Homeroom's database lived on the container's /tmp and a
+ * local account lasted about as long as one container. That is no longer the
+ * reason to use it: local accounts are durable too now. What Supabase still
+ * gives, and this app cannot, is the part of account management that needs a
+ * mail server — an actual password-reset email, rather than a link written to a
+ * function log.
  *
  * WHAT IT DOES AND DOES NOT OWN
  *

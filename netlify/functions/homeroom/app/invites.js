@@ -16,15 +16,15 @@
  *
  * WHERE INVITES LIVE, AND WHY IT MATTERS
  *
- * In Supabase, when it is configured. Homeroom's SQLite file is on the
- * container's /tmp, so an invite minted on one container is invisible to the
- * next — the link would work only if the person clicked it while that same
- * container happened to still be warm. An invite that works by luck is not an
- * invite, so this is the one piece of onboarding state that must be durable.
+ * In Supabase, when it is configured. This predates the move of Homeroom's own
+ * database off the container's /tmp, when an invite stored locally would have
+ * been invisible to the next container and a link worked only by luck. Both
+ * stores are durable now, and the Supabase one is still preferred for a
+ * different reason: its RLS and `security definer` functions let an invite be
+ * redeemed without this app ever holding a privileged credential.
  *
- * Without Supabase it falls back to a local `hr_invites` table, which is
- * correct for development and honest rather than silent in production: the
- * steward page says plainly that the links will not survive a restart.
+ * Without Supabase it falls back to the local `hr_invites` table. The steward
+ * page says which store is in use either way.
  *
  * WHAT REACHES SUPABASE
  *
@@ -98,23 +98,23 @@ async function rpc(name, args) {
  * The local fallback
  * ======================================================================== */
 
-function localCreate({ tokenHash, email, invitedBy, note, rosterVerdict, ttlDays }) {
-  const db = getDb();
+async function localCreate({ tokenHash, email, invitedBy, note, rosterVerdict, ttlDays }) {
+  const db = await getDb();
   const now = nowSeconds();
   // Same rule as the Supabase function: re-inviting replaces the live link
   // rather than leaving two that both work.
-  db.prepare(`UPDATE hr_invites SET status = 'revoked' WHERE email = ? AND status = 'pending'`)
-    .run(email);
-  db.prepare(
+  (await db.prepare(`UPDATE hr_invites SET status = 'revoked' WHERE email = ? AND status = 'pending'`)
+    .run(email));
+  ((await db.prepare(
     `INSERT INTO hr_invites (token_hash, email, invited_by, note, roster_verdict, status,
                              expires_at, created_at)
      VALUES (?, ?, ?, ?, ?, 'pending', ?, ?)`,
-  ).run(tokenHash, email, invitedBy, note, rosterVerdict, now + Math.max(1, ttlDays) * 86400, now);
-  return db.prepare('SELECT id FROM hr_invites WHERE token_hash = ?').get(tokenHash)?.id;
+  ).run(tokenHash, email, invitedBy, note, rosterVerdict, now + Math.max(1, ttlDays) * 86400, now)));
+  return ((await db.prepare('SELECT id FROM hr_invites WHERE token_hash = ?').get(tokenHash)))?.id;
 }
 
-function localPeek(tokenHash) {
-  const row = getDb().prepare('SELECT * FROM hr_invites WHERE token_hash = ?').get(tokenHash);
+async function localPeek(tokenHash) {
+  const row = (await (await getDb()).prepare('SELECT * FROM hr_invites WHERE token_hash = ?').get(tokenHash));
   if (!row) return null;
   return {
     email: row.email,
@@ -126,22 +126,22 @@ function localPeek(tokenHash) {
   };
 }
 
-function localRedeem(tokenHash, handle) {
-  const db = getDb();
+async function localRedeem(tokenHash, handle) {
+  const db = await getDb();
   // One statement, so two simultaneous redemptions cannot both match.
-  const changed = db.prepare(
+  const changed = ((await db.prepare(
     `UPDATE hr_invites SET status = 'redeemed', redeemed_by = ?, redeemed_at = ?
       WHERE token_hash = ? AND status = 'pending' AND expires_at > ?`,
-  ).run(handle, nowSeconds(), tokenHash, nowSeconds()).changes;
+  ).run(handle, nowSeconds(), tokenHash, nowSeconds()))).changes;
   if (!changed) return null;
-  const row = db.prepare('SELECT * FROM hr_invites WHERE token_hash = ?').get(tokenHash);
+  const row = ((await db.prepare('SELECT * FROM hr_invites WHERE token_hash = ?').get(tokenHash)));
   return { email: row.email, invitedBy: row.invited_by, rosterVerdict: row.roster_verdict };
 }
 
-function localList(limit) {
-  return getDb()
+async function localList(limit) {
+  return (await (await getDb())
     .prepare('SELECT * FROM hr_invites ORDER BY created_at DESC LIMIT ?')
-    .all(Math.min(Math.max(1, limit), 500))
+    .all(Math.min(Math.max(1, limit), 500)))
     .map(shapeLocal);
 }
 
@@ -196,7 +196,7 @@ export async function create({
     return { ok: true, token, id: String(result.data ?? ''), durable: true };
   }
 
-  const id = localCreate({
+  const id = await localCreate({
     tokenHash, email: address, invitedBy,
     note: String(note).slice(0, 500),
     rosterVerdict: String(rosterVerdict).slice(0, 80),
@@ -225,7 +225,7 @@ export async function peek(token) {
       },
     };
   }
-  return { ok: true, invite: localPeek(tokenHash) };
+  return { ok: true, invite: await localPeek(tokenHash) };
 }
 
 /**
@@ -247,7 +247,7 @@ export async function redeem(token, handle) {
       invite: { email: row.email, invitedBy: row.invited_by, rosterVerdict: row.roster_verdict },
     };
   }
-  return { ok: true, invite: localRedeem(tokenHash, handle) };
+  return { ok: true, invite: await localRedeem(tokenHash, handle) };
 }
 
 export async function list({ limit = 100 } = {}) {
@@ -272,7 +272,7 @@ export async function list({ limit = 100 } = {}) {
       })),
     };
   }
-  return { ok: true, invites: localList(limit) };
+  return { ok: true, invites: await localList(limit) };
 }
 
 export async function revoke(id) {
@@ -281,9 +281,9 @@ export async function revoke(id) {
     if (!result.ok) return { ok: false, error: describe(result.error) };
     return { ok: true, revoked: !!result.data };
   }
-  const changed = getDb()
+  const changed = (await (await getDb())
     .prepare(`UPDATE hr_invites SET status = 'revoked' WHERE id = ? AND status = 'pending'`)
-    .run(Number(id)).changes;
+    .run(Number(id))).changes;
   return { ok: true, revoked: changed > 0 };
 }
 

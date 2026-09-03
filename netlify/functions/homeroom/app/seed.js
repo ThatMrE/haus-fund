@@ -385,13 +385,17 @@ const SLOTS = [
 
 /* --------------------------------------------------------------------- */
 
-function seedHomeroom({ reset = false } = {}) {
-  const instance = getDb();
+async function seedHomeroom({ reset = false } = {}) {
+  const instance = await getDb();
   if (reset) {
-    for (const table of SAMPLE_TABLES) instance.exec(`DELETE FROM ${table}`);
-    instance.exec(`DELETE FROM sqlite_sequence WHERE name LIKE 'hr_%'`);
+    // One statement so the foreign keys between these tables never see a
+    // half-emptied database, and RESTART IDENTITY so a reseed produces the
+    // same ids as a first seed.
+    await instance.exec(
+      `TRUNCATE ${SAMPLE_TABLES.join(', ')} RESTART IDENTITY CASCADE`,
+    );
   }
-  if (instance.prepare('SELECT COUNT(*) AS n FROM hr_members').get().n > 0) {
+  if (((await instance.prepare('SELECT COUNT(*) AS n FROM hr_members').get())).n > 0) {
     return { skipped: true };
   }
 
@@ -402,12 +406,12 @@ function seedHomeroom({ reset = false } = {}) {
   // and these are throwaway logins, listed in the README.
   const sampleHash = hashPassword(SAMPLE_PASSWORD);
   for (const [handle] of MEMBERS) {
-    if (!bf.getUser(handle)) {
-      bf.createUser({ id: handle, email: `${handle}@example.org`, passwordHash: sampleHash });
+    if (!await bf.getUser(handle)) {
+      await bf.createUser({ id: handle, email: `${handle}@example.org`, passwordHash: sampleHash });
     }
   }
 
-  const handles = instance.prepare('SELECT id FROM users').all().map((row) => row.id);
+  const handles = ((await instance.prepare('SELECT id FROM users').all())).map((row) => row.id);
   if (!handles.length) return { skipped: true };
   const named = MEMBERS.map(([handle]) => handle).filter((handle) => handles.includes(handle));
   if (!named.length) return { skipped: true };
@@ -422,8 +426,8 @@ function seedHomeroom({ reset = false } = {}) {
   /* ---- members ---- */
   for (const [handle, name, headline, org, role, cohort, location, bsl, expertise, workingOn, askMe] of MEMBERS) {
     if (!handles.includes(handle)) continue;
-    bf.ensureMember(handle);
-    bf.updateMember(handle, {
+    await bf.ensureMember(handle);
+    await bf.updateMember(handle, {
       name, headline, org, role, cohort, location, bsl,
       bio: headline,
       working_on: workingOn,
@@ -438,16 +442,16 @@ function seedHomeroom({ reset = false } = {}) {
   }
   // Everyone else gets a bare profile so the directory is not a ghost town.
   for (const handle of handles) {
-    if (bf.getMember(handle)) continue;
-    bf.ensureMember(handle);
-    bf.updateMember(handle, { headline: 'Quiet member. Reads more than posts.', open_intros: false });
+    if (await bf.getMember(handle)) continue;
+    await bf.ensureMember(handle);
+    await bf.updateMember(handle, { headline: 'Quiet member. Reads more than posts.', open_intros: false });
   }
 
   /* ---- labs ---- */
   const orgIds = new Map();
   for (const [name, tagline, kind, stage, location, website, cohort, founded, headcount, tags, createdBy, description] of ORGS) {
     if (!handles.includes(createdBy)) continue;
-    const id = bf.createOrg({
+    const id = await bf.createOrg({
       name, tagline, description, kind, stage, location, website, cohort, founded, headcount, tags, createdBy,
     });
     orgIds.set(name, id);
@@ -457,11 +461,11 @@ function seedHomeroom({ reset = false } = {}) {
     ['Loam Foods', 'open_assay', 'Advisor'], ['Kitchen Sequencing Club', 'crispr_kid', 'Member']];
   for (const [orgName, handle, role] of teamPairs) {
     const orgId = orgIds.get(orgName);
-    if (orgId && handles.includes(handle)) bf.joinOrg(orgId, handle, role);
+    if (orgId && handles.includes(handle)) await bf.joinOrg(orgId, handle, role);
   }
 
-  const setCreatedAt = (table, id, at) =>
-    instance.prepare(`UPDATE ${table} SET created_at = ? WHERE id = ?`).run(at, id);
+  const setCreatedAt = async (table, id, at) =>
+    ((await instance.prepare(`UPDATE ${table} SET created_at = ? WHERE id = ?`).run(at, id)));
 
   /* ---- updates ---- */
   const UPDATES = [
@@ -478,7 +482,7 @@ function seedHomeroom({ reset = false } = {}) {
   for (const [orgName, author, period, body, metrics, asks] of UPDATES) {
     const orgId = orgIds.get(orgName);
     if (!orgId || !handles.includes(author)) continue;
-    const id = bf.createUpdate({ orgId, authorId: author, period, body, metrics, asks });
+    const id = await bf.createUpdate({ orgId, authorId: author, period, body, metrics, asks });
     setCreatedAt('hr_updates', id, now - Math.floor(random() * 6 * DAY));
   }
 
@@ -488,7 +492,7 @@ function seedHomeroom({ reset = false } = {}) {
      that would not exist on a vendor's public page. */
   const steward = named.includes('helix_witch') ? 'helix_witch' : named[0];
   for (const perk of PERKS) {
-    const id = bf.createDeal({
+    const id = await bf.createDeal({
       vendor: perk.vendor, title: perk.title, category: perk.category,
       summary: perk.summary, details: perk.details, worth: perk.worth,
       code: perk.code || '', url: perk.url || null, access: perk.access,
@@ -496,16 +500,16 @@ function seedHomeroom({ reset = false } = {}) {
       postedBy: steward,
     });
     setCreatedAt('hr_deals', id, now - Math.floor(random() * 90 * DAY));
-    for (const handle of handles.slice(0, Math.floor(random() * 8))) bf.claimDeal(id, handle);
+    for (const handle of handles.slice(0, Math.floor(random() * 8))) await bf.claimDeal(id, handle);
   }
   for (const [vendor, title, category, worth, code, url, details] of DEALS) {
-    const id = bf.createDeal({
+    const id = await bf.createDeal({
       vendor, title, category, worth, code, url, details,
       summary: title, access: code ? 'code' : 'partner',
       postedBy: steward,
     });
     setCreatedAt('hr_deals', id, now - Math.floor(random() * 60 * DAY));
-    for (const handle of handles.slice(0, Math.floor(random() * 14))) bf.claimDeal(id, handle);
+    for (const handle of handles.slice(0, Math.floor(random() * 14))) await bf.claimDeal(id, handle);
   }
 
   /* ---- the capital map ----
@@ -515,11 +519,11 @@ function seedHomeroom({ reset = false } = {}) {
      carry the sample reviews instead, so the UI still has something to show. */
   const funderIds = new Map();
   for (const funder of CAPITAL_MAP) {
-    const id = bf.createFunder({ ...funder, checkSize: funder.checkSize, addedBy: steward });
+    const id = await bf.createFunder({ ...funder, checkSize: funder.checkSize, addedBy: steward });
     funderIds.set(funder.name, id);
   }
   for (const [name, kind, focus, stages, checkSize, location, website, dilutive, description] of FUNDERS) {
-    const id = bf.createFunder({
+    const id = await bf.createFunder({
       name, kind, focus, stages, checkSize, location, website, dilutive, description,
       addedBy: named[0],
     });
@@ -528,7 +532,7 @@ function seedHomeroom({ reset = false } = {}) {
   for (const [funderName, user, rating, speed, valueAdd, invested, anonymous, body] of REVIEWS) {
     const funderId = funderIds.get(funderName);
     if (!funderId || !handles.includes(user)) continue;
-    bf.upsertReview({
+    await bf.upsertReview({
       funderId, userId: user, rating, speed, valueAdd, invested, anonymous, body,
       founderFriendly: Math.max(1, Math.min(5, rating + (random() < 0.5 ? 0 : 1))),
       terms: Math.max(1, Math.min(5, rating)),
@@ -542,14 +546,14 @@ function seedHomeroom({ reset = false } = {}) {
     });
   }
   // A few reviews get corroborated, which is what makes the sort order legible.
-  for (const review of instance.prepare('SELECT id, user_id FROM hr_funder_reviews').all()) {
+  for (const review of ((await instance.prepare('SELECT id, user_id FROM hr_funder_reviews').all()))) {
     for (const handle of handles.filter((h) => h !== review.user_id).slice(0, Math.floor(random() * 5))) {
-      bf.toggleReviewHelpful(review.id, handle);
+      await bf.toggleReviewHelpful(review.id, handle);
     }
     if (random() < 0.4) {
       const author = pick(handles.filter((h) => h !== review.user_id));
       if (author) {
-        bf.addReviewComment({
+        await bf.addReviewComment({
           reviewId: review.id, authorId: author, anonymous: random() < 0.6,
           body: 'Same experience here, a cohort later. Sample reply — fictional demo data.',
         });
@@ -567,70 +571,70 @@ function seedHomeroom({ reset = false } = {}) {
   for (const [user, funderName, status, amount, notes] of pipelineRows) {
     const funderId = funderIds.get(funderName);
     if (!funderId || !handles.includes(user)) continue;
-    bf.upsertPipeline({ userId: user, funderId, orgId: orgIds.get('Loam Foods') ?? null, status, amount, notes });
+    await bf.upsertPipeline({ userId: user, funderId, orgId: orgIds.get('Loam Foods') ?? null, status, amount, notes });
   }
 
   /* ---- library ---- */
   for (const [title, kind, summary, body, tags, authorId] of LIBRARY) {
-    const id = bf.createLibraryEntry({
+    const id = await bf.createLibraryEntry({
       title, kind, summary, body, tags,
       authorId: handles.includes(authorId) ? authorId : null,
     });
-    instance.prepare('UPDATE hr_library SET reads = ? WHERE id = ?').run(20 + Math.floor(random() * 400), id);
+    ((await instance.prepare('UPDATE hr_library SET reads = ? WHERE id = ?').run(20 + Math.floor(random() * 400), id)));
   }
 
   /* ---- jobs ---- */
   for (const [orgName, postedBy, title, discipline, employment, location, remote, comp, equity, tags, description] of JOBS) {
     const orgId = orgIds.get(orgName);
     if (!orgId || !handles.includes(postedBy)) continue;
-    const id = bf.createJob({
+    const id = await bf.createJob({
       orgId, postedBy, title, discipline, employment, location, remote, comp, equity, tags, description,
     });
     setCreatedAt('hr_jobs', id, now - Math.floor(random() * 20 * DAY));
     for (const handle of handles.slice(3, 3 + Math.floor(random() * 5))) {
-      if (handle !== postedBy) bf.applyToJob(id, handle, 'Sample application — fictional demo data.');
+      if (handle !== postedBy) await bf.applyToJob(id, handle, 'Sample application — fictional demo data.');
     }
   }
 
   /* ---- events ---- */
   for (const [hostId, title, kind, offset, minutes, place, capacity, description] of EVENTS) {
     if (!handles.includes(hostId)) continue;
-    const id = bf.createEvent({
+    const id = await bf.createEvent({
       hostId, title, kind, startsAt: now + offset, minutes, place, capacity, description, url: null,
     });
-    bf.rsvp(id, hostId, 'going');
+    await bf.rsvp(id, hostId, 'going');
     for (const handle of handles.slice(0, 4 + Math.floor(random() * 14))) {
-      if (handle !== hostId) bf.rsvp(id, handle, random() < 0.75 ? 'going' : 'maybe');
+      if (handle !== hostId) await bf.rsvp(id, handle, random() < 0.75 ? 'going' : 'maybe');
     }
   }
 
   /* ---- office hours ---- */
   for (const [hostId, title, format, offset, minutes, capacity, place, topics, description] of SLOTS) {
     if (!handles.includes(hostId)) continue;
-    const id = bf.createSlot({
+    const id = await bf.createSlot({
       hostId, title, format, startsAt: now + offset, minutes, capacity, place, topics, description,
     });
     const bookers = handles.filter((h) => h !== hostId).slice(0, Math.min(capacity, 1 + Math.floor(random() * capacity)));
     for (const handle of bookers) {
-      bf.bookSlot(id, handle, 'Sample booking question — fictional demo data.');
+      await bf.bookSlot(id, handle, 'Sample booking question — fictional demo data.');
     }
   }
 
   /* ---- the biolab atlas ---- */
   for (const [name, city, country, region, kind, status, bsl, website, capabilities, note, source] of ATLAS_LABS) {
-    bf.upsertLab({ name, city, country, region, kind, status, bsl, website, capabilities, note, source });
+    await bf.upsertLab({ name, city, country, region, kind, status, bsl, website, capabilities, note, source });
   }
   // Two member reports, so the "been there?" loop is visibly a loop.
-  const genspace = bf.getLab('genspace-brooklyn-ny');
+  const genspace = await bf.getLab('genspace-brooklyn-ny');
   if (genspace && handles.includes('garage_genome')) {
-    bf.reportLab({
+    await bf.reportLab({
       labId: genspace.id, userId: 'garage_genome', status: 'active',
       body: 'Sample report — fictional demo data. Membership was straightforward and the thermocyclers were free most evenings.',
     });
   }
-  const paillasse = bf.getLab('la-paillasse-paris');
+  const paillasse = await bf.getLab('la-paillasse-paris');
   if (paillasse && handles.includes('open_assay')) {
-    bf.reportLab({
+    await bf.reportLab({
       labId: paillasse.id, userId: 'open_assay', status: 'dormant',
       body: 'Sample report — fictional demo data. The organisation answers email; there was no open bench when I asked.',
     });
@@ -641,15 +645,15 @@ function seedHomeroom({ reset = false } = {}) {
      it. Real rows carry source 'calendar' and are never marked vetted — see
      data/network.js for why — so `npm run mentors:import -- --replace-seed`
      drops the sample rows and leaves these standing. */
-  for (const mentor of MENTOR_ROSTER) bf.upsertMentor(mentor);
-  for (const mentor of NETWORK_MENTORS) bf.upsertMentor(mentor);
+  for (const mentor of MENTOR_ROSTER) await bf.upsertMentor(mentor);
+  for (const mentor of NETWORK_MENTORS) await bf.upsertMentor(mentor);
   // A handful of the vetted ones publish Homeroom slots as well as their own
   // scheduler, so the booking flow has something to book.
-  const vetted = instance
+  const vetted = (await instance
     .prepare('SELECT id, name, track FROM hr_mentors WHERE vetted = 1 ORDER BY id LIMIT 14')
-    .all();
+    .all());
   for (const [index, mentor] of vetted.entries()) {
-    const slotId = bf.createSlot({
+    const slotId = await bf.createSlot({
       hostId: steward,
       mentorId: mentor.id,
       title: `Office hours with ${mentor.name}`,
@@ -663,21 +667,21 @@ function seedHomeroom({ reset = false } = {}) {
     });
     if (index % 3 === 0) {
       const booker = pick(handles.filter((h) => h !== steward));
-      if (booker) bf.bookSlot(slotId, booker, 'Sample booking question — fictional demo data.');
+      if (booker) await bf.bookSlot(slotId, booker, 'Sample booking question — fictional demo data.');
     }
   }
 
   /* ---- the yearbook ---- */
   for (const [handle, cohort, house, venture, oneLiner, quote, building, before] of YEARBOOK) {
     if (!handles.includes(handle)) continue;
-    bf.upsertYearbook(handle, {
+    await bf.upsertYearbook(handle, {
       cohort, house, venture, one_liner: oneLiner, quote, building, before_haus: before,
     });
   }
   const signable = YEARBOOK.map(([handle]) => handle).filter((h) => handles.includes(h));
   for (const handle of signable) {
     for (const author of signable.filter((h) => h !== handle).slice(0, 2 + Math.floor(random() * 3))) {
-      bf.signYearbook({
+      await bf.signYearbook({
         userId: handle, authorId: author,
         body: 'Sample signature — fictional demo data. Ask them about the thing they will not shut up about.',
       });
@@ -685,13 +689,13 @@ function seedHomeroom({ reset = false } = {}) {
   }
 
   /* ---- the founder manual ---- */
-  for (const [index, track] of TRACKS.entries()) bf.upsertTrack(track, index);
-  for (const [index, module] of LIBRARY_MODULES.entries()) bf.upsertModule(module, index);
+  for (const [index, track] of TRACKS.entries()) await bf.upsertTrack(track, index);
+  for (const [index, module] of LIBRARY_MODULES.entries()) await bf.upsertModule(module, index);
   // One member part-way through, so the progress bars are not all at zero.
   if (handles.includes('ferment_or_die')) {
-    const started = instance.prepare('SELECT id, deliverable FROM hr_modules ORDER BY position LIMIT 7').all();
+    const started = ((await instance.prepare('SELECT id, deliverable FROM hr_modules ORDER BY position LIMIT 7').all()));
     for (const [index, module] of started.entries()) {
-      bf.setProgress({
+      await bf.setProgress({
         userId: 'ferment_or_die',
         moduleId: module.id,
         state: index < 4 ? 'done' : 'started',
@@ -703,15 +707,15 @@ function seedHomeroom({ reset = false } = {}) {
 
   /* ---- intros and messages ---- */
   if (handles.includes('mycelium_max') && handles.includes('ferment_or_die')) {
-    const request = bf.requestIntro({
+    const request = await bf.requestIntro({
       requesterId: 'mycelium_max',
       targetId: 'ferment_or_die',
       reason: 'You have been through EN 13501 with a different material. Twenty minutes on the notified body and the sample prep would save me a month.',
     });
     if (request.ok) {
-      const resolved = bf.resolveIntro(request.id, 'accepted');
+      const resolved = await bf.resolveIntro(request.id, 'accepted');
       if (resolved?.threadId) {
-        bf.sendMessage({
+        await bf.sendMessage({
           threadId: resolved.threadId,
           senderId: 'mycelium_max',
           body: 'Thank you. Thursday afternoon works if it still does for you — I will send the panel spec beforehand.',
@@ -720,7 +724,7 @@ function seedHomeroom({ reset = false } = {}) {
     }
   }
   if (handles.includes('crispr_kid') && handles.includes('biosafety_bee')) {
-    bf.requestIntro({
+    await bf.requestIntro({
       requesterId: 'crispr_kid',
       targetId: 'biosafety_bee',
       reason: 'Trying to work out whether my construct needs institutional review before I publish the sequence. Would value fifteen minutes.',
@@ -729,7 +733,7 @@ function seedHomeroom({ reset = false } = {}) {
 
   return {
     skipped: false,
-    stats: bf.networkStats(),
+    stats: await bf.networkStats(),
   };
 }
 
@@ -738,7 +742,7 @@ export { seedHomeroom };
 const isMain = process.argv[1] && import.meta.url === `file://${process.argv[1]}`;
 if (isMain) {
   const { closeDb } = await import('./db.js');
-  const result = seedHomeroom({ reset: process.argv.includes('--reset') });
+  const result = await seedHomeroom({ reset: process.argv.includes('--reset') });
   if (result.skipped) console.log('Already seeded. Use `npm run reset` to start over.');
   else {
     const s = result.stats;
@@ -751,5 +755,5 @@ if (isMain) {
     console.log(`Sample logins: any handle above, password "${SAMPLE_PASSWORD}".`);
     console.log('All sample content is fictional.');
   }
-  closeDb();
+  await closeDb();
 }

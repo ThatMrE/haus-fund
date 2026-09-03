@@ -6,57 +6,60 @@
  * pair the app expects. Same shape as the sibling `news` function, and plain
  * JS for the same reason: no build step, no dependencies.
  *
- * Serverless containers have an ephemeral filesystem, so the SQLite file lives
- * in /tmp and a cold container starts from the sample content. Accounts do not
- * survive that — read the storage section of the README before inviting anyone.
+ * The database is Postgres (Supabase), reached over the network, so a cold
+ * container finds the data already there rather than seeding a fresh copy of
+ * it. Set HOMEROOM_DATABASE_URL; without it the app falls back to an in-process
+ * database that does not outlive the container, and /homeroom/health says so.
  */
 import { Readable } from 'node:stream';
 
 let ready = null;
 
-/** Open the database and seed it once per container. */
+/** Open the database, seed a genuinely empty one, and cache the handler. */
 async function boot() {
   if (ready) return ready;
   ready = (async () => {
-    process.env.HOMEROOM_DB ||= '/tmp/haus-homeroom.db';
     process.env.HOMEROOM_STATIC_BASE ||= '/homeroom-assets';
     const { getDb } = await import('./app/db.js');
-    const db = getDb();
-    // An empty Homeroom is indistinguishable from a broken one, so a fresh
-    // container fills itself. What with, depends:
-    //
-    //   (unset)  the full sample network — ten invented accounts sharing a
-    //            documented password, plus invented labs, threads and mentors.
-    //            Right for reviewing the design, wrong for production, where
-    //            those accounts are ten working keys.
-    //   real     only the researched reference data: perks, the capital map,
-    //            the atlas, the manual and the channels. No accounts, no posts,
-    //            nothing invented. This is the production setting while storage
-    //            is still ephemeral — every cold container rebuilds the
-    //            catalogue and nobody inherits a fake login.
-    //   off      nothing at all.
-    //
-    // NOTE that `real` creates the house account, so userCount is 1 afterwards
-    // and the first person to sign up is NOT made a steward. With `off` the
-    // count stays 0 and they would be — which is why `off` should be paired
-    // with HOMEROOM_ACCESS=closed or a roster token.
+    const db = await getDb();
+
+    /*
+     * Seeding used to run on every cold container, because every cold container
+     * started with an empty database. It no longer does: the store is Postgres
+     * and survives the container, so this fires once on a genuinely new
+     * database and never again.
+     *
+     *   (unset)  the full sample network — ten invented accounts sharing a
+     *            documented password, plus invented labs and mentors. Right for
+     *            reviewing the design, wrong for production, where those
+     *            accounts are ten working keys.
+     *   real     only the researched reference data: perks, the capital map,
+     *            the atlas and the manual. No accounts, nothing invented.
+     *   off      nothing at all.
+     *
+     * NOTE that `real` creates the house account, so userCount is 1 afterwards
+     * and the first person to sign up is NOT made a steward. With `off` the
+     * count stays 0 and they would be — which is why `off` should be paired
+     * with HOMEROOM_ACCESS=closed or a roster token.
+     */
     const seedMode = process.env.HOMEROOM_SEED;
-    if (seedMode !== 'off' && db.prepare('SELECT COUNT(*) AS n FROM users').get().n === 0) {
+    const empty = (await db.prepare('SELECT COUNT(*) AS n FROM users').get()).n === 0;
+    if (seedMode !== 'off' && empty) {
       if (seedMode === 'real') {
         const { seedReal } = await import('./app/seed-real.js');
-        seedReal();
+        await seedReal();
       } else {
         const { seedHomeroom } = await import('./app/seed.js');
-        seedHomeroom();
+        await seedHomeroom();
       }
     }
 
-    // Independently of seeding, and on every boot. This database lives on the
-    // container's /tmp, so an admin account created by hand exists until the
-    // next cold start and no longer; the only account that survives a redeploy
-    // is one rebuilt from configuration. A no-op unless HOMEROOM_STEWARD is set.
+    // On every boot, so a steward's credentials are configuration rather than a
+    // row somebody has to remember to create. A no-op unless HOMEROOM_STEWARD
+    // is set; now that the database is durable it usually finds the account
+    // already there and does nothing.
     const { ensureSteward } = await import('./app/steward.js');
-    ensureSteward();
+    await ensureSteward();
 
     const { handle } = await import('./app/app.js');
     return handle;
