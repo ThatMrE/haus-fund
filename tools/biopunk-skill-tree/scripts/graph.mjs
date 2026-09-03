@@ -48,11 +48,25 @@
  *   showcase-capstone       a terminal node. The programme ends in an artefact.
  *
  * VIDEO POLICY. A node gets a video only when there is a specific, checkable
- * one from a source worth citing — Y Combinator, Stanford eCorner, Kauffman
- * Founders School, MIT, NIH, FDA-facing regulatory practitioners, a16z Bio +
- * Health, SOSV/IndieBio, Nucleate, Strategyzer. Where no such video exists the
- * field stays empty rather than carrying something unvetted; those nodes lean
- * on their reading instead. `validate.mjs` enforces the URL shape.
+ * one from a source worth citing — Y Combinator, Stanford eCorner, MIT, NIH,
+ * FDA-facing regulatory practitioners, bio investor panels, SOSV/IndieBio,
+ * Nucleate, Strategyzer. Where no such video exists the field stays empty
+ * rather than carrying something unvetted; those nodes lean on their reading
+ * instead. `validate.mjs` enforces the URL shape and rejects a reused id.
+ *
+ * WHAT "VERIFIED" MEANS HERE, EXACTLY. Every id below was checked by searching
+ * its title and confirming the id that came back matches — so no id is invented
+ * or mistyped, and each resolves to the video its title claims. That pass found
+ * and fixed four wrong labels: a pre-submission talk attributed to a summit
+ * panel it was not from, two paraphrased titles, and an investor panel credited
+ * to one of its three firms.
+ *
+ * It is NOT proof of playback. YouTube is unreachable from the environment this
+ * is maintained in, so nobody has pressed play. Deletion, an embed being
+ * disabled, and region locks would all pass the check above and still leave a
+ * dead poster in the drawer. If you can reach YouTube, that is the one check
+ * worth doing by hand — and the failure mode is contained: a dead video is one
+ * `VIDEOS` entry plus a rebuild, and the node still has its reading.
  */
 
 /* Column order on the map. The manual's own track order, left to right. */
@@ -546,9 +560,9 @@ export const VIDEOS = {
     source: 'Marta New',
   },
   'regulatory-strategy': {
-    url: 'https://www.youtube.com/watch?v=0kbpCoFwhak',
+    url: 'https://www.youtube.com/watch?v=hTJ2d3YH-DQ',
     title: "Navigating the FDA's Medical Device Pre-submission Process",
-    source: 'Utah Life Sciences Summit panel',
+    source: '2024 Utah Life Sciences Summit panel',
   },
   cofounders: {
     url: 'https://www.youtube.com/watch?v=qhmvwOevsSo',
@@ -567,13 +581,13 @@ export const VIDEOS = {
   },
   'lab-operations': {
     url: 'https://www.youtube.com/watch?v=Lc8xWm5sarA',
-    title: 'Electronic lab notebooks for data management and collaboration',
+    title: 'Lab Management Tools: Using Electronic Lab Notebooks to Support Data Management & Collaboration',
     source: 'Research data management seminar',
   },
   'credibility-stack': {
     url: 'https://www.youtube.com/watch?v=t1AHFTCj4yo',
     title: 'What VCs Look for When Investing in Bio and Healthcare',
-    source: 'a16z Bio + Health',
+    source: 'Venrock, a16z and Khosla — investor panel',
   },
   'scientific-communication': {
     url: 'https://www.youtube.com/watch?v=tmFwSntejpM',
@@ -587,8 +601,8 @@ export const VIDEOS = {
   },
   'immigration-and-o1': {
     url: 'https://www.youtube.com/watch?v=ybgavFQ32pM',
-    title: 'O-1 Visa Q&A: agent petitions, criteria, O-1A vs O-1B',
-    source: 'Immigration counsel Q&A',
+    title: 'O-1 Visa Q&A with an Immigration Lawyer: Agent Petitions, Criteria, O-1A vs. O-1B',
+    source: 'Nicole Gunara, Manifest Law',
   },
   'showcase-capstone': {
     url: 'https://www.youtube.com/watch?v=oElUqWybV-4',
