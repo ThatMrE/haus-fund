@@ -1,0 +1,70 @@
+{
+  "treeId": "biopunk-accelerator",
+  "id": "credibility-stack",
+  "title": {
+    "name": "The scientific credibility stack",
+    "level": 2
+  },
+  "track": "brand-network-and-life",
+  "kind": "workshop",
+  "week": 0,
+  "minutes": 90,
+  "deliverable": "Scientific Credibility Map",
+  "defaultStatus": "inProgress",
+  "isUnlocked": true,
+  "onMainPath": false,
+  "link": "/homeroom/library/module/credibility-stack",
+  "initialPosition": [
+    6,
+    0
+  ],
+  "dependencies": [
+    "risk-mapping"
+  ],
+  "leadsTo": [
+    "fundraising-narrative",
+    "scientific-communication"
+  ],
+  "overview": {
+    "description": "Publications, patents, grants, advisors, LOIs, pilots, validation studies, regulatory milestones, media and community reputation — and which audience trusts which.",
+    "objectives": [
+      "Map which credibility signal each audience actually reads",
+      "Build the cheapest signal that moves your specific blocker",
+      "Avoid stacking signals that impress only your peers"
+    ],
+    "prerequisites": [
+      "Technical risk, market risk and the risk map"
+    ]
+  },
+  "steps": {
+    "intro": "Publications, patents, grants, advisors, LOIs, pilots, validation studies, regulatory milestones, media and community reputation — and which audience trusts which.",
+    "estimatedMinutes": 90,
+    "instructions": [
+      "List your current credibility assets honestly.",
+      "For each audience — investor, customer, regulator, recruit, journalist — name the one signal that would move them.",
+      "Build the cheapest missing one this quarter."
+    ]
+  },
+  "submission": {
+    "description": "Produce the Scientific Credibility Map and log it against this module in Homeroom. Done means the artefact exists, not that you read the page."
+  },
+  "video": {
+    "url": "https://www.youtube.com/watch?v=t1AHFTCj4yo",
+    "title": "What VCs Look for When Investing in Bio and Healthcare",
+    "source": "a16z Bio + Health"
+  },
+  "resources": [
+    {
+      "title": "a16z Bio + Health — what each audience actually reads",
+      "url": "https://a16z.com/bio-health/"
+    },
+    {
+      "title": "Nature Biotechnology — the signals the field trusts",
+      "url": "https://www.nature.com/nbt/"
+    },
+    {
+      "title": "LifeSciVC — credibility before data",
+      "url": "https://lifescivc.com/category/biotech-startup-advice/"
+    }
+  ]
+}

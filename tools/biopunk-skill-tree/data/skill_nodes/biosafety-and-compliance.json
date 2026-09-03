@@ -1,0 +1,69 @@
+{
+  "treeId": "biopunk-accelerator",
+  "id": "biosafety-and-compliance",
+  "title": {
+    "name": "Biosafety, EHS and dual-use review",
+    "level": 2
+  },
+  "track": "legal-ip-and-regulatory",
+  "kind": "reference",
+  "week": 0,
+  "minutes": 45,
+  "deliverable": "",
+  "defaultStatus": "inProgress",
+  "isUnlocked": true,
+  "onMainPath": false,
+  "link": "/homeroom/library/module/biosafety-and-compliance",
+  "initialPosition": [
+    4,
+    7
+  ],
+  "dependencies": [
+    "company-formation"
+  ],
+  "leadsTo": [
+    "lab-operations"
+  ],
+  "overview": {
+    "description": "The documented risk assessment a landlord, an insurer and a customer will each eventually ask for — and which is much easier to write before you need it.",
+    "objectives": [
+      "Complete a risk assessment a two-person lab can actually maintain",
+      "Know what triggers institutional or dual-use review",
+      "Handle export control on biological materials and equipment"
+    ],
+    "prerequisites": [
+      "Orrick 1: Formation and startup foundations"
+    ]
+  },
+  "steps": {
+    "intro": "The documented risk assessment a landlord, an insurer and a customer will each eventually ask for — and which is much easier to write before you need it.",
+    "estimatedMinutes": 45,
+    "instructions": [
+      "Write the risk assessment. Haus biosafety mentors will review it in office hours at no cost.",
+      "Confirm your BSL level matches your actual practice, not your intention.",
+      "Check export control before shipping anything across a border."
+    ]
+  },
+  "submission": {
+    "description": "No named deliverable. Work the steps and keep the notes with the module in Homeroom."
+  },
+  "video": null,
+  "resources": [
+    {
+      "title": "CDC/NIH — Biosafety in Microbiological and Biomedical Laboratories (BMBL)",
+      "url": "https://www.cdc.gov/labs/BMBL.html"
+    },
+    {
+      "title": "NIH Guidelines for research involving recombinant or synthetic nucleic acids",
+      "url": "https://osp.od.nih.gov/policies/biosafety-and-biosecurity-policy"
+    },
+    {
+      "title": "BIS — export control on biological materials and equipment",
+      "url": "https://www.bis.doc.gov/"
+    },
+    {
+      "title": "The Common Mechanism — DNA synthesis screening",
+      "url": "https://ibbis.bio/common-mechanism/"
+    }
+  ]
+}

@@ -1,0 +1,69 @@
+{
+  "treeId": "biopunk-accelerator",
+  "id": "hiring-and-governance",
+  "title": {
+    "name": "Orrick 4: Hiring, governance and legal pitfalls",
+    "level": 3
+  },
+  "track": "legal-ip-and-regulatory",
+  "kind": "workshop",
+  "week": 12,
+  "minutes": 90,
+  "deliverable": "Investor Data Room",
+  "defaultStatus": "inProgress",
+  "isUnlocked": true,
+  "onMainPath": true,
+  "link": "/homeroom/library/module/hiring-and-governance",
+  "initialPosition": [
+    4,
+    8
+  ],
+  "dependencies": [
+    "company-formation",
+    "first-hires"
+  ],
+  "leadsTo": [],
+  "overview": {
+    "description": "Run in the high case and in week 11 or 12. Contractors versus employees, international hiring, firing abroad, advisor equity, seed-stage governance, compliance, and diligence readiness.",
+    "objectives": [
+      "Classify contractors and employees correctly, which is a real liability",
+      "Hire and end relationships internationally without creating an entity problem",
+      "Set governance that protects founder control without alarming investors"
+    ],
+    "prerequisites": [
+      "Orrick 1: Formation and startup foundations",
+      "First hires and scientific hiring"
+    ]
+  },
+  "steps": {
+    "intro": "Run in the high case and in week 11 or 12. Contractors versus employees, international hiring, firing abroad, advisor equity, seed-stage governance, compliance, and diligence readiness.",
+    "estimatedMinutes": 90,
+    "instructions": [
+      "Audit every current contractor against the classification tests.",
+      "Document advisor equity with a standard agreement and a vesting schedule.",
+      "Assemble the investor data room from the starter diligence room."
+    ]
+  },
+  "submission": {
+    "description": "Produce the Investor Data Room and log it against this module in Homeroom. Done means the artefact exists, not that you read the page."
+  },
+  "video": {
+    "url": "https://www.youtube.com/watch?v=CUZ6PKJZvXE",
+    "title": "Don't Make These Hiring Mistakes",
+    "source": "Y Combinator"
+  },
+  "resources": [
+    {
+      "title": "Orrick Tech Studio — employment, advisor and equity forms",
+      "url": "https://www.orrick.com/en/tech-studio/resources/forms"
+    },
+    {
+      "title": "IRS — employee or independent contractor, the actual test",
+      "url": "https://www.irs.gov/businesses/small-businesses-self-employed/independent-contractor-self-employed-or-employee"
+    },
+    {
+      "title": "Cooley GO — board, governance and option plan documents",
+      "url": "https://www.cooleygo.com/documents/"
+    }
+  ]
+}

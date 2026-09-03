@@ -1,0 +1,67 @@
+{
+  "treeId": "biopunk-accelerator",
+  "id": "category-design",
+  "title": {
+    "name": "Category creation versus market entry",
+    "level": 3
+  },
+  "track": "customers-and-commercialization",
+  "kind": "playbook",
+  "week": 0,
+  "minutes": 60,
+  "deliverable": "",
+  "defaultStatus": "inProgress",
+  "isUnlocked": true,
+  "onMainPath": false,
+  "link": "/homeroom/library/module/category-design",
+  "initialPosition": [
+    2,
+    6
+  ],
+  "dependencies": [
+    "beachhead-market-memo"
+  ],
+  "leadsTo": [],
+  "overview": {
+    "description": "Another gap the review identified. Many frontier science companies are creating a category and pricing as though they are entering one.",
+    "objectives": [
+      "Tell whether you are entering a market or making one",
+      "Budget for customer education as a real cost line",
+      "Judge market timing — too early is indistinguishable from wrong"
+    ],
+    "prerequisites": [
+      "Beachhead markets and why superior products fail"
+    ]
+  },
+  "steps": {
+    "intro": "Another gap the review identified. Many frontier science companies are creating a category and pricing as though they are entering one.",
+    "estimatedMinutes": 60,
+    "instructions": [
+      "Write the sentence a customer would use to describe what they bought.",
+      "If no existing budget line covers it, you are creating a category. Plan accordingly.",
+      "Name what has to become true in the world for you to be on time."
+    ]
+  },
+  "submission": {
+    "description": "No named deliverable. Work the steps and keep the notes with the module in Homeroom."
+  },
+  "video": {
+    "url": "https://www.youtube.com/watch?v=hdjlCLb9Hl8",
+    "title": "How to nail your product positioning",
+    "source": "April Dunford"
+  },
+  "resources": [
+    {
+      "title": "April Dunford — Obviously Awesome, on positioning",
+      "url": "https://www.aprildunford.com/"
+    },
+    {
+      "title": "Strategyzer — Value Proposition Canvas",
+      "url": "https://www.strategyzer.com/library/the-value-proposition-canvas"
+    },
+    {
+      "title": "The Role of Market Category in Differentiation",
+      "url": "https://www.youtube.com/watch?v=sQkSDNcinFE"
+    }
+  ]
+}

@@ -1,0 +1,65 @@
+{
+  "treeId": "biopunk-accelerator",
+  "id": "operating-cadence",
+  "title": {
+    "name": "Founder-operator systems and operating cadence",
+    "level": 2
+  },
+  "track": "team-and-operations",
+  "kind": "playbook",
+  "week": 0,
+  "minutes": 45,
+  "deliverable": "",
+  "defaultStatus": "inProgress",
+  "isUnlocked": true,
+  "onMainPath": false,
+  "link": "/homeroom/library/module/operating-cadence",
+  "initialPosition": [
+    5,
+    3
+  ],
+  "dependencies": [
+    "founder-scorecard"
+  ],
+  "leadsTo": [
+    "ai-founder-stack"
+  ],
+  "overview": {
+    "description": "The weekly loop that makes the other tracks compound: what got done, what is blocked, what must happen next week.",
+    "objectives": [
+      "Run a weekly operating review in under an hour",
+      "Track scientific and business milestones in one place without conflating them",
+      "Use the cohort check-in as accountability rather than reporting"
+    ],
+    "prerequisites": [
+      "The founder scorecard and goal setting"
+    ]
+  },
+  "steps": {
+    "intro": "The weekly loop that makes the other tracks compound: what got done, what is blocked, what must happen next week.",
+    "estimatedMinutes": 45,
+    "instructions": [
+      "Set the weekly review. Same time, same five questions.",
+      "Keep one milestone tracker with both scientific and commercial rows.",
+      "Answer the Sunday check-in honestly, especially the procrastination question."
+    ]
+  },
+  "submission": {
+    "description": "No named deliverable. Work the steps and keep the notes with the module in Homeroom."
+  },
+  "video": null,
+  "resources": [
+    {
+      "title": "YC — the weekly operating review, and why it survives a bad week",
+      "url": "https://www.ycombinator.com/library"
+    },
+    {
+      "title": "Kauffman Founders School — founder operating systems",
+      "url": "https://www.entrepreneurship.org/learning-paths"
+    },
+    {
+      "title": "Homeroom — the Sunday check-in this node feeds",
+      "url": "/homeroom"
+    }
+  ]
+}

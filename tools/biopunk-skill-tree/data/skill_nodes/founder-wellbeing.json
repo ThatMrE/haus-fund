@@ -1,0 +1,63 @@
+{
+  "treeId": "biopunk-accelerator",
+  "id": "founder-wellbeing",
+  "title": {
+    "name": "Founder wellbeing and sustainable ambition",
+    "level": 1
+  },
+  "track": "founder-fundamentals",
+  "kind": "playbook",
+  "week": 0,
+  "minutes": 30,
+  "deliverable": "",
+  "defaultStatus": "inProgress",
+  "isUnlocked": true,
+  "onMainPath": false,
+  "link": "/homeroom/library/module/founder-wellbeing",
+  "initialPosition": [
+    1,
+    7
+  ],
+  "dependencies": [
+    "orientation"
+  ],
+  "leadsTo": [],
+  "overview": {
+    "description": "Carried in the curriculum taxonomy because the review found it missing from most comparable programmes. A founder who breaks in month nine has not made a trade-off, they have made a mistake.",
+    "objectives": [
+      "Build routines that survive a fundraise",
+      "Notice the difference between hard and unsustainable",
+      "Use the cohort as a pressure release rather than a performance"
+    ],
+    "prerequisites": [
+      "Orientation: how to read this tree"
+    ]
+  },
+  "steps": {
+    "intro": "Carried in the curriculum taxonomy because the review found it missing from most comparable programmes. A founder who breaks in month nine has not made a trade-off, they have made a mistake.",
+    "estimatedMinutes": 30,
+    "instructions": [
+      "Write what your week looked like in the last bad month.",
+      "Name the two things you dropped first. Those are your early-warning indicators.",
+      "Put one non-negotiable back in the calendar this week."
+    ]
+  },
+  "submission": {
+    "description": "No named deliverable. Work the steps and keep the notes with the module in Homeroom."
+  },
+  "video": null,
+  "resources": [
+    {
+      "title": "Kauffman Founders School — founder resilience",
+      "url": "https://www.entrepreneurship.org/learning-paths"
+    },
+    {
+      "title": "YC — advice on founder depression and burnout",
+      "url": "https://www.ycombinator.com/library"
+    },
+    {
+      "title": "The module in Homeroom, with the deliverable form",
+      "url": "/homeroom/library/module/founder-wellbeing"
+    }
+  ]
+}

@@ -878,6 +878,46 @@ function lumaStrip(ctx, luma) {
  * THE LIBRARY AS A TRAINING SYSTEM
  * ======================================================================== */
 
+export const LIBRARY_TABS = [
+  { key: 'manual', href: '/homeroom/library', label: 'The manual' },
+  { key: 'tree', href: '/homeroom/library/tree', label: 'Skill tree' },
+  { key: 'notes', href: '/homeroom/library/notes', label: 'Your deliverables' },
+];
+
+/**
+ * The manual as a graph.
+ *
+ * Embedded rather than reimplemented: the tree is the same page served at
+ * haus.fund/skilltree, and `?embed=1` tells it to drop its own nav, hero and
+ * footer so Homeroom's chrome is the only chrome. It then asks
+ * /homeroom/api/library for this member's progress, so the nodes it shows as
+ * done are the modules they actually logged a deliverable against — not a
+ * second tally kept in the browser.
+ */
+export function treePage(ctx, { moduleCount, nodeCount }) {
+  return html`<div class="pagehead">
+    <div>
+      <h1>The manual as a skill tree</h1>
+      <p class="lede">Every module as a node: what it builds on, what it leads to, the outcomes,
+        the work, the deliverable, the reading and one video worth watching. Nothing locks —
+        the dependencies say what reads better after what, and that is all they do.</p>
+    </div>
+    <a class="btn solid" href="/skilltree" target="_blank" rel="noopener">Open in a new tab</a>
+  </div>
+
+  <div class="toolframe">
+    <iframe src="/skilltree.html?embed=1" title="Biopunk Accelerator Skill Tree"
+      loading="lazy"></iframe>
+  </div>
+  <p class="mono dim tiny">The tree reads your progress from this Library, so a node counts as done
+    once the deliverable is logged against its module — the tree is not a second way to finish one.
+    Click any node, then <b>log the deliverable</b> to open its form.
+    It draws ${nodeCount} nodes to the manual's ${moduleCount} modules: the extra
+    ${nodeCount - moduleCount} are the orientation, the showcase, and the six subjects the live
+    calendar assumes but never sits down and teaches — market sizing, the target product profile,
+    the IND path, reimbursement, the AI founder stack and the O-1.</p>`;
+}
+
 export function libraryPage(ctx, { tracks, progress, modules, filters, entries, sequence }) {
   return html`<div class="pagehead">
     <div>
@@ -893,6 +933,11 @@ export function libraryPage(ctx, { tracks, progress, modules, filters, entries, 
     <div class="mono">${progress.done} done · ${progress.started} in progress · ${progress.total} total
       <b>${progress.percent}%</b></div>
   </div>
+
+  <p class="mono dim tiny">The same curriculum is drawn as a navigable graph in the
+    <a href="/homeroom/library/tree">skill tree</a> — every module as a node, with what it builds
+    on, what it leads to, curated reading and a video. It reads your progress from here, so the
+    deliverable you log is what makes a node done.</p>
 
   <form class="searchbar" method="get" action="/homeroom/library">
     <input type="search" name="q" value="${filters.q}" placeholder="search every module" />

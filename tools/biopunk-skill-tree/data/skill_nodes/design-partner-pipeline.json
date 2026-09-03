@@ -1,0 +1,69 @@
+{
+  "treeId": "biopunk-accelerator",
+  "id": "design-partner-pipeline",
+  "title": {
+    "name": "Design partners, LOIs and pilots",
+    "level": 5
+  },
+  "track": "customers-and-commercialization",
+  "kind": "playbook",
+  "week": 4,
+  "minutes": 60,
+  "deliverable": "Design Partner Pipeline",
+  "defaultStatus": "inProgress",
+  "isUnlocked": true,
+  "onMainPath": false,
+  "link": "/homeroom/library/module/design-partner-pipeline",
+  "initialPosition": [
+    2,
+    2
+  ],
+  "dependencies": [
+    "customer-discovery"
+  ],
+  "leadsTo": [
+    "founder-led-sales"
+  ],
+  "overview": {
+    "description": "A letter of intent is worth exactly what the person signing it risks by signing. Most are worth nothing. Some are worth a round.",
+    "objectives": [
+      "Structure a design partnership that gets you data rather than a logo",
+      "Write an LOI that a procurement department will actually let through",
+      "Convert a pilot to a contract, which is a different sale from the pilot itself"
+    ],
+    "prerequisites": [
+      "Customer discovery for scientists"
+    ]
+  },
+  "steps": {
+    "intro": "A letter of intent is worth exactly what the person signing it risks by signing. Most are worth nothing. Some are worth a round.",
+    "estimatedMinutes": 60,
+    "instructions": [
+      "For each pipeline account: name the economic buyer and the technical buyer separately.",
+      "Define what the pilot must show for them to buy, in their words.",
+      "Agree the success criteria in writing before the pilot starts, not after."
+    ]
+  },
+  "submission": {
+    "description": "Produce the Design Partner Pipeline and log it against this module in Homeroom. Done means the artefact exists, not that you read the page."
+  },
+  "video": {
+    "url": "https://www.youtube.com/watch?v=hyYCn_kAngI",
+    "title": "How to Get Your First Customers",
+    "source": "Y Combinator Startup School"
+  },
+  "resources": [
+    {
+      "title": "YC — how to work with your first design partners",
+      "url": "https://www.ycombinator.com/library"
+    },
+    {
+      "title": "Orrick Tech Studio — pilot, LOI and evaluation agreement forms",
+      "url": "https://www.orrick.com/en/tech-studio/resources/forms"
+    },
+    {
+      "title": "Cooley GO — free startup document generators",
+      "url": "https://www.cooleygo.com/documents/"
+    }
+  ]
+}

@@ -1,0 +1,71 @@
+{
+  "treeId": "biopunk-accelerator",
+  "id": "technoeconomics",
+  "title": {
+    "name": "Technoeconomics, cost curves and willingness to pay",
+    "level": 5
+  },
+  "track": "customers-and-commercialization",
+  "kind": "playbook",
+  "week": 0,
+  "minutes": 90,
+  "deliverable": "",
+  "defaultStatus": "inProgress",
+  "isUnlocked": true,
+  "onMainPath": false,
+  "link": "/homeroom/library/module/technoeconomics",
+  "initialPosition": [
+    2,
+    4
+  ],
+  "dependencies": [
+    "customer-discovery"
+  ],
+  "leadsTo": [
+    "business-model",
+    "reimbursement-and-access",
+    "manufacturing-scaleup"
+  ],
+  "overview": {
+    "description": "Flagged in the programme review as arguably as important as customer discovery for biotech and hard tech, and usually absent.",
+    "objectives": [
+      "Build a technoeconomic analysis that survives a sceptical investor",
+      "Find the cost threshold below which adoption becomes rational for the buyer",
+      "Separate the economic buyer from the technical buyer and price to the former"
+    ],
+    "prerequisites": [
+      "Customer discovery for scientists"
+    ]
+  },
+  "steps": {
+    "intro": "Flagged in the programme review as arguably as important as customer discovery for biotech and hard tech, and usually absent.",
+    "estimatedMinutes": 90,
+    "instructions": [
+      "Model your unit cost at current scale and at 100×.",
+      "Model the incumbent’s total cost of ownership, not its list price.",
+      "Find the crossover. If it does not exist, say so now rather than in diligence."
+    ]
+  },
+  "submission": {
+    "description": "No named deliverable. Work the steps and keep the notes with the module in Homeroom."
+  },
+  "video": null,
+  "resources": [
+    {
+      "title": "NREL — techno-economic analysis method and models",
+      "url": "https://www.nrel.gov/analysis/techno-economic.html"
+    },
+    {
+      "title": "The Bioprocess TEA Calculator (open tool and paper)",
+      "url": "https://www.biorxiv.org/content/10.1101/2020.10.08.331272v1"
+    },
+    {
+      "title": "DOE BETO — TEA in the technology development lifecycle",
+      "url": "https://www.energy.gov/eere/bioenergy/techno-economic-analysis"
+    },
+    {
+      "title": "LifeSciVC — cost of goods and the biotech business case",
+      "url": "https://lifescivc.com/"
+    }
+  ]
+}

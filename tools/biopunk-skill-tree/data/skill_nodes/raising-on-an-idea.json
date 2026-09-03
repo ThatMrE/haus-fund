@@ -1,0 +1,73 @@
+{
+  "treeId": "biopunk-accelerator",
+  "id": "raising-on-an-idea",
+  "title": {
+    "name": "Raising on an idea",
+    "level": 2
+  },
+  "track": "fundraising-and-capital",
+  "kind": "workshop",
+  "week": 3,
+  "minutes": 90,
+  "deliverable": "Fundraising Roadmap",
+  "defaultStatus": "inProgress",
+  "isUnlocked": true,
+  "onMainPath": true,
+  "link": "/homeroom/library/module/raising-on-an-idea",
+  "initialPosition": [
+    3,
+    0
+  ],
+  "dependencies": [
+    "risk-mapping",
+    "company-formation"
+  ],
+  "leadsTo": [
+    "venture-math",
+    "grants-and-nondilutive",
+    "fundraising-narrative"
+  ],
+  "overview": {
+    "description": "Delivered in week 3 alongside Reverse Demo Day. Proof-point fundraising: what you can credibly raise on before you have data.",
+    "objectives": [
+      "State what can be proven with $0, $50K, $500K and $2M+, and raise against exactly that",
+      "Understand what traction actually matters at pre-seed for a science company",
+      "Avoid the common mistakes: raising too little, raising against the wrong milestone, raising in build mode"
+    ],
+    "prerequisites": [
+      "Technical risk, market risk and the risk map",
+      "Orrick 1: Formation and startup foundations"
+    ]
+  },
+  "steps": {
+    "intro": "Delivered in week 3 alongside Reverse Demo Day. Proof-point fundraising: what you can credibly raise on before you have data.",
+    "estimatedMinutes": 90,
+    "instructions": [
+      "Write the four proof points at the four budget levels.",
+      "Identify which one your next round buys.",
+      "Build the roadmap backwards from the round after that."
+    ]
+  },
+  "submission": {
+    "description": "Produce the Fundraising Roadmap and log it against this module in Homeroom. Done means the artefact exists, not that you read the page."
+  },
+  "video": {
+    "url": "https://www.youtube.com/watch?v=zBUhQPPS9AY",
+    "title": "How Startup Fundraising Works",
+    "source": "Y Combinator Startup School"
+  },
+  "resources": [
+    {
+      "title": "YC — the SAFE, and the standard it set",
+      "url": "https://www.ycombinator.com/safe"
+    },
+    {
+      "title": "Geoff Ralston — fundraising fundamentals",
+      "url": "https://www.youtube.com/watch?v=gcevHkNGrWQ"
+    },
+    {
+      "title": "LifeSciVC — pitching a therapeutics startup to VCs",
+      "url": "https://lifescivc.com/category/biotech-financing/"
+    }
+  ]
+}

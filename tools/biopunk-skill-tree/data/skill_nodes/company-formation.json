@@ -1,0 +1,83 @@
+{
+  "treeId": "biopunk-accelerator",
+  "id": "company-formation",
+  "title": {
+    "name": "Orrick 1: Formation and startup foundations",
+    "level": 1
+  },
+  "track": "legal-ip-and-regulatory",
+  "kind": "workshop",
+  "week": 2,
+  "minutes": 90,
+  "deliverable": "Legal Checklist",
+  "defaultStatus": "inProgress",
+  "isUnlocked": true,
+  "onMainPath": true,
+  "link": "/homeroom/library/module/company-formation",
+  "initialPosition": [
+    4,
+    0
+  ],
+  "dependencies": [
+    "orientation"
+  ],
+  "leadsTo": [
+    "raising-on-an-idea",
+    "diligence-room",
+    "ip-and-spinouts",
+    "safes-and-mtas",
+    "biosafety-and-compliance",
+    "hiring-and-governance",
+    "cofounders",
+    "first-hires",
+    "immigration-and-o1"
+  ],
+  "overview": {
+    "description": "Delivered live by Orrick with office hours the same week. Incorporation, Delaware C-corps, founder agreements, vesting, cap tables, 83(b) elections and choosing counsel.",
+    "objectives": [
+      "Incorporate correctly, in the right jurisdiction, at the right time",
+      "File the 83(b) inside the 30-day window, which is unforgiving and unwindable",
+      "Set founder vesting before there is anything to argue about",
+      "Know when to engage counsel and how to use a legal budget efficiently"
+    ],
+    "prerequisites": [
+      "Orientation: how to read this tree"
+    ]
+  },
+  "steps": {
+    "intro": "Delivered live by Orrick with office hours the same week. Incorporation, Delaware C-corps, founder agreements, vesting, cap tables, 83(b) elections and choosing counsel.",
+    "estimatedMinutes": 90,
+    "instructions": [
+      "Confirm incorporation state, share authorisation and founder allocations.",
+      "File 83(b) elections and keep proof of mailing.",
+      "Set vesting with a cliff on every founder including yourself.",
+      "Bring anything unresolved to Orrick office hours this week."
+    ]
+  },
+  "submission": {
+    "description": "Produce the Legal Checklist and log it against this module in Homeroom. Done means the artefact exists, not that you read the page."
+  },
+  "video": {
+    "url": "https://www.youtube.com/watch?v=EHzvmyMJEK4",
+    "title": "Legal and Accounting Basics for Startups",
+    "source": "Kirsty Nathoo and Carolynn Levy, Stanford CS183B"
+  },
+  "resources": [
+    {
+      "title": "Orrick — the Incorporation Toolkit",
+      "url": "https://www.orrick.com/en/tech-studio/forms/Incorporation-Toolkit"
+    },
+    {
+      "title": "Cooley GO — Delaware incorporation package",
+      "url": "https://www.cooleygo.com/documents/incorporation-package-delaware/"
+    },
+    {
+      "title": "IRS — the 83(b) election and its 30-day window",
+      "url": "https://www.irs.gov/pub/irs-pdf/f15620.pdf"
+    },
+    {
+      "title": "Orrick Startup Forms Library — founder stock, vesting, cap table",
+      "url": "https://www.orrick.com/Total-Access/Tool-Kit/Start-Up-Forms"
+    }
+  ]
+}

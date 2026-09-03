@@ -1,0 +1,73 @@
+{
+  "treeId": "biopunk-accelerator",
+  "id": "diligence-room",
+  "title": {
+    "name": "Diligence, data rooms and fundraising readiness",
+    "level": 4
+  },
+  "track": "fundraising-and-capital",
+  "kind": "workshop",
+  "week": 11,
+  "minutes": 60,
+  "deliverable": "Starter Diligence Room",
+  "defaultStatus": "inProgress",
+  "isUnlocked": true,
+  "onMainPath": true,
+  "link": "/homeroom/library/module/diligence-room",
+  "initialPosition": [
+    3,
+    5
+  ],
+  "dependencies": [
+    "company-formation",
+    "ip-and-spinouts",
+    "venture-math"
+  ],
+  "leadsTo": [
+    "showcase-capstone"
+  ],
+  "overview": {
+    "description": "Orrick 3 territory. Diligence readiness is credibility through documentation: what you have written down is what you are believed to have done.",
+    "objectives": [
+      "Assemble a diligence folder before it is requested",
+      "Anticipate scientific, technical and financial diligence separately",
+      "Spot your own red flags before an investor does"
+    ],
+    "prerequisites": [
+      "Orrick 1: Formation and startup foundations",
+      "Orrick 2: IP, academic spinouts and research commercialisation",
+      "Venture capital, fund economics and venture math"
+    ]
+  },
+  "steps": {
+    "intro": "Orrick 3 territory. Diligence readiness is credibility through documentation: what you have written down is what you are believed to have done.",
+    "estimatedMinutes": 60,
+    "instructions": [
+      "Build the folder: incorporation, cap table, IP, contracts, key data, financials.",
+      "Have someone outside the company try to answer five diligence questions from it alone.",
+      "Fix what they could not find."
+    ]
+  },
+  "submission": {
+    "description": "Produce the Starter Diligence Room and log it against this module in Homeroom. Done means the artefact exists, not that you read the page."
+  },
+  "video": {
+    "url": "https://www.youtube.com/watch?v=3WUPVZ4onPw",
+    "title": "How to Build a Data Room",
+    "source": "Elizabeth Yin, Hustle Fund"
+  },
+  "resources": [
+    {
+      "title": "Orrick Tech Studio — diligence checklist and startup forms",
+      "url": "https://www.orrick.com/en/tech-studio/resources/forms"
+    },
+    {
+      "title": "Cooley GO — the documents an investor will ask for",
+      "url": "https://www.cooleygo.com/documents/"
+    },
+    {
+      "title": "YC Startup Library — fundraising readiness",
+      "url": "https://www.ycombinator.com/library"
+    }
+  ]
+}

@@ -1,0 +1,67 @@
+{
+  "treeId": "biopunk-accelerator",
+  "id": "investor-psychology",
+  "title": {
+    "name": "Investor psychology and signalling",
+    "level": 4
+  },
+  "track": "fundraising-and-capital",
+  "kind": "reference",
+  "week": 0,
+  "minutes": 45,
+  "deliverable": "",
+  "defaultStatus": "inProgress",
+  "isUnlocked": true,
+  "onMainPath": false,
+  "link": "/homeroom/library/module/investor-psychology",
+  "initialPosition": [
+    3,
+    3
+  ],
+  "dependencies": [
+    "venture-math"
+  ],
+  "leadsTo": [],
+  "overview": {
+    "description": "What a term sheet, a pass, a slow no and a party round each actually signal — to you and to the next investor.",
+    "objectives": [
+      "Read a pass for the information it contains",
+      "Manage signalling risk from an existing investor not following on",
+      "Know when a process is live and when you are being optioned"
+    ],
+    "prerequisites": [
+      "Venture capital, fund economics and venture math"
+    ]
+  },
+  "steps": {
+    "intro": "What a term sheet, a pass, a slow no and a party round each actually signal — to you and to the next investor.",
+    "estimatedMinutes": 45,
+    "instructions": [
+      "Log every investor conversation with date, stage and next step.",
+      "After each pass, write the real reason as best you can infer it.",
+      "Look at the log monthly. The pattern is the feedback."
+    ]
+  },
+  "submission": {
+    "description": "No named deliverable. Work the steps and keep the notes with the module in Homeroom."
+  },
+  "video": {
+    "url": "https://www.youtube.com/watch?v=PLjxoqZOOl8",
+    "title": "PhD to VC — how bio investors actually decide",
+    "source": "a16z Bio + Health and 8VC, on BIOS"
+  },
+  "resources": [
+    {
+      "title": "LifeSciVC — reading a pass, and what a slow no means",
+      "url": "https://lifescivc.com/category/biotech-financing/"
+    },
+    {
+      "title": "YC Startup Library — fundraising",
+      "url": "https://www.ycombinator.com/library"
+    },
+    {
+      "title": "a16z Bio + Health — what bio investors actually screen for",
+      "url": "https://a16z.com/bio-health/"
+    }
+  ]
+}

@@ -1,0 +1,71 @@
+{
+  "treeId": "biopunk-accelerator",
+  "id": "reimbursement-and-access",
+  "title": {
+    "name": "Reimbursement, payers and market access",
+    "level": 6
+  },
+  "track": "legal-ip-and-regulatory",
+  "kind": "reference",
+  "week": 0,
+  "minutes": 45,
+  "deliverable": "",
+  "defaultStatus": "inProgress",
+  "isUnlocked": true,
+  "onMainPath": false,
+  "link": "/homeroom/library/module/reimbursement-and-access",
+  "initialPosition": [
+    4,
+    6
+  ],
+  "dependencies": [
+    "regulatory-strategy",
+    "technoeconomics"
+  ],
+  "leadsTo": [],
+  "overview": {
+    "description": "Approval is permission to sell; reimbursement is permission to be bought. The I-Corps life-science curriculum treats this as a first-class subject for a reason — coding, coverage and payment are decided by people who never read your paper, and the evidence they want is not the evidence the agency wanted.",
+    "objectives": [
+      "Tell coding, coverage and payment apart, and know which is your blocker",
+      "Identify who actually pays in your setting, which is rarely the user",
+      "Design a health-economic study alongside the pivotal one rather than after it",
+      "Recognise when there is no existing payment mechanism, which is a company-shaping fact"
+    ],
+    "prerequisites": [
+      "Validation, regulatory pathways and quality systems",
+      "Technoeconomics, cost curves and willingness to pay"
+    ]
+  },
+  "steps": {
+    "intro": "Approval is permission to sell; reimbursement is permission to be bought. The I-Corps life-science curriculum treats this as a first-class subject for a reason — coding, coverage and payment are decided by people who never read your paper, and the evidence they want is not the evidence the agency wanted.",
+    "estimatedMinutes": 45,
+    "instructions": [
+      "Name the payer. Then name the budget line your product would come out of.",
+      "Find whether a code exists. If it does not, price the years it takes to create one.",
+      "Write the economic argument in the payer’s units — cost per avoided event, not per test.",
+      "Decide what evidence the payer needs and whether the pivotal trial can carry it."
+    ]
+  },
+  "submission": {
+    "description": "No named deliverable. Work the steps and keep the notes with the module in Homeroom."
+  },
+  "video": null,
+  "resources": [
+    {
+      "title": "CMS — coverage, coding and payment for new technology",
+      "url": "https://www.cms.gov/medicare/coverage"
+    },
+    {
+      "title": "AMA — CPT codes, and how one comes into existence",
+      "url": "https://www.ama-assn.org/practice-management/cpt"
+    },
+    {
+      "title": "CMS — the Medicare Coverage with Evidence Development pathway",
+      "url": "https://www.cms.gov/medicare/coverage/evidence"
+    },
+    {
+      "title": "Building payer perspective into development through a dynamic TPP",
+      "url": "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC9340272/"
+    }
+  ]
+}
