@@ -1,8 +1,18 @@
 # Netlify Configuration for Haus Fund
 
+# The site is static apart from the functions, so the build command exists for
+# exactly one reason: /homeroom needs the `pg` driver at runtime, and nothing
+# else here would ever install it. There is no package.json at this level, so
+# Netlify runs no install of its own; without this line the function deploys
+# with no node_modules beside it and dies on `Cannot find module 'pg'` the
+# moment HOMEROOM_DATABASE_URL is set.
+#
+# --omit=dev keeps PGlite (the 26MB test-only fallback) out of the build.
+# node_modules is ignored by the publish upload wherever it sits, so this adds
+# nothing to the site itself — only to what the function bundler can find.
 [build]
   publish = "."
-  command = ""
+  command = "cd netlify/functions/homeroom && npm ci --omit=dev"
 
 # ── LP section: HTTP Basic Auth at the edge ──
 # Both paths are declared: "/lp" alone does not match the "/lp/*" pattern.
