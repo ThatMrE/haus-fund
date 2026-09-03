@@ -1609,11 +1609,31 @@ export function upsertMentor(mentor) {
   return Number(info.lastInsertRowid);
 }
 
+/*
+ * Everything about a mentor EXCEPT the booking link.
+ *
+ * `scheduler` is named column-by-column out of these two queries rather than
+ * filtered afterwards, and there is no `SELECT *` on hr_mentors anywhere in
+ * this file any more. The link used to travel inside `m.*` and reached
+ * /homeroom/api/mentors that way — nothing looked broken, so nobody noticed.
+ * A filter at each call site would have the same failure mode the next time
+ * an endpoint is added; a column that is never selected does not.
+ *
+ * Read it deliberately, one mentor at a time, with mentordesk.schedulerFor().
+ */
+const MENTOR_FIELDS = ['id', 'slug', 'user_id', 'name', 'role', 'org', 'track', 'tags',
+  'location', 'bio', 'format', 'vetted', 'active', 'sessions', 'source', 'created_at',
+  'state', 'consent_mode', 'capacity', 'tracks', 'confirmed_at', 'paused_until', 'synced_at',
+  'reconfirm_sent_at', 'reconfirm_nudges'];
+
+const MENTOR_COLUMNS = MENTOR_FIELDS.join(', ');
+const MENTOR_COLUMNS_M = MENTOR_FIELDS.map((f) => `m.${f}`).join(', ');
+
 export function getMentor(idOrSlug) {
   const db = getDb();
   const row = (/^\d+$/.test(String(idOrSlug))
-    ? db.prepare('SELECT * FROM hr_mentors WHERE id = ?').get(Number(idOrSlug))
-    : db.prepare('SELECT * FROM hr_mentors WHERE slug = ?').get(String(idOrSlug))) ?? null;
+    ? db.prepare(`SELECT ${MENTOR_COLUMNS} FROM hr_mentors WHERE id = ?`).get(Number(idOrSlug))
+    : db.prepare(`SELECT ${MENTOR_COLUMNS} FROM hr_mentors WHERE slug = ?`).get(String(idOrSlug))) ?? null;
   if (!row) return null;
   return { ...row, tags: tagList(row.tags) };
 }
@@ -1628,7 +1648,16 @@ export function getMentor(idOrSlug) {
  */
 export function searchMentors({ q = '', track = '', tag = '', vetted = false, format = '',
   limit = 60, offset = 0 } = {}) {
-  const where = ['active = 1'];
+  /*
+   * `state` gates the roster, not just `active`.
+   *
+   * Listed and paused are the two states a member should see: paused means
+   * "here, but not taking requests right now", which the profile explains.
+   * Everything else — pending review, rejected, dormant, withdrawn — is
+   * invisible, and it is an allowlist rather than a list of exclusions so a
+   * state added later is hidden by default rather than accidentally published.
+   */
+  const where = ["active = 1", "state IN ('listed','paused')"];
   const params = [];
   if (track) { where.push('track = ?'); params.push(track); }
   if (format) { where.push('format = ?'); params.push(format); }
@@ -1642,11 +1671,11 @@ export function searchMentors({ q = '', track = '', tag = '', vetted = false, fo
   const clause = where.join(' AND ');
   const rows = getDb()
     .prepare(
-      `SELECT m.*,
+      `SELECT ${MENTOR_COLUMNS_M},
               (SELECT COUNT(*) FROM hr_slots s
                 WHERE s.mentor_id = m.id AND s.canceled = 0 AND s.starts_at > ?) AS open_slots
        FROM hr_mentors m WHERE ${clause}
-       ORDER BY vetted DESC, open_slots DESC, name COLLATE NOCASE LIMIT ? OFFSET ?`,
+       ORDER BY m.vetted DESC, open_slots DESC, m.name COLLATE NOCASE LIMIT ? OFFSET ?`,
     )
     .all(nowSeconds(), ...params, limit, offset);
   const { total } = getDb().prepare(`SELECT COUNT(*) AS total FROM hr_mentors WHERE ${clause}`).get(...params);

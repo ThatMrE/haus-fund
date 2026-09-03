@@ -94,6 +94,7 @@ export async function handle(req, res) {
         roster: { ...(await roster.health()), ...hr.rosterCounts() },
         auth: await sbAuth.health(),
         luma: { configured: lumaConfigured(), calendar: calendarUrl() },
+        mentors: (await import('./mentordesk.js')).deskStats(),
         invites: invites.health(),
         now: nowSeconds(),
       });
