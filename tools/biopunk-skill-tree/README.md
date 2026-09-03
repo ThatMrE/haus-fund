@@ -5,10 +5,15 @@ The Biopunk Founder Manual drawn as a navigable graph. **47 nodes across seven t
 one coherent dependency graph** that takes a founder from a risk map on day one to a
 company a stranger can diligence in week twelve.
 
-**▶ Live: [haus.fund/homeroom/library/tree](https://haus.fund/homeroom/library/tree)** — inside
-Homeroom, behind the roster gate, as a third tab of the Library. The same page is served standalone
-at [haus.fund/skilltree](https://haus.fund/skilltree) (`noindex`, not in the site nav), which is what
-Homeroom embeds.
+**▶ Live at [haus.fund/skilltree](https://haus.fund/skilltree)**, linked from the public site nav
+under **About**, and inside Homeroom at
+[/homeroom/library/tree](https://haus.fund/homeroom/library/tree) — its own top-level tab and a
+third tab of the Library, which embeds this same page.
+
+The standalone page stays `noindex`. That is deliberate rather than left over: the nav link is for
+people already on the site, and putting the whole curriculum into search results is a separate
+decision nobody has taken. Flipping it is the `robots` meta tag in `skilltree.html` plus a
+`sitemap.xml` entry.
 
 It is a companion to [ThatMrE/biotech-skill-tree](https://github.com/ThatMrE/biotech-skill-tree),
 which does the same thing for the bench. That tree teaches you to run a Gibson assembly;
@@ -189,8 +194,11 @@ from either tree can be read by the same code.
 
 ## Where it lives, and the two modes
 
-Its home is Homeroom: `/homeroom/library/tree`, a third tab of the Library next to the
-manual and your deliverables, behind the same roster gate as the curriculum it draws.
+Its home is Homeroom: `/homeroom/library/tree`, both a top-level tab of the Homeroom nav
+and a third tab of the Library next to the manual and your deliverables, behind the same
+roster gate as the curriculum it draws. The public site links the standalone page from the
+**About** dropdown — the dropdown rather than the top bar because the bar is already full;
+a tenth item collides with the Apply button below 1100px.
 Homeroom does not reimplement it — it embeds `/skilltree.html?embed=1` in an iframe, the
 same way `/homeroom/labs/cores` embeds the Core Facility Finder.
 

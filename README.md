@@ -15,7 +15,7 @@ no build step, no framework.
 | `showcase.html` | 2050 Final Showcase — venue design brief for the Mabuhay Gardens event |
 | `cores.html` | Core Facility Finder — served at `cores.haus.fund`, `noindex`, not in the nav |
 | `visa.html` | Visa Desk — immigration support letters, served at `visa.haus.fund`, `noindex`, not in the nav |
-| `skilltree.html` | Biopunk Accelerator Skill Tree — the Founder Manual as a navigable graph. Its home is Homeroom, at `/homeroom/library/tree`; also served standalone at `/skilltree`, `noindex`, not in the nav |
+| `skilltree.html` | Biopunk Accelerator Skill Tree — the Founder Manual as a navigable graph. Served at `/skilltree` and linked from the public nav (under **About**) and from the Homeroom nav, where it also renders embedded at `/homeroom/library/tree`. Still `noindex`: the nav is for visitors, search listing is a separate decision |
 | `fund-portal/` | Separate internal React portal (not linked from the public nav) |
 | `netlify/functions/homeroom/` | **Homeroom** — the members-only network, served at `/homeroom`, `noindex`. Forum, member and lab directories, deals, funder reviews, pipeline, office hours, jobs, events, library, intros, messaging. A server-rendered app like `/news`, with its own accounts; see its README |
 | `netlify/functions/news/` | **haus.fund/news** — a server-rendered feed of early-stage biotech news, with its own README |
