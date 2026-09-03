@@ -687,7 +687,7 @@ export function mentorsPage(ctx, { mentors, total, filters, tags, basePath, page
     </a>
     <div class="tagrow">${m.tags.slice(0, 3).map((t) => html`<a class="tag ghost"
       href="/homeroom/mentors?tag=${encodeURIComponent(t)}">${t}</a>`)}</div>
-  </li>`)}</ul>` : empty('Nobody matches. Try a broader track, or ask in the forum.')}
+  </li>`)}</ul>` : empty('Nobody matches. Try a broader track, or see who is offering office hours.')}
   ${pager({ page, total, perPage: 60, basePath })}`;
 }
 
@@ -1089,7 +1089,7 @@ export function publishPage(ctx, { submissions, supabase, error = null, values =
         placeholder="Why it matters. Two paragraphs is plenty.">${values.body || ''}</textarea></div>
     <button class="btn solid" type="submit" ${raw(supabase.configured ? '' : 'disabled')}>Send for review</button>
     <p class="hint">It goes out under your handle, <b>${ctx.user?.id}</b>, not anonymously.
-      Anything you would not want attached to your name belongs in the forum instead.</p>
+      If you would not want it attached to your name in public, do not send it.</p>
   </form>
 
   ${section('Your submissions', submissions.length
