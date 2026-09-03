@@ -3258,7 +3258,7 @@ var SKILLTREE = {
     "instructions": [
      "Host one thing. A dinner counts.",
      "Write down what you learned that you would not have learned otherwise.",
-     "Post it in the forum. That is the loop."
+     "Write it up for the library. That is the loop — whoever convenes the next one starts from your notes rather than from nothing."
     ]
    },
    "submission": {
