@@ -9,6 +9,7 @@
  * fails safely when Supabase is not configured.
  */
 
+process.env.HOMEROOM_DB = ':memory:';
 process.env.HOMEROOM_SECRET = 'test-secret';
 
 import test, { before, after } from 'node:test';
@@ -28,7 +29,7 @@ import { MENTORS } from '../app/data/mentors.js';
 import { NETWORK_MENTORS } from '../app/data/network.js';
 import { seedHomeroom } from '../app/seed.js';
 
-await getDb();
+getDb();
 
 let server;
 let base;
@@ -37,7 +38,7 @@ before(async () => {
   // These surfaces are about a populated room — a hundred mentors, forty labs,
   // a whole catalogue — so the tests run against the seeded network rather than
   // building each fixture by hand. Same data a fresh deploy gets.
-  await seedHomeroom();
+  seedHomeroom();
   server = createServer((req, res) => handle(req, res));
   await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
   base = `http://127.0.0.1:${server.address().port}`;
@@ -51,7 +52,7 @@ function body(html) {
 
 after(() => server.close());
 
-async function agent() {
+function agent() {
   const jar = new Map();
   return async function call(path, options = {}) {
     const headers = new Headers(options.headers || {});
@@ -88,7 +89,7 @@ function unreadIn(userId, slug) {
 
 async function member(handleName) {
   resetRateLimits();
-  const call = await agent();
+  const call = agent();
   const csrf = await csrfFor(call, '/homeroom/signup');
   const res = await call('/homeroom/signup', form({
     csrf, handle: handleName, email: `${handleName}@example.com`, password: 'a-good-passphrase',
@@ -156,14 +157,14 @@ test('a yearbook entry appears on the wall and can be signed once', async () => 
     csrf: classmate.csrf, body: 'Actually, the best two questions.',
   }));
 
-  const signs = await hr.signatures(founder.id);
+  const signs = hr.signatures(founder.id);
   assert.equal(signs.length, 1, 'a second signature updates rather than stacks');
   assert.match(signs[0].body, /best two questions/);
 });
 
 test('you cannot sign your own yearbook', async () => {
   const alone = await member('wallalone');
-  const result = await hr.signYearbook({ userId: alone.id, authorId: alone.id, body: 'I was great.' });
+  const result = hr.signYearbook({ userId: alone.id, authorId: alone.id, body: 'I was great.' });
   assert.equal(result.ok, false);
 });
 
@@ -171,7 +172,7 @@ test('you cannot sign your own yearbook', async () => {
 
 test('the atlas sorts live labs above dead ones and filters by status', async () => {
   const { call } = await member('atlasreader');
-  const { labs } = await hr.searchLabs({ limit: 500 });
+  const { labs } = hr.searchLabs({ limit: 500 });
   assert.ok(labs.length >= 40, 'the atlas should ship with a real list');
 
   const order = labs.map((lab) => lab.status);
@@ -188,7 +189,7 @@ test('the atlas sorts live labs above dead ones and filters by status', async ()
 
 test('a member report moves the lab status and is attributed', async () => {
   const visitor = await member('atlasvisitor');
-  const { labs } = await hr.searchLabs({ status: 'unknown', limit: 1 });
+  const { labs } = hr.searchLabs({ status: 'unknown', limit: 1 });
   const lab = labs[0];
   assert.ok(lab, 'there should be an unconfirmed lab to report on');
 
@@ -197,10 +198,10 @@ test('a member report moves the lab status and is attributed', async () => {
   }));
   assert.equal(res.status, 303);
 
-  const updated = await hr.getLab(lab.slug);
+  const updated = hr.getLab(lab.slug);
   assert.equal(updated.status, 'active');
   assert.equal(updated.confirmed_by, visitor.id);
-  assert.match((await hr.labReports(lab.id))[0].body, /PCR machine works/);
+  assert.match(hr.labReports(lab.id)[0].body, /PCR machine works/);
 });
 
 /* ==================================================================== perks */
@@ -220,7 +221,7 @@ test('the perks catalogue is loaded and spans every category', async () => {
 
 test('a perk with no code says how to redeem rather than showing a blank', async () => {
   const { call, csrf } = await member('perkclaimer');
-  const { deals } = await hr.listDeals({ limit: 500 });
+  const { deals } = hr.listDeals({ limit: 500 });
   const apply = deals.find((d) => d.access === 'apply' && !d.code);
   assert.ok(apply, 'the catalogue should contain application-only perks');
 
@@ -237,15 +238,15 @@ test('a review carries every axis, and the funder page averages them', async () 
     csrf: author.csrf, name: 'Axis Capital', kind: 'seed', focus: 'Nothing real',
   }));
   const slug = created.headers.get('location').split('/').pop();
-  const funder = await hr.getFunder(slug);
+  const funder = hr.getFunder(slug);
 
-  await hr.upsertReview({
+  hr.upsertReview({
     funderId: funder.id, userId: author.id, rating: 4, speed: 5, valueAdd: 3,
     founderFriendly: 5, terms: 4, wouldAgain: true, tags: 'fast-decision,clean-terms',
     outcome: 'passed', stage: 'pre-seed', body: 'Fast, clear, and told me why.',
   });
 
-  const rated = await hr.getFunder(slug);
+  const rated = hr.getFunder(slug);
   assert.equal(rated.avg_rating, 4);
   assert.equal(rated.avg_friendly, 5);
   assert.equal(rated.avg_terms, 4);
@@ -262,15 +263,15 @@ test('would-raise-again appears only once three reviews protect the reviewers', 
     csrf: owner.csrf, name: 'Threshold Fund', kind: 'seed',
   }));
   const slug = created.headers.get('location').split('/').pop();
-  const funder = await hr.getFunder(slug);
+  const funder = hr.getFunder(slug);
 
   for (const [index, handleName] of ['againa', 'againb', 'againc'].entries()) {
     await member(handleName);
-    await hr.upsertReview({
+    hr.upsertReview({
       funderId: funder.id, userId: handleName, rating: 4, wouldAgain: index !== 2,
     });
   }
-  const rated = await hr.getFunder(slug);
+  const rated = hr.getFunder(slug);
   assert.equal(rated.review_count, 3);
   assert.equal(rated.would_again_pct, 67);
 });
@@ -282,8 +283,8 @@ test('reviews get replies and helpful votes, and you cannot vouch for your own',
     csrf: author.csrf, name: 'Echo Ventures', kind: 'preseed',
   }));
   const slug = created.headers.get('location').split('/').pop();
-  const funder = await hr.getFunder(slug);
-  const review = await hr.upsertReview({
+  const funder = hr.getFunder(slug);
+  const review = hr.upsertReview({
     funderId: funder.id, userId: author.id, rating: 2, body: 'Three months, then silence.',
   });
 
@@ -300,7 +301,7 @@ test('reviews get replies and helpful votes, and you cannot vouch for your own',
     goto: `/homeroom/funder/${slug}`,
   }));
 
-  const reviews = await hr.funderReviews(funder.id);
+  const reviews = hr.funderReviews(funder.id);
   assert.equal(reviews[0].helpful, 1);
   assert.equal(reviews[0].reply_count, 1);
 
@@ -312,12 +313,12 @@ test('reviews get replies and helpful votes, and you cannot vouch for your own',
 test('a helpful vote toggles rather than stacking', async () => {
   const author = await member('togglea');
   const voter = await member('toggleb');
-  const funderId = await hr.createFunder({ name: 'Toggle Fund', kind: 'angel', addedBy: author.id });
-  const review = await hr.upsertReview({ funderId, userId: author.id, rating: 3 });
+  const funderId = hr.createFunder({ name: 'Toggle Fund', kind: 'angel', addedBy: author.id });
+  const review = hr.upsertReview({ funderId, userId: author.id, rating: 3 });
 
-  assert.equal(await hr.toggleReviewHelpful(review.id, voter.id), true);
-  assert.equal(await hr.toggleReviewHelpful(review.id, voter.id), false);
-  assert.equal((await hr.funderReviews(funderId))[0].helpful, 0);
+  assert.equal(hr.toggleReviewHelpful(review.id, voter.id), true);
+  assert.equal(hr.toggleReviewHelpful(review.id, voter.id), false);
+  assert.equal(hr.funderReviews(funderId)[0].helpful, 0);
 });
 
 /* ================================================================= mentors */
@@ -357,7 +358,7 @@ test('real people from the network are never presented as bookable', async () =>
   }
 
   const { call } = await member('networkreader');
-  const stored = await hr.getMentor(NETWORK_MENTORS[0].name.toLowerCase().replace(/[^a-z0-9]+/g, '-'));
+  const stored = hr.getMentor(NETWORK_MENTORS[0].name.toLowerCase().replace(/[^a-z0-9]+/g, '-'));
   assert.ok(stored, 'the network roster should be seeded');
   assert.equal(stored.vetted, 0);
 
@@ -373,7 +374,7 @@ test('real people from the network are never presented as bookable', async () =>
 
 test('a mentor page offers a way to book, whether or not they publish a link', async () => {
   const { call } = await member('mentorbooker');
-  const { mentors } = await hr.searchMentors({ vetted: true, limit: 1 });
+  const { mentors } = hr.searchMentors({ vetted: true, limit: 1 });
   const mentor = mentors[0];
   const page = await (await call(`/homeroom/mentor/${mentor.slug}`)).text();
   assert.match(page, /Book time/);
@@ -387,7 +388,7 @@ test('a mentor page offers a way to book, whether or not they publish a link', a
 test('the calendar renders a month and groups events onto their day', async () => {
   const { call, id } = await member('calendarreader');
   const when = Math.floor(Date.UTC(2027, 2, 15, 18, 0) / 1000);
-  await hr.createEvent({ hostId: id, title: 'Calendar Smoke Test', kind: 'meetup', startsAt: when, minutes: 90 });
+  hr.createEvent({ hostId: id, title: 'Calendar Smoke Test', kind: 'meetup', startsAt: when, minutes: 90 });
 
   const page = await (await call('/homeroom/events?y=2027&m=2')).text();
   assert.match(page, /March 2027/);
@@ -399,7 +400,7 @@ test('the calendar renders a month and groups events onto their day', async () =
 
 test('the ics feed is members-only and never leaks the description', async () => {
   const { call, id } = await member('icsreader');
-  await hr.createEvent({
+  hr.createEvent({
     hostId: id, title: 'Private Details Event', kind: 'meetup',
     startsAt: Math.floor(Date.now() / 1000) + 86400, minutes: 60,
     place: 'The house', description: 'Door code is 1234.',
@@ -416,25 +417,25 @@ test('the ics feed is members-only and never leaks the description', async () =>
   assert.doesNotMatch(ics, /Door code/, 'a calendar file gets forwarded; the description does not go in it');
 });
 
-test('a Luma re-sync updates the event it already imported', async () => {
+test('a Luma re-sync updates the event it already imported', () => {
   const hostId = 'lumahost';
-  if (!await hr.getUser(hostId)) await hr.createUser({ id: hostId, email: 'lumahost@example.com', passwordHash: 'x' });
+  if (!hr.getUser(hostId)) hr.createUser({ id: hostId, email: 'lumahost@example.com', passwordHash: 'x' });
 
   const startsAt = Math.floor(Date.now() / 1000) + 7 * 86400;
-  const first = await hr.upsertExternalEvent({
+  const first = hr.upsertExternalEvent({
     source: 'luma', externalId: 'evt-abc', hostId, title: 'Biopunk Dinner',
     startsAt, minutes: 120, place: 'Punkhaus', url: 'https://luma.com/event/evt-abc',
   });
   assert.equal(first.created, true);
 
-  const again = await hr.upsertExternalEvent({
+  const again = hr.upsertExternalEvent({
     source: 'luma', externalId: 'evt-abc', hostId, title: 'Biopunk Dinner (moved)',
     startsAt: startsAt + 3600, minutes: 120, place: 'Femhaus', url: 'https://luma.com/event/evt-abc',
   });
   assert.equal(again.created, false, 'the same Luma id must not become a second event');
   assert.equal(again.id, first.id);
 
-  const event = await hr.getEvent(first.id);
+  const event = hr.getEvent(first.id);
   assert.equal(event.title, 'Biopunk Dinner (moved)');
   assert.equal(event.place, 'Femhaus');
 });
@@ -479,7 +480,7 @@ test('the manual is a training system: tracks, modules, and a deliverable', asyn
   assert.match(module, /Risk Map/, 'the module names its deliverable');
   assert.match(module, /highest-risk assumption/, 'and what you should be able to do afterwards');
 
-  const before = await hr.progressSummary(id);
+  const before = hr.progressSummary(id);
   assert.equal(before.done, 0);
 
   await call('/homeroom/library/module/risk-mapping/progress', form({
@@ -487,11 +488,11 @@ test('the manual is a training system: tracks, modules, and a deliverable', asyn
     link: 'https://example.org/risk-map',
   }));
 
-  const after = await hr.progressSummary(id);
+  const after = hr.progressSummary(id);
   assert.equal(after.done, 1);
   assert.ok(after.percent > 0);
 
-  const deliverables = await hr.deliverables(id);
+  const deliverables = hr.deliverables(id);
   assert.equal(deliverables[0].deliverable, 'Risk Map');
   assert.equal(deliverables[0].link, 'https://example.org/risk-map');
 });
@@ -499,16 +500,16 @@ test('the manual is a training system: tracks, modules, and a deliverable', asyn
 test('module notes are private to the member who wrote them', async () => {
   const owner = await member('noteowner');
   const nosy = await member('notenosy');
-  const module = await hr.getModule('risk-mapping');
+  const module = hr.getModule('risk-mapping');
 
-  await hr.setProgress({
+  hr.setProgress({
     userId: owner.id, moduleId: module.id, state: 'started',
     note: 'Our real risk is the strain, not the market.',
   });
 
   const page = await (await nosy.call('/homeroom/library/module/risk-mapping')).text();
   assert.doesNotMatch(page, /real risk is the strain/, 'another member never sees your notes');
-  assert.equal(await hr.getProgress(nosy.id, module.id), null);
+  assert.equal(hr.getProgress(nosy.id, module.id), null);
 });
 
 test('the skill tree embeds the tool and reads progress from the library', async () => {
@@ -531,11 +532,11 @@ test('the skill tree embeds the tool and reads progress from the library', async
   const after = await (await call('/homeroom/api/library?q=risk')).json();
   assert.equal(after.modules.find((m) => m.slug === 'risk-mapping').state, 'done',
     'so a node the member finished shows as done in the tree');
-  assert.equal((await hr.progressSummary(id)).done, 1);
+  assert.equal(hr.progressSummary(id).done, 1);
 });
 
 test('the skill tree is members-only, like the manual it draws', async () => {
-  const stranger = await agent();
+  const stranger = agent();
   const body = await (await stranger('/homeroom/library/tree')).text();
   assert.doesNotMatch(body, /skilltree\.html/, 'a signed-out visitor never gets the tree');
 });
@@ -563,7 +564,7 @@ test('publishing fails safely and visibly when Supabase is not configured', asyn
   assert.equal(res.status, 400);
 
   // The attempt is still recorded, so nothing is silently lost.
-  const [submission] = await hr.newsSubmissions(id);
+  const [submission] = hr.newsSubmissions(id);
   assert.ok(submission, 'a failed submission still leaves a receipt');
   assert.equal(submission.status, 'failed');
   assert.equal(submission.title, 'We made a thing');
@@ -571,20 +572,20 @@ test('publishing fails safely and visibly when Supabase is not configured', asyn
 
 test('publishing validates before it records anything', async () => {
   const { call, csrf, id } = await member('publishvalidator');
-  const before = (await hr.newsSubmissions(id)).length;
+  const before = hr.newsSubmissions(id).length;
 
   const noTitle = await call('/homeroom/publish', form({ csrf, title: '', body: 'x' }));
   assert.equal(noTitle.status, 400);
   const noContent = await call('/homeroom/publish', form({ csrf, title: 'Just a headline' }));
   assert.equal(noContent.status, 400);
 
-  assert.equal((await hr.newsSubmissions(id)).length, before, 'a rejected form writes nothing');
+  assert.equal(hr.newsSubmissions(id).length, before, 'a rejected form writes nothing');
 });
 
 test('a member only ever sees their own submissions', async () => {
   const mine = await member('subsmine');
   const theirs = await member('substheirs');
-  await hr.recordNewsSubmission({ userId: theirs.id, title: 'Their private draft' });
+  hr.recordNewsSubmission({ userId: theirs.id, title: 'Their private draft' });
 
   const page = await (await mine.call('/homeroom/publish')).text();
   assert.doesNotMatch(page, /Their private draft/);

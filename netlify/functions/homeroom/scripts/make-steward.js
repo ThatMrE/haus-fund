@@ -115,16 +115,15 @@ async function main() {
   console.log(`\n${DIM}This is the only time the password is shown; nothing stores it but your`);
   console.log('password manager. The hash is what goes in the environment, and it cannot be');
   console.log('turned back into the password or replayed as a login.');
-  console.log('\nThe account is checked against these variables on every boot, so it is');
-  console.log('configuration rather than a row somebody has to remember to create. Changing');
-  console.log('the password inside Homeroom now persists, because the database does — but the');
-  console.log('variables stay the source of truth for a fresh database, so keep them in step.');
-  console.log(`Rotating means re-running this and updating HOMEROOM_STEWARD_PASSWORD_HASH.${OFF}\n`);
+  console.log('\nThe account is rebuilt from these variables on every cold start, so it');
+  console.log('survives redeploys. Changing the password inside Homeroom does NOT: that');
+  console.log('change lives on one container. To rotate for real, re-run this and update');
+  console.log(`HOMEROOM_STEWARD_PASSWORD_HASH.${OFF}\n`);
 
   if (apply) {
     const { ensureSteward } = await import('../app/steward.js');
     const { closeDb } = await import('../app/db.js');
-    const result = await ensureSteward({
+    const result = ensureSteward({
       env: {
         ...process.env,
         HOMEROOM_STEWARD: handle,
@@ -134,7 +133,7 @@ async function main() {
       force,
       quiet: true,
     });
-    await closeDb();
+    closeDb();
     if (result.status === 'error') {
       console.error(`Local database: ${result.message}\n`);
       process.exitCode = 1;

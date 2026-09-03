@@ -3,17 +3,16 @@
  *
  * WHY THIS IS NOT A ROUTE OR A ONE-OFF SCRIPT
  *
- * This was written when Homeroom's database lived on the container's /tmp and
- * an account created by hand survived until that container recycled — there was
- * no "create the admin once" on that storage, so the steward had to be
- * derivable from configuration.
+ * Homeroom's database lives on the function container's /tmp. Every cold
+ * container starts from nothing, seeds itself, and is thrown away again. An
+ * account created by hand — through a signup form, an admin route, a script run
+ * once against production — exists on exactly one container and is gone by the
+ * next request. There is no "create the admin once" on this storage.
  *
- * The database is durable now, and this is still worth keeping: it makes the
- * first account on a fresh database a matter of configuration rather than a
- * step somebody has to remember, and it re-asserts stewardship on every boot,
- * so an admin who loses it cannot be locked out by a bad row. Given a handle
- * and a password hash in the environment, it makes sure the account is there
- * and is a steward.
+ * So the steward has to be derivable from configuration, and recreated
+ * identically on every boot. That is what this does: given a handle and a
+ * password (or better, a password hash) in the environment, it makes sure the
+ * account is there, is a steward, and has the same password it had last time.
  *
  * It runs on every boot regardless of HOMEROOM_SEED, so turning seeding off
  * does not lock the stewards out of the room.
@@ -96,7 +95,7 @@ export function stewardFromEnv(env = process.env) {
  * @returns {{status: 'created'|'promoted'|'reset'|'present'|'skipped'|'error',
  *            handle?: string, message?: string}}
  */
-export async function ensureSteward({ env = process.env, force = false, quiet = true } = {}) {
+export function ensureSteward({ env = process.env, force = false, quiet = true } = {}) {
   const config = stewardFromEnv(env);
 
   if (config.skip) return { status: 'skipped', message: config.skip };
@@ -108,38 +107,38 @@ export async function ensureSteward({ env = process.env, force = false, quiet = 
   }
 
   const { handle, email, hash } = config;
-  const db = await getDb();
-  const existing = await hr.getUser(handle);
+  const db = getDb();
+  const existing = hr.getUser(handle);
 
   if (!existing) {
     // Guard the address as well as the handle: two rows sharing an email would
     // make "sign in with your email" ambiguous.
-    const byEmail = await hr.getUserByEmail(email);
+    const byEmail = hr.getUserByEmail(email);
     if (byEmail && byEmail.id !== handle) {
       const message = `${email} already belongs to "${byEmail.id}". `
         + 'Set HOMEROOM_STEWARD_EMAIL to a different address, or set HOMEROOM_STEWARD to that handle.';
       console.error(`[homeroom] steward: ${message}`);
       return { status: 'error', message };
     }
-    await hr.createUser({ id: handle, email, passwordHash: hash, isAdmin: true });
-    await hr.ensureMember(handle, { name: handle, headline: 'Steward.' });
+    hr.createUser({ id: handle, email, passwordHash: hash, isAdmin: true });
+    hr.ensureMember(handle, { name: handle, headline: 'Steward.' });
     if (!quiet) console.log(`[homeroom] steward "${handle}" created.`);
     return { status: 'created', handle };
   }
 
   let status = 'present';
   if (!existing.is_admin) {
-    ((await db.prepare('UPDATE users SET is_admin = 1 WHERE id = ?').run(handle)));
+    db.prepare('UPDATE users SET is_admin = 1 WHERE id = ?').run(handle);
     status = 'promoted';
   }
   if (force) {
-    ((await db.prepare('UPDATE users SET password_hash = ?, email = ? WHERE id = ?').run(hash, email, handle)));
+    db.prepare('UPDATE users SET password_hash = ?, email = ? WHERE id = ?').run(hash, email, handle);
     // Any session opened under the old password stops working, which is the
     // point of rotating one.
-    ((await db.prepare('DELETE FROM sessions WHERE user_id = ?').run(handle)));
+    db.prepare('DELETE FROM sessions WHERE user_id = ?').run(handle);
     status = 'reset';
   }
-  await hr.ensureMember(handle);
+  hr.ensureMember(handle);
   if (!quiet) console.log(`[homeroom] steward "${handle}" ${status}.`);
   return { status, handle };
 }

@@ -34,24 +34,24 @@ export function verifyPassword(password, stored) {
   return derived.length === expectedBuf.length && timingSafeEqual(derived, expectedBuf);
 }
 
-export async function createSession(userId) {
+export function createSession(userId) {
   const token = randomBytes(32).toString('hex');
   const now = nowSeconds();
-  (await (await getDb())
+  getDb()
     .prepare('INSERT INTO sessions (token, user_id, created_at, expires_at) VALUES (?, ?, ?, ?)')
-    .run(token, userId, now, now + SESSION_TTL));
+    .run(token, userId, now, now + SESSION_TTL);
   return token;
 }
 
-export async function getSessionUser(token) {
+export function getSessionUser(token) {
   if (!token) return null;
-  const row = (await (await getDb())
+  const row = getDb()
     .prepare(
       `SELECT u.* FROM sessions s
        JOIN users u ON u.id = s.user_id
        WHERE s.token = ? AND s.expires_at > ?`,
     )
-    .get(token, nowSeconds()));
+    .get(token, nowSeconds());
   if (!row || row.banned) return null;
   return row;
 }
@@ -62,17 +62,17 @@ export async function getSessionUser(token) {
  * The counterpart to changing a password: a credential change that leaves the
  * old cookie working has not actually taken the key back from anyone.
  */
-export async function destroyAllSessions(userId) {
-  return (await (await getDb()).prepare('DELETE FROM sessions WHERE user_id = ?').run(userId)).changes;
+export function destroyAllSessions(userId) {
+  return getDb().prepare('DELETE FROM sessions WHERE user_id = ?').run(userId).changes;
 }
 
-export async function destroySession(token) {
+export function destroySession(token) {
   if (!token) return;
-  (await (await getDb()).prepare('DELETE FROM sessions WHERE token = ?').run(token));
+  getDb().prepare('DELETE FROM sessions WHERE token = ?').run(token);
 }
 
-export async function purgeExpiredSessions() {
-  return (await (await getDb()).prepare('DELETE FROM sessions WHERE expires_at <= ?').run(nowSeconds())).changes;
+export function purgeExpiredSessions() {
+  return getDb().prepare('DELETE FROM sessions WHERE expires_at <= ?').run(nowSeconds()).changes;
 }
 
 /** CSRF token bound to the session, so it needs no extra storage. */
@@ -135,15 +135,15 @@ export const RESET_TTL = 60 * 60; // one hour
  * not let anyone take over an account; the token itself exists only in the
  * link that goes to the address on file.
  */
-export async function createResetToken(userId) {
+export function createResetToken(userId) {
   const token = randomBytes(32).toString('hex');
   const now = nowSeconds();
-  (await (await getDb())
+  getDb()
     .prepare(
       `INSERT INTO password_resets (token_hash, user_id, created_at, expires_at)
        VALUES (?, ?, ?, ?)`,
     )
-    .run(hashToken(token), userId, now, now + RESET_TTL));
+    .run(hashToken(token), userId, now, now + RESET_TTL);
   return token;
 }
 
@@ -152,11 +152,11 @@ export function hashToken(token) {
 }
 
 /** Look a token up without spending it. */
-export async function findResetToken(token) {
+export function findResetToken(token) {
   if (!token) return null;
-  const row = (await (await getDb())
+  const row = getDb()
     .prepare('SELECT * FROM password_resets WHERE token_hash = ?')
-    .get(hashToken(token)));
+    .get(hashToken(token));
   if (!row || row.used_at || row.expires_at <= nowSeconds()) return null;
   return row;
 }
@@ -165,19 +165,19 @@ export async function findResetToken(token) {
  * Spend a token and set the new password, in one transaction, and drop every
  * existing session for that account: a reset is also how you throw someone out.
  */
-export async function consumeResetToken(token, newPassword) {
-  const row = await findResetToken(token);
+export function consumeResetToken(token, newPassword) {
+  const row = findResetToken(token);
   if (!row) return null;
   const now = nowSeconds();
-  const db = await getDb();
+  const db = getDb();
   db.exec('BEGIN');
   try {
-    const spent = (await db
+    const spent = db
       .prepare('UPDATE password_resets SET used_at = ? WHERE token_hash = ? AND used_at IS NULL')
-      .run(now, row.token_hash));
+      .run(now, row.token_hash);
     if (spent.changes !== 1) throw new Error('that link has already been used');
-    ((await db.prepare('UPDATE users SET password_hash = ? WHERE id = ?').run(hashPassword(newPassword), row.user_id)));
-    ((await db.prepare('DELETE FROM sessions WHERE user_id = ?').run(row.user_id)));
+    db.prepare('UPDATE users SET password_hash = ? WHERE id = ?').run(hashPassword(newPassword), row.user_id);
+    db.prepare('DELETE FROM sessions WHERE user_id = ?').run(row.user_id);
     db.exec('COMMIT');
   } catch (err) {
     try { db.exec('ROLLBACK'); } catch { /* the outer error is the interesting one */ }
@@ -186,6 +186,6 @@ export async function consumeResetToken(token, newPassword) {
   return row.user_id;
 }
 
-export async function purgeExpiredResets() {
-  return (await (await getDb()).prepare('DELETE FROM password_resets WHERE expires_at <= ?').run(nowSeconds())).changes;
+export function purgeExpiredResets() {
+  return getDb().prepare('DELETE FROM password_resets WHERE expires_at <= ?').run(nowSeconds()).changes;
 }

@@ -1,3 +1,4 @@
+process.env.HOMEROOM_DB = ':memory:';
 process.env.HOMEROOM_SECRET = 'test-secret';
 
 import test, { before, after } from 'node:test';
@@ -9,7 +10,7 @@ import { resetRateLimits } from '../app/http.js';
 import * as hr from '../app/models.js';
 import { relTime, stamp, parseWhen, toLocalInput } from '../app/views/components.js';
 
-await getDb();
+getDb();
 
 let server;
 let base;
@@ -183,8 +184,8 @@ test('creating a lab makes you its admin and lets you post updates', async () =>
   }));
   assert.equal(created.status, 303);
   const slug = created.headers.get('location').split('/').pop();
-  const org = await hr.getOrg(slug);
-  assert.ok(await hr.isOrgAdmin(org.id, id));
+  const org = hr.getOrg(slug);
+  assert.ok(hr.isOrgAdmin(org.id, id));
 
   const posted = await call(`/homeroom/lab/${slug}/update`, form({
     csrf, period: 'Week 1', body: 'Nothing broke.', metrics: '0 incidents', asks: 'A second autoclave',
@@ -243,7 +244,7 @@ test('funder reviews average, and anonymity is respected on the page', async () 
     csrf: author.csrf, name: 'Imaginary Capital', kind: 'vc', focus: 'Nothing real',
   }));
   const slug = created.headers.get('location').split('/').pop();
-  const funderId = (await hr.getFunder(slug)).id;
+  const funderId = hr.getFunder(slug).id;
 
   await author.call(`/homeroom/funder/${slug}/review`, form({
     csrf: author.csrf, rating: '5', speed: '5', value_add: '4', invested: '1', body: 'Fast and straight.',
@@ -252,8 +253,8 @@ test('funder reviews average, and anonymity is respected on the page', async () 
     csrf: second.csrf, rating: '2', body: 'Fourteen weeks then a pass.', anonymous: '1',
   }));
 
-  assert.equal((await hr.getFunder(slug)).avg_rating, 3.5);
-  assert.equal((await hr.getFunder(slug)).review_count, 2);
+  assert.equal(hr.getFunder(slug).avg_rating, 3.5);
+  assert.equal(hr.getFunder(slug).review_count, 2);
 
   const page = await (await author.call(`/homeroom/funder/${slug}`)).text();
   assert.match(page, /Fourteen weeks then a pass/);
@@ -261,7 +262,7 @@ test('funder reviews average, and anonymity is respected on the page', async () 
 
   // Re-reviewing updates in place rather than stacking.
   await author.call(`/homeroom/funder/${slug}/review`, form({ csrf: author.csrf, rating: '3' }));
-  assert.equal((await hr.getFunder(slug)).review_count, 2);
+  assert.equal(hr.getFunder(slug).review_count, 2);
 });
 
 test('the pipeline is private to its owner', async () => {
@@ -285,7 +286,7 @@ test('office hours book, fill up and notify the host', async () => {
   const host = await member('hourhost');
   const first = await member('hourguest1');
   const second = await member('hourguest2');
-  const slotId = await hr.createSlot({
+  const slotId = hr.createSlot({
     hostId: host.id, title: 'Half an hour on scale-up', startsAt: Math.floor(Date.now() / 1000) + 86400, capacity: 1,
   });
 
@@ -293,27 +294,27 @@ test('office hours book, fill up and notify the host', async () => {
     csrf: first.csrf, question: 'Foam control above 300L?',
   }));
   assert.equal(booked.status, 303);
-  assert.ok((await hr.notifications(host.id)).some((n) => n.kind === 'booking'));
+  assert.ok(hr.notifications(host.id).some((n) => n.kind === 'booking'));
 
   const full = await second.call(`/homeroom/hours/${slotId}/book`, form({ csrf: second.csrf }));
   assert.equal(full.status, 400);
-  assert.equal((await hr.slotBookings(slotId)).length, 1);
+  assert.equal(hr.slotBookings(slotId).length, 1);
 
   // Only the person who booked sees the question on the page; the host does too.
   assert.match(await (await host.call(`/homeroom/hours/${slotId}`)).text(), /Foam control above 300L/);
 
   await first.call(`/homeroom/hours/${slotId}/unbook`, form({ csrf: first.csrf }));
-  assert.equal((await hr.slotBookings(slotId)).length, 0);
+  assert.equal(hr.slotBookings(slotId).length, 0);
 });
 
 test('you cannot book your own session or one in the past', async () => {
   const host = await member('hourhost2');
   const now = Math.floor(Date.now() / 1000);
-  const mine = await hr.createSlot({ hostId: host.id, title: 'My own slot', startsAt: now + 86400 });
-  assert.equal((await hr.bookSlot(mine, host.id)).ok, false);
+  const mine = hr.createSlot({ hostId: host.id, title: 'My own slot', startsAt: now + 86400 });
+  assert.equal(hr.bookSlot(mine, host.id).ok, false);
 
-  const past = await hr.createSlot({ hostId: host.id, title: 'Yesterday', startsAt: now - 86400 });
-  assert.equal((await hr.bookSlot(past, 'hourhost')).ok, false);
+  const past = hr.createSlot({ hostId: host.id, title: 'Yesterday', startsAt: now - 86400 });
+  assert.equal(hr.bookSlot(past, 'hourhost').ok, false);
 });
 
 /* ------------------------------------------------------------------ jobs */
@@ -325,7 +326,7 @@ test('roles need a lab, and applications reach the poster', async () => {
   assert.equal((await applicant.call('/homeroom/jobs/new')).status, 400);
 
   const lab = await founder.call('/homeroom/labs/member/new', form({ csrf: founder.csrf, name: 'Hiring Lab' }));
-  const orgId = (await hr.getOrg(lab.headers.get('location').split('/').pop())).id;
+  const orgId = hr.getOrg(lab.headers.get('location').split('/').pop()).id;
   const created = await founder.call('/homeroom/jobs/new', form({
     csrf: founder.csrf, org: String(orgId), title: 'Bench scientist', discipline: 'wetlab',
     employment: 'full-time', location: 'Lisbon', description: 'Do the science.',
@@ -334,7 +335,7 @@ test('roles need a lab, and applications reach the poster', async () => {
   const jobUrl = created.headers.get('location');
 
   await applicant.call(`${jobUrl}/apply`, form({ csrf: applicant.csrf, note: 'I have done this.' }));
-  assert.ok((await hr.notifications(founder.id)).some((n) => n.kind === 'application'));
+  assert.ok(hr.notifications(founder.id).some((n) => n.kind === 'application'));
 
   // The poster sees applicants; a stranger does not.
   assert.match(await (await founder.call(jobUrl)).text(), /I have done this/);
@@ -354,13 +355,13 @@ test('RSVPs respect capacity', async () => {
   const eventUrl = created.headers.get('location');
   const eventId = Number(eventUrl.split('/').pop());
 
-  assert.equal(await hr.myRsvp(eventId, host.id), 'going', 'the host is going to their own event');
+  assert.equal(hr.myRsvp(eventId, host.id), 'going', 'the host is going to their own event');
   await guest.call(`${eventUrl}/rsvp`, form({ csrf: guest.csrf, status: 'going' }));
-  assert.equal((await hr.getEvent(eventId)).going, 2);
+  assert.equal(hr.getEvent(eventId).going, 2);
 
   const full = await spare.call(`${eventUrl}/rsvp`, form({ csrf: spare.csrf, status: 'going' }));
   assert.equal(full.status, 400);
-  assert.equal((await hr.getEvent(eventId)).going, 2);
+  assert.equal(hr.getEvent(eventId).going, 2);
 });
 
 /* ---------------------------------------------------- intros and messages */
@@ -368,16 +369,16 @@ test('RSVPs respect capacity', async () => {
 test('an accepted intro opens a thread both members can read', async () => {
   const asker = await member('introasker');
   const target = await member('introtarget');
-  await hr.updateMember(target.id, { open_intros: true });
+  hr.updateMember(target.id, { open_intros: true });
 
   const requested = await asker.call('/homeroom/intros/new', form({
     csrf: asker.csrf, to: target.id,
     reason: 'You have shipped the thing I am about to ship and I would like twenty minutes on it.',
   }));
   assert.equal(requested.status, 303);
-  assert.equal(await hr.pendingIntroCount(target.id), 1);
+  assert.equal(hr.pendingIntroCount(target.id), 1);
 
-  const [intro] = (await hr.introsFor(target.id)).incoming;
+  const [intro] = hr.introsFor(target.id).incoming;
   const resolved = await target.call(`/homeroom/intros/${intro.id}/resolve`, form({
     csrf: target.csrf, decision: 'accepted',
   }));
@@ -395,7 +396,7 @@ test('an accepted intro opens a thread both members can read', async () => {
 test('a short intro request is rejected, and closed members cannot be asked', async () => {
   const asker = await member('introasker2');
   const closed = await member('introclosed');
-  await hr.updateMember(closed.id, { open_intros: false });
+  hr.updateMember(closed.id, { open_intros: false });
 
   const short = await asker.call('/homeroom/intros/new', form({ csrf: asker.csrf, to: closed.id, reason: 'hi' }));
   assert.equal(short.status, 403, 'the closed door is checked before the length');
@@ -419,10 +420,10 @@ test('direct threads are reused, and unread counts clear on read', async () => {
   }));
   assert.equal(second.headers.get('location'), threadUrl, 'a second DM reuses the thread');
 
-  assert.equal(await hr.unreadMessageCount(b.id), 2);
+  assert.equal(hr.unreadMessageCount(b.id), 2);
   await b.call(threadUrl);
-  assert.equal(await hr.unreadMessageCount(b.id), 0);
-  assert.equal(await hr.unreadMessageCount(a.id), 0, 'your own messages are never unread');
+  assert.equal(hr.unreadMessageCount(b.id), 0);
+  assert.equal(hr.unreadMessageCount(a.id), 0, 'your own messages are never unread');
 });
 
 /* ---------------------------------------------------------------- search */
@@ -451,17 +452,17 @@ test('writes without a CSRF token are refused', async () => {
     const res = await call(path, form(fields));
     assert.equal(res.status, 403, `${path} must reject a missing token`);
   }
-  assert.equal((await hr.getMember('csrfvictim')).headline, '');
+  assert.equal(hr.getMember('csrfvictim').headline, '');
 });
 
 
 /* ------------------------------------------------------------- unit bits */
 
-test('slugs are unique per table', async () => {
-  const a = await hr.createFunder({ name: 'Same Name Fund' });
-  const b = await hr.createFunder({ name: 'Same Name Fund' });
-  assert.equal((await hr.getFunder(a)).slug, 'same-name-fund');
-  assert.equal((await hr.getFunder(b)).slug, 'same-name-fund-2');
+test('slugs are unique per table', () => {
+  const a = hr.createFunder({ name: 'Same Name Fund' });
+  const b = hr.createFunder({ name: 'Same Name Fund' });
+  assert.equal(hr.getFunder(a).slug, 'same-name-fund');
+  assert.equal(hr.getFunder(b).slug, 'same-name-fund-2');
 });
 
 test('tags are normalised, deduplicated and capped', () => {
@@ -527,8 +528,8 @@ test('a handle cannot be taken twice, and the email is not confirmed either way'
   assert.doesNotMatch(await sameEmail.text(), /already (registered|exists|has)/i);
 });
 
-test('the first account through the door is a steward, later ones are not', async () => {
-  const stewards = (await (await getDb()).prepare('SELECT id FROM users WHERE is_admin = 1').all());
+test('the first account through the door is a steward, later ones are not', () => {
+  const stewards = getDb().prepare('SELECT id FROM users WHERE is_admin = 1').all();
   assert.equal(stewards.length, 1, 'exactly one steward');
 });
 
@@ -575,14 +576,14 @@ test('a reset link works once, changes the password, and drops every session', a
   assert.doesNotMatch(sent, /reset\?token=/, 'the link is never shown to whoever asked');
 
   // Read the token the way the mail would carry it.
-  const row = (await (await getDb())
+  const row = getDb()
     .prepare('SELECT token_hash FROM password_resets WHERE user_id = ? ORDER BY created_at DESC')
-    .get(id));
+    .get(id);
   assert.ok(row, 'a token was minted');
 
   // Only its hash is stored, so mint a fresh one here to drive the rest.
   const { createResetToken } = await import('../app/auth.js');
-  const token = await createResetToken(id);
+  const token = createResetToken(id);
 
   assert.equal((await call(`/homeroom/reset?token=${token}`)).status, 200);
   assert.equal((await call('/homeroom/reset?token=deadbeef')).status, 410);
@@ -616,7 +617,7 @@ test('a reset request for an unknown address looks identical', async () => {
   assert.equal(res.status, 200);
   assert.match(await res.text(), /Check your email/);
   assert.equal(
-    (await (await getDb()).prepare('SELECT COUNT(*) AS n FROM password_resets WHERE user_id = ?').get('stranger')).n,
+    getDb().prepare('SELECT COUNT(*) AS n FROM password_resets WHERE user_id = ?').get('stranger').n,
     0,
     'and mints nothing',
   );
@@ -624,13 +625,13 @@ test('a reset request for an unknown address looks identical', async () => {
 
 test('password hashes and reset tokens are never stored in the clear', async () => {
   const { id } = await member('hashcheck');
-  const account = (await (await getDb()).prepare('SELECT password_hash FROM users WHERE id = ?').get(id));
+  const account = getDb().prepare('SELECT password_hash FROM users WHERE id = ?').get(id);
   assert.match(account.password_hash, /^scrypt\$/);
   assert.doesNotMatch(account.password_hash, /a-good-passphrase/);
 
   const { createResetToken } = await import('../app/auth.js');
-  const token = await createResetToken(id);
-  const stored = (await (await getDb()).prepare('SELECT token_hash FROM password_resets WHERE user_id = ?').all(id));
+  const token = createResetToken(id);
+  const stored = getDb().prepare('SELECT token_hash FROM password_resets WHERE user_id = ?').all(id);
   assert.ok(stored.length);
   for (const row of stored) assert.notEqual(row.token_hash, token, 'the row holds a hash, not the token');
 });
@@ -676,7 +677,7 @@ test('a member can change their own local password', async () => {
   assert.equal(res.status, 303);
 
   const { verifyPassword } = await import('../app/auth.js');
-  assert.ok(verifyPassword('the-replacement-phrase', (await hr.getUser('localrotate')).password_hash));
+  assert.ok(verifyPassword('the-replacement-phrase', hr.getUser('localrotate').password_hash));
 });
 
 test('the current local password has to be right', async () => {
@@ -689,7 +690,7 @@ test('the current local password has to be right', async () => {
   assert.equal(res.status, 400);
   assert.match(await res.text(), /current password is wrong/i);
   const { verifyPassword } = await import('../app/auth.js');
-  assert.ok(verifyPassword('a-good-passphrase', (await hr.getUser('localguess')).password_hash), 'unchanged');
+  assert.ok(verifyPassword('a-good-passphrase', hr.getUser('localguess').password_hash), 'unchanged');
 });
 
 test('changing a local password ends the other sessions and keeps mine', async () => {

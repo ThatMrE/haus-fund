@@ -5,15 +5,20 @@
  * event id via `hr_event_sources`, so a repeated fire updates rows rather than
  * duplicating evenings, and a fire with nothing new does one API call.
  *
- * WHERE THIS WRITES. The same Postgres the web containers read, which is what
- * makes a scheduled sync worth having: this runs in its own container, and
- * before the database moved off /tmp anything it imported was invisible to
- * every other one.
+ * A NOTE ON WHERE THIS WRITES. Homeroom's SQLite file lives in `/tmp`, which is
+ * per-container. A scheduled function runs in its own container, so what this
+ * writes is not guaranteed to be the same database the web container is reading
+ * from — the sync is genuinely useful only once Homeroom's storage moves
+ * somewhere durable (see the storage section of the Homeroom README). It is
+ * wired up now because the failure mode is harmless (a container re-syncs on
+ * its own next boot) and because leaving the schedule until after the storage
+ * move would mean remembering to come back for it.
  *
  * Set LUMA_API_KEY to enable it. Without one it logs and exits, rather than
  * failing the scheduled run.
  */
 export default async function lumaSyncHandler() {
+  process.env.HOMEROOM_DB ||= '/tmp/haus-homeroom.db';
 
   const { getDb } = await import('./homeroom/app/db.js');
   const luma = await import('./homeroom/app/luma.js');
@@ -23,13 +28,13 @@ export default async function lumaSyncHandler() {
     return json({ ok: true, ran: false, reason: 'not configured' });
   }
 
-  const db = await getDb();
+  const db = getDb();
   // Imported events need a local owner. Prefer the configured importer, then
   // the first steward, then the first account: an event with no host cannot be
   // written, and failing the whole sweep over it would be worse than picking.
   const host = process.env.LUMA_IMPORT_AS
-    || (await db.prepare('SELECT id FROM users WHERE is_admin = 1 ORDER BY created_at LIMIT 1').get())?.id
-    || (await db.prepare('SELECT id FROM users ORDER BY created_at LIMIT 1').get())?.id;
+    || db.prepare('SELECT id FROM users WHERE is_admin = 1 ORDER BY created_at LIMIT 1').get()?.id
+    || db.prepare('SELECT id FROM users ORDER BY created_at LIMIT 1').get()?.id;
 
   if (!host) {
     console.log('[luma] skipped — no account to attribute imported events to');
