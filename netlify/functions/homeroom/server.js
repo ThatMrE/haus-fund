@@ -11,6 +11,11 @@ process.env.HOMEROOM_STATIC_BASE ||= '/homeroom-assets';
 
 const SITE = fileURLToPath(new URL('../../../', import.meta.url));
 const MIME = {
+  /* Tool pages are embedded in Homeroom as iframes (/homeroom/labs/cores and
+     /homeroom/library/tree). Without this entry they fall through to
+     application/octet-stream and the browser downloads them instead of
+     rendering, so the embeds only ever look right in production. */
+  '.html': 'text/html; charset=utf-8',
   '.css': 'text/css; charset=utf-8',
   '.js': 'text/javascript; charset=utf-8',
   '.mjs': 'text/javascript; charset=utf-8',

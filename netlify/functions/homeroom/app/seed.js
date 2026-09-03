@@ -755,5 +755,5 @@ if (isMain) {
     console.log(`Sample logins: any handle above, password "${SAMPLE_PASSWORD}".`);
     console.log('All sample content is fictional.');
   }
-  closeDb();
+  await closeDb();
 }

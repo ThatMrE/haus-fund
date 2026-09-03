@@ -1,0 +1,77 @@
+{
+  "treeId": "biopunk-accelerator",
+  "id": "orientation",
+  "title": {
+    "name": "Orientation: how to read this tree",
+    "level": 0
+  },
+  "track": "program",
+  "kind": "playbook",
+  "week": 1,
+  "minutes": 20,
+  "deliverable": "Your first three nodes",
+  "defaultStatus": "inProgress",
+  "isUnlocked": true,
+  "onMainPath": true,
+  "link": "/homeroom/library/module/orientation",
+  "initialPosition": [
+    0,
+    0
+  ],
+  "dependencies": [],
+  "leadsTo": [
+    "risk-mapping",
+    "founder-scorecard",
+    "decision-making",
+    "study-the-greats",
+    "founder-wellbeing",
+    "company-formation",
+    "founder-resources",
+    "relationship-systems"
+  ],
+  "overview": {
+    "description": "Forty-seven nodes across six tracks and a spine. Nothing here locks: the dependencies are guidance about what a node reads better after, never a gate. Week one is for picking the three you will actually finish.",
+    "objectives": [
+      "Read a node as a piece of work with an artefact at the end, not as a page to open",
+      "Tell the twelve live-workshop nodes from the async ones and plan around both",
+      "Pick the three nodes that retire your largest risk this month"
+    ],
+    "prerequisites": []
+  },
+  "steps": {
+    "intro": "Forty-seven nodes across six tracks and a spine. Nothing here locks: the dependencies are guidance about what a node reads better after, never a gate. Week one is for picking the three you will actually finish.",
+    "estimatedMinutes": 20,
+    "instructions": [
+      "Walk the spine first — orientation, risk map, beachhead, formation, first raise, customers — and read only the summaries.",
+      "Mark every node whose deliverable you already have. Most founders have two or three.",
+      "Pick three to finish in the first fortnight. Write them where your cohort can see them.",
+      "Log each one in Homeroom as you go, so the deliverable and the note live with the module."
+    ]
+  },
+  "submission": {
+    "description": "Produce the Your first three nodes and log it against this module in Homeroom. Done means the artefact exists, not that you read the page."
+  },
+  "video": {
+    "url": "https://www.youtube.com/watch?v=bzxPVr9H8Kc",
+    "title": "Everything We Teach at YC in 10 Minutes",
+    "source": "Y Combinator"
+  },
+  "resources": [
+    {
+      "title": "YC Startup Library — the whole free curriculum",
+      "url": "https://www.ycombinator.com/library"
+    },
+    {
+      "title": "Disciplined Entrepreneurship — the 24 steps, MIT",
+      "url": "https://disciplinedentrepreneurship.com/"
+    },
+    {
+      "title": "Steve Blank — tools and reading for founders",
+      "url": "https://steveblank.com/tools-and-blogs-for-entrepreneurs/"
+    },
+    {
+      "title": "LifeSciVC — a biotech VC writing in public since 2010",
+      "url": "https://lifescivc.com/"
+    }
+  ]
+}

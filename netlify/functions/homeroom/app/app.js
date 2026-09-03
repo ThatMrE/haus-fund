@@ -96,6 +96,7 @@ export async function handle(req, res) {
         auth: await sbAuth.health(),
         database: await dbHealth(),
         luma: { configured: lumaConfigured(), calendar: calendarUrl() },
+        mentors: await (await import('./mentordesk.js')).deskStats(),
         invites: invites.health(),
         now: nowSeconds(),
       });
@@ -301,8 +302,8 @@ async function joinSubmit(ctx, token) {
     const { account: linked, error } = await localAccountFor(created.user, { handleHint: values.handle });
     if (error) return auth(ctx, views.joinFailedPage(error, invite), { title: 'Could not finish', status: 409 });
 
-    access.bindAccount({ email: invite.email, userId: linked.id, assessment });
-    access.seedProfile(linked.id, assessment.person);
+    await access.bindAccount({ email: invite.email, userId: linked.id, assessment });
+    await access.seedProfile(linked.id, assessment.person);
     if (created.needsConfirmation) {
       return auth(ctx, views.confirmEmailPage(ctx, { email: invite.email }), { title: 'Confirm your email' });
     }
@@ -316,8 +317,8 @@ async function joinSubmit(ctx, token) {
     passwordHash: hashPassword(fields.password),
     isAdmin: false,
   });
-  access.bindAccount({ email: invite.email, userId: values.handle, assessment });
-  access.seedProfile(values.handle, assessment.person);
+  await access.bindAccount({ email: invite.email, userId: values.handle, assessment });
+  await access.seedProfile(values.handle, assessment.person);
   await finishLogin(ctx, values.handle, '/homeroom/welcome');
 }
 
@@ -476,8 +477,8 @@ const AUTH_ROUTES = {
         isAdmin: first,
       });
       if (error) return fail(error, 409);
-      access.bindAccount({ email: values.email, userId: linked.id, assessment });
-      access.seedProfile(linked.id, assessment.person);
+      await access.bindAccount({ email: values.email, userId: linked.id, assessment });
+      await access.seedProfile(linked.id, assessment.person);
 
       // With email confirmation switched on, the credential exists but cannot
       // sign in yet. Saying so beats a login that mysteriously fails.
@@ -496,8 +497,8 @@ const AUTH_ROUTES = {
       passwordHash: hashPassword(fields.password),
       isAdmin: first,
     });
-    access.bindAccount({ email: values.email, userId: values.handle, assessment });
-    access.seedProfile(values.handle, assessment.person);
+    await access.bindAccount({ email: values.email, userId: values.handle, assessment });
+    await access.seedProfile(values.handle, assessment.person);
     await finishLogin(ctx, values.handle, '/homeroom/settings?welcome=1');
   },
 

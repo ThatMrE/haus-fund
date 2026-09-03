@@ -173,5 +173,5 @@ if (isMain) {
     console.error(`\n${err.message}\n`);
     process.exitCode = 1;
   }
-  closeDb();
+  await closeDb();
 }

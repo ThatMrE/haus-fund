@@ -48,7 +48,12 @@ test('a quoted identifier is not scanned for placeholders', () => {
 
 /* ============================================================== the driver */
 
-test('with no database URL it runs in process, and says so', async () => {
+test('with no database URL it runs in process, and says so', {
+  // This one is about the absence of a URL, so it cannot mean anything when
+  // the suite is pointed at a real Postgres — which is worth doing, and which
+  // should not produce a failure that reads like a defect.
+  skip: process.env.HOMEROOM_DATABASE_URL ? 'HOMEROOM_DATABASE_URL is set' : false,
+}, async () => {
   // This is what the test suite itself is using, so the assertion doubles as a
   // statement of how these tests get a Postgres without one being installed.
   assert.equal(driver(), 'pglite');

@@ -1,0 +1,71 @@
+{
+  "treeId": "biopunk-accelerator",
+  "id": "study-the-greats",
+  "title": {
+    "name": "Study the greats: case studies and pattern recognition",
+    "level": 1
+  },
+  "track": "founder-fundamentals",
+  "kind": "playbook",
+  "week": 0,
+  "minutes": 60,
+  "deliverable": "",
+  "defaultStatus": "inProgress",
+  "isUnlocked": true,
+  "onMainPath": false,
+  "link": "/homeroom/library/module/study-the-greats",
+  "initialPosition": [
+    1,
+    4
+  ],
+  "dependencies": [
+    "orientation"
+  ],
+  "leadsTo": [],
+  "overview": {
+    "description": "A gap the programme review flagged explicitly: most accelerators skip this, and 5050 does not. Reverse-engineering companies that worked, and companies that did not, is cheaper than learning the same lessons live.",
+    "objectives": [
+      "Reconstruct how a company you admire actually got its first customer and first cheque",
+      "Identify the decision that made it, not the narrative told afterwards",
+      "Recognise the failure patterns that most resemble your own position"
+    ],
+    "prerequisites": [
+      "Orientation: how to read this tree"
+    ]
+  },
+  "steps": {
+    "intro": "A gap the programme review flagged explicitly: most accelerators skip this, and 5050 does not. Reverse-engineering companies that worked, and companies that did not, is cheaper than learning the same lessons live.",
+    "estimatedMinutes": 60,
+    "instructions": [
+      "Pick two companies in your space: one that worked, one that did not.",
+      "Reconstruct the first 24 months of each from primary sources — filings, interviews, archived sites.",
+      "Write the one decision that separated them. Then ask whether you are about to make the wrong version of it."
+    ]
+  },
+  "submission": {
+    "description": "No named deliverable. Work the steps and keep the notes with the module in Homeroom."
+  },
+  "video": {
+    "url": "https://www.youtube.com/watch?v=beNfIxRSrFA",
+    "title": "George Church on building biotech companies",
+    "source": "Nucleate Virtual Summit"
+  },
+  "resources": [
+    {
+      "title": "LifeSciVC — biotech company formation, case by case",
+      "url": "https://lifescivc.com/category/biotech-startup-advice/"
+    },
+    {
+      "title": "Nature Biotechnology — the bioentrepreneur archive",
+      "url": "https://www.nature.com/nbt/"
+    },
+    {
+      "title": "SEC EDGAR — read the S-1 of a company you admire",
+      "url": "https://www.sec.gov/edgar/search/"
+    },
+    {
+      "title": "Nucleate — the next generation of bio founders",
+      "url": "https://nucleate.org/"
+    }
+  ]
+}

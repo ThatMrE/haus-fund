@@ -1,0 +1,63 @@
+{
+  "treeId": "biopunk-accelerator",
+  "id": "community-building",
+  "title": {
+    "name": "Community as a moat",
+    "level": 2
+  },
+  "track": "brand-network-and-life",
+  "kind": "reference",
+  "week": 0,
+  "minutes": 30,
+  "deliverable": "",
+  "defaultStatus": "inProgress",
+  "isUnlocked": true,
+  "onMainPath": false,
+  "link": "/homeroom/library/module/community-building",
+  "initialPosition": [
+    6,
+    3
+  ],
+  "dependencies": [
+    "relationship-systems"
+  ],
+  "leadsTo": [],
+  "overview": {
+    "description": "Building communities around ideas, convening people, and movement building — the thing this network is itself an instance of.",
+    "objectives": [
+      "Convene people around a problem rather than a product",
+      "Understand why a closed room produces different information from an open one",
+      "Turn a community into a durable advantage rather than a marketing channel"
+    ],
+    "prerequisites": [
+      "Mentor networks and the personal board"
+    ]
+  },
+  "steps": {
+    "intro": "Building communities around ideas, convening people, and movement building — the thing this network is itself an instance of.",
+    "estimatedMinutes": 30,
+    "instructions": [
+      "Host one thing. A dinner counts.",
+      "Write down what you learned that you would not have learned otherwise.",
+      "Write it up for the library. That is the loop — whoever convenes the next one starts from your notes rather than from nothing."
+    ]
+  },
+  "submission": {
+    "description": "No named deliverable. Work the steps and keep the notes with the module in Homeroom."
+  },
+  "video": null,
+  "resources": [
+    {
+      "title": "Nucleate — a community built around a problem, not a product",
+      "url": "https://nucleate.org/"
+    },
+    {
+      "title": "iGEM — the longest-running example in synthetic biology",
+      "url": "https://igem.org/"
+    },
+    {
+      "title": "Homeroom events — convene the room, then write down what you learned",
+      "url": "/homeroom/events"
+    }
+  ]
+}

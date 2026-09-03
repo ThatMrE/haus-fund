@@ -12,7 +12,7 @@
  *
  *   Login fails OPEN. Someone already has an account; the roster said yes at
  *   least once. An Airtable outage must not lock the whole house out of its own
- *   forum. Only a definite, fresh "no longer eligible" revokes access.
+ *   Homeroom. Only a definite, fresh "no longer eligible" revokes access.
  *
  * That asymmetry is the entire point of this file, and it is the thing to keep
  * if anything here is ever rewritten.

@@ -30,7 +30,7 @@
 import { readFileSync } from 'node:fs';
 import { getDb, closeDb } from '../app/db.js';
 import * as hr from '../app/models.js';
-import { MENTOR_TRACKS } from '../app/data/mentors.js';
+import { normalize } from '../app/mentorfields.js';
 
 const AIRTABLE_BASE = process.env.AIRTABLE_MENTORS_BASE || 'appisCTsCCcBCMSk0';
 const AIRTABLE_TABLE = process.env.AIRTABLE_MENTORS_TABLE || 'tblwHSlwNLXIfXFX9';
@@ -78,73 +78,6 @@ function parseCsv(text) {
   return rows
     .filter((cells) => cells.some((cell) => cell.trim()))
     .map((cells) => Object.fromEntries(header.map((key, index) => [key, (cells[index] || '').trim()])));
-}
-
-/* -------------------------------------------------------------- mapping */
-
-const TRACK_SLUGS = new Set(MENTOR_TRACKS.map((t) => t.slug));
-
-/**
- * Guess a track from free text.
- *
- * Airtable's "Area of Expertise" is prose, not a slug, so this maps the words
- * people actually write onto the twelve tracks. Anything unrecognised lands in
- * `founder`, which is the correct default for a generalist and is visible in
- * the directory rather than hidden.
- */
-function trackFor(value) {
-  const text = String(value || '').toLowerCase();
-  if (TRACK_SLUGS.has(text)) return text;
-  const rules = [
-    [/legal|counsel|attorney|patent|\bip\b|licens/, 'legal'],
-    [/invest|venture|\bvc\b|fundrais|capital|angel/, 'fundraising'],
-    [/customer|commercial|sales|market|business develop|\bbd\b|partnership/, 'commercialization'],
-    [/regulat|\bfda\b|quality|clinical|\bgmp\b|\bglp\b|biosafety|compliance/, 'regulatory'],
-    [/grant|sbir|sttr|non-?dilutive|nih|nsf/, 'grants'],
-    [/manufactur|supply|scale-?up|sourcing|cdmo|\bcmo\b|hardware/, 'manufacturing'],
-    [/hiring|recruit|talent|people|\bhr\b/, 'hiring'],
-    [/visa|immigration|\bo-?1\b|relocation/, 'immigration'],
-    [/brand|media|press|communicat|community|marketing/, 'brand'],
-    [/finance|account|\bcfo\b|bookkeep|operations|insurance/, 'ops'],
-    [/scien|research|technical|\bphd\b|bio|chem|engineer|comput|\bml\b/, 'technical'],
-  ];
-  for (const [pattern, slug] of rules) if (pattern.test(text)) return slug;
-  return 'founder';
-}
-
-const SCHEDULER = /^https?:\/\/(cal\.com|calendly\.com|savvycal\.com|lu\.ma|luma\.com|[\w.-]*zcal\.co)/i;
-
-function normalize(row) {
-  const get = (...keys) => {
-    for (const key of keys) {
-      const value = row[key] ?? row[key.toLowerCase()];
-      if (value !== undefined && String(value).trim()) return String(value).trim();
-    }
-    return '';
-  };
-
-  const name = get('name', 'full name', 'mentor');
-  if (!name) return null;
-
-  const expertise = get('area of expertise', 'expertise', 'focus');
-  const scheduler = get('scheduler', 'booking', 'booking link', 'calendly', 'cal.com', 'calendar');
-
-  return {
-    name,
-    role: get('role', 'title', 'position'),
-    org: get('org', 'organisation', 'organization', 'company', 'firm'),
-    track: trackFor(get('track') || expertise),
-    tags: get('tags', 'topics', 'skills')
-      .split(/[,;|]/).map((t) => t.trim().toLowerCase().replace(/\s+/g, '-')).filter(Boolean),
-    location: get('location', 'city', 'based'),
-    bio: get('bio', 'about', 'summary'),
-    format: /group/i.test(get('format')) ? 'group' : 'one-on-one',
-    // Only accept links that look like a scheduler. A LinkedIn URL in this
-    // column would render a "book time" button that goes to a profile page.
-    scheduler: SCHEDULER.test(scheduler) ? scheduler : '',
-    vetted: /^(1|true|yes|y|vetted)$/i.test(get('vetted', 'approved', 'confirmed')),
-    source: 'import',
-  };
 }
 
 /* ------------------------------------------------------------ airtable */

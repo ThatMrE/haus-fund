@@ -377,6 +377,28 @@ const ADDED_COLUMNS = [
   ['hr_deals', 'access', "TEXT NOT NULL DEFAULT 'code'"],
   ['hr_deals', 'requirement', "TEXT NOT NULL DEFAULT ''"],
   ['hr_deals', 'checked', "TEXT NOT NULL DEFAULT ''"],
+  // Mentor desk: standing consent, availability and how much of it there is.
+  // `state` defaults to 'listed' so every existing row keeps behaving as it
+  // did — a migration that quietly unlisted the whole roster would be worse
+  // than no gate at all.
+  ['hr_mentors', 'state', "TEXT NOT NULL DEFAULT 'listed'"],
+  ['hr_mentors', 'consent_mode', "TEXT NOT NULL DEFAULT 'ask-me'"],
+  ['hr_mentors', 'capacity', 'INTEGER NOT NULL DEFAULT 2'],
+  ['hr_mentors', 'tracks', "TEXT NOT NULL DEFAULT ''"],
+  ['hr_mentors', 'email', "TEXT NOT NULL DEFAULT ''"],
+  ['hr_mentors', 'airtable_id', "TEXT NOT NULL DEFAULT ''"],
+  // BIGINT, like every other timestamp here: INTEGER is 32 bits and runs out
+  // in 2038. These arrived on main while this branch was moving to Postgres.
+  ['hr_mentors', 'confirmed_at', 'BIGINT'],
+  ['hr_mentors', 'paused_until', 'BIGINT'],
+  ['hr_mentors', 'synced_at', 'BIGINT'],
+  // Phase 3: keeping the roster honest. `confirmed_at` is when they last said
+  // yes to being here at all; the two nudge columns are how a silence becomes
+  // dormancy rather than a listing nobody ever checks again.
+  ['hr_mentors', 'reconfirm_sent_at', 'BIGINT'],
+  ['hr_mentors', 'reconfirm_nudges', 'INTEGER NOT NULL DEFAULT 0'],
+  // Which Supabase credential this account signs in with, when HOMEROOM_AUTH
+  // is supabase. Empty for a local account, so the two can coexist.
   ['users', 'supabase_id', "TEXT NOT NULL DEFAULT ''"],
 ];
 

@@ -1,0 +1,69 @@
+{
+  "treeId": "biopunk-accelerator",
+  "id": "business-model",
+  "title": {
+    "name": "Business model and pricing for science companies",
+    "level": 6
+  },
+  "track": "customers-and-commercialization",
+  "kind": "playbook",
+  "week": 0,
+  "minutes": 60,
+  "deliverable": "",
+  "defaultStatus": "inProgress",
+  "isUnlocked": true,
+  "onMainPath": false,
+  "link": "/homeroom/library/module/business-model",
+  "initialPosition": [
+    2,
+    5
+  ],
+  "dependencies": [
+    "technoeconomics"
+  ],
+  "leadsTo": [
+    "strategic-partnerships"
+  ],
+  "overview": {
+    "description": "Platform, tool, service, therapeutic and product companies have irreconcilable economics. Choosing late is expensive.",
+    "objectives": [
+      "Choose between platform, product and service deliberately",
+      "Price against value delivered rather than cost incurred",
+      "Recognise when a services business is funding a product business, and when it has replaced it"
+    ],
+    "prerequisites": [
+      "Technoeconomics, cost curves and willingness to pay"
+    ]
+  },
+  "steps": {
+    "intro": "Platform, tool, service, therapeutic and product companies have irreconcilable economics. Choosing late is expensive.",
+    "estimatedMinutes": 60,
+    "instructions": [
+      "Write your Lean Canvas in one sitting. Do not polish it.",
+      "State your pricing and the value it captures as a percentage.",
+      "Name the point at which services revenue would be a trap."
+    ]
+  },
+  "submission": {
+    "description": "No named deliverable. Work the steps and keep the notes with the module in Homeroom."
+  },
+  "video": {
+    "url": "https://www.youtube.com/watch?v=QoAOzMTLP5s",
+    "title": "Business Model Canvas Explained",
+    "source": "Strategyzer"
+  },
+  "resources": [
+    {
+      "title": "Strategyzer — the Business Model Canvas",
+      "url": "https://www.strategyzer.com/library/the-business-model-canvas"
+    },
+    {
+      "title": "Strategyzer — the Value Proposition Canvas",
+      "url": "https://www.strategyzer.com/library/the-value-proposition-canvas"
+    },
+    {
+      "title": "Nature Biotechnology — platform versus asset company economics",
+      "url": "https://www.nature.com/nbt/"
+    }
+  ]
+}

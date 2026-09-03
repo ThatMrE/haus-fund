@@ -641,6 +641,7 @@ function reviewCard(ctx, funder, review, replies, marked) {
 
 export const MENTOR_TABS = [
   { key: 'mentors', href: '/homeroom/mentors', label: 'Mentors' },
+  { key: 'requests', href: '/homeroom/mentors/requests', label: 'Your requests' },
   { key: 'hours', href: '/homeroom/hours', label: 'Open office hours' },
   { key: 'mine', href: '/homeroom/hours?mine=1', label: 'Your bookings' },
 ];
@@ -687,11 +688,49 @@ export function mentorsPage(ctx, { mentors, total, filters, tags, basePath, page
     </a>
     <div class="tagrow">${m.tags.slice(0, 3).map((t) => html`<a class="tag ghost"
       href="/homeroom/mentors?tag=${encodeURIComponent(t)}">${t}</a>`)}</div>
-  </li>`)}</ul>` : empty('Nobody matches. Try a broader track, or ask in the forum.')}
+  </li>`)}</ul>` : empty('Nobody matches. Try a broader track, or see who is offering office hours.')}
   ${pager({ page, total, perPage: 60, basePath })}`;
 }
 
-export function mentorPage(ctx, { mentor, slots, member }) {
+/**
+ * The booking section: the one place a member can reach a mentor's calendar.
+ *
+ * `mentor.scheduler` is not available here and that is deliberate — models.js
+ * no longer selects the column, so this view could not render the raw link if
+ * it tried. What it renders instead is one of four things: a live grant, a
+ * request button, the reason there is no request button, or (with the gate
+ * switched off) the old direct link, which the route has to fetch on purpose.
+ */
+function booking(mentor, desk) {
+  if (desk.directLink) {
+    return html`<p>Pick a time straight on their calendar.</p>
+      <a class="btn solid" href="${desk.directLink}" rel="nofollow noopener" target="_blank">
+        Open ${mentor.name}’s booking page</a>
+      <p class="mono dim tiny">Booking happens on their own scheduler, so the slot lands in
+        their real calendar rather than in a queue nobody watches.</p>`;
+  }
+  if (desk.grant) {
+    return html`<p>${mentor.name} said yes. The link is yours and expires ${relTime(desk.grant.expires_at)}.</p>
+      <a class="btn solid" href="/homeroom/mentor/${mentor.slug}/book/${desk.grant.id}">
+        Book with ${mentor.name}</a>
+      <p class="mono dim tiny">Booking happens on their own scheduler, so the slot lands in
+        their real calendar rather than in a queue nobody watches.</p>`;
+  }
+  if (desk.pending) {
+    return html`<p>You asked ${mentor.name} ${relTime(desk.pending.created_at)}. They answer by
+      email, and you will hear either way.</p>
+      <a class="btn ghost" href="/homeroom/mentors/requests">Your requests</a>`;
+  }
+  if (desk.canAsk) {
+    return html`<p>${mentor.name} takes up to ${desk.capacity.cap} sessions a month and has
+      ${desk.capacity.cap - desk.capacity.used} left. Tell them what you need; they say yes or no.</p>
+      <a class="btn solid" href="/homeroom/mentor/${mentor.slug}/request">Ask for time</a>`;
+  }
+  return html`<p class="mono dim">${desk.reason || 'Not taking requests right now.'}</p>
+    ${desk.resetsAt ? html`<p class="mono dim tiny">Their month resets ${relTime(desk.resetsAt)}.</p>` : ''}`;
+}
+
+export function mentorPage(ctx, { mentor, slots, member, desk }) {
   return html`<div class="profilehead">
     ${avatar(mentor.name, { size: 72 })}
     <div class="grow">
@@ -717,13 +756,7 @@ export function mentorPage(ctx, { mentor, slots, member }) {
         : ''}
 
       ${section('Book time', html`
-        ${mentor.scheduler
-          ? html`<p>Pick a time straight on their calendar.</p>
-            <a class="btn solid" href="${mentor.scheduler}" rel="nofollow noopener" target="_blank">
-              Open ${mentor.name}’s booking page</a>
-            <p class="mono dim tiny">Booking happens on their own scheduler, so the slot lands in
-              their real calendar rather than in a queue nobody watches.</p>`
-          : html`<p class="mono dim">No public scheduling link on file.</p>`}
+        ${booking(mentor, desk)}
 
         ${slots.length ? html`<ul class="rail-list wide">${slots.map((s) => html`<li class="slot">
           <div class="mono"><b>${stamp(s.starts_at)}</b> <span class="sep">/</span> ${relTime(s.starts_at)}
@@ -845,6 +878,46 @@ function lumaStrip(ctx, luma) {
  * THE LIBRARY AS A TRAINING SYSTEM
  * ======================================================================== */
 
+export const LIBRARY_TABS = [
+  { key: 'manual', href: '/homeroom/library', label: 'The manual' },
+  { key: 'tree', href: '/homeroom/library/tree', label: 'Skill tree' },
+  { key: 'notes', href: '/homeroom/library/notes', label: 'Your deliverables' },
+];
+
+/**
+ * The manual as a graph.
+ *
+ * Embedded rather than reimplemented: the tree is the same page served at
+ * haus.fund/skilltree, and `?embed=1` tells it to drop its own nav, hero and
+ * footer so Homeroom's chrome is the only chrome. It then asks
+ * /homeroom/api/library for this member's progress, so the nodes it shows as
+ * done are the modules they actually logged a deliverable against — not a
+ * second tally kept in the browser.
+ */
+export function treePage(ctx, { moduleCount, nodeCount }) {
+  return html`<div class="pagehead">
+    <div>
+      <h1>The manual as a skill tree</h1>
+      <p class="lede">Every module as a node: what it builds on, what it leads to, the outcomes,
+        the work, the deliverable, the reading and one video worth watching. Nothing locks —
+        the dependencies say what reads better after what, and that is all they do.</p>
+    </div>
+    <a class="btn solid" href="/skilltree" target="_blank" rel="noopener">Open in a new tab</a>
+  </div>
+
+  <div class="toolframe">
+    <iframe src="/skilltree.html?embed=1" title="Biopunk Accelerator Skill Tree"
+      loading="lazy"></iframe>
+  </div>
+  <p class="mono dim tiny">The tree reads your progress from this Library, so a node counts as done
+    once the deliverable is logged against its module — the tree is not a second way to finish one.
+    Click any node, then <b>log the deliverable</b> to open its form.
+    It draws ${nodeCount} nodes to the manual's ${moduleCount} modules: the extra
+    ${nodeCount - moduleCount} are the orientation, the showcase, and the six subjects the live
+    calendar assumes but never sits down and teaches — market sizing, the target product profile,
+    the IND path, reimbursement, the AI founder stack and the O-1.</p>`;
+}
+
 export function libraryPage(ctx, { tracks, progress, modules, filters, entries, sequence }) {
   return html`<div class="pagehead">
     <div>
@@ -860,6 +933,11 @@ export function libraryPage(ctx, { tracks, progress, modules, filters, entries, 
     <div class="mono">${progress.done} done · ${progress.started} in progress · ${progress.total} total
       <b>${progress.percent}%</b></div>
   </div>
+
+  <p class="mono dim tiny">The same curriculum is drawn as a navigable graph in the
+    <a href="/homeroom/library/tree">skill tree</a> — every module as a node, with what it builds
+    on, what it leads to, curated reading and a video. It reads your progress from here, so the
+    deliverable you log is what makes a node done.</p>
 
   <form class="searchbar" method="get" action="/homeroom/library">
     <input type="search" name="q" value="${filters.q}" placeholder="search every module" />
@@ -1044,7 +1122,7 @@ export function publishPage(ctx, { submissions, supabase, error = null, values =
         placeholder="Why it matters. Two paragraphs is plenty.">${values.body || ''}</textarea></div>
     <button class="btn solid" type="submit" ${raw(supabase.configured ? '' : 'disabled')}>Send for review</button>
     <p class="hint">It goes out under your handle, <b>${ctx.user?.id}</b>, not anonymously.
-      Anything you would not want attached to your name belongs in the forum instead.</p>
+      If you would not want it attached to your name in public, do not send it.</p>
   </form>
 
   ${section('Your submissions', submissions.length

@@ -1,0 +1,74 @@
+{
+  "treeId": "biopunk-accelerator",
+  "id": "regulatory-strategy",
+  "title": {
+    "name": "Validation, regulatory pathways and quality systems",
+    "level": 4
+  },
+  "track": "legal-ip-and-regulatory",
+  "kind": "workshop",
+  "week": 10,
+  "minutes": 90,
+  "deliverable": "Regulatory Strategy",
+  "defaultStatus": "inProgress",
+  "isUnlocked": true,
+  "onMainPath": true,
+  "link": "/homeroom/library/module/regulatory-strategy",
+  "initialPosition": [
+    4,
+    4
+  ],
+  "dependencies": [
+    "target-product-profile"
+  ],
+  "leadsTo": [
+    "ind-and-clinical-path",
+    "reimbursement-and-access"
+  ],
+  "overview": {
+    "description": "Sponsor-led with regulatory office hours. FDA fundamentals across diagnostics, therapeutics, devices and software as a medical device; reimbursement, regulatory milestones, GLP, GMP, GCP and documentation culture.",
+    "objectives": [
+      "Identify your regulatory pathway and its first gating milestone",
+      "Use a Q-submission to get the agency’s view before you commit",
+      "Build documentation habits now that an audit will not punish later"
+    ],
+    "prerequisites": [
+      "The target product profile"
+    ]
+  },
+  "steps": {
+    "intro": "Sponsor-led with regulatory office hours. FDA fundamentals across diagnostics, therapeutics, devices and software as a medical device; reimbursement, regulatory milestones, GLP, GMP, GCP and documentation culture.",
+    "estimatedMinutes": 90,
+    "instructions": [
+      "Write your intended use statement. Everything regulatory follows from it.",
+      "Identify pathway, predicate if any, and the first submission.",
+      "Start the design history file now, even if it is a folder and a naming convention."
+    ]
+  },
+  "submission": {
+    "description": "Produce the Regulatory Strategy and log it against this module in Homeroom. Done means the artefact exists, not that you read the page."
+  },
+  "video": {
+    "url": "https://www.youtube.com/watch?v=hTJ2d3YH-DQ",
+    "title": "Navigating the FDA's Medical Device Pre-submission Process",
+    "source": "2024 Utah Life Sciences Summit panel"
+  },
+  "resources": [
+    {
+      "title": "FDA — the Q-Submission Program, the free early meeting",
+      "url": "https://www.fda.gov/regulatory-information/search-fda-guidance-documents/requests-feedback-and-meetings-medical-device-submissions-q-submission-program"
+    },
+    {
+      "title": "FDA — how to determine your device classification and pathway",
+      "url": "https://www.fda.gov/medical-devices/overview-device-regulation/classify-your-medical-device"
+    },
+    {
+      "title": "FDA — Device Advice, the whole regulatory reference",
+      "url": "https://www.fda.gov/medical-devices/device-advice-comprehensive-regulatory-assistance"
+    },
+    {
+      "title": "CMS — CLIA, if a laboratory test is in scope",
+      "url": "https://www.cms.gov/medicare/quality/clinical-laboratory-improvement-amendments"
+    }
+  ]
+}

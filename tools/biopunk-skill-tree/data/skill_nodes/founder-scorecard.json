@@ -1,0 +1,65 @@
+{
+  "treeId": "biopunk-accelerator",
+  "id": "founder-scorecard",
+  "title": {
+    "name": "The founder scorecard and goal setting",
+    "level": 1
+  },
+  "track": "founder-fundamentals",
+  "kind": "playbook",
+  "week": 1,
+  "minutes": 45,
+  "deliverable": "Founder Scorecard",
+  "defaultStatus": "inProgress",
+  "isUnlocked": true,
+  "onMainPath": false,
+  "link": "/homeroom/library/module/founder-scorecard",
+  "initialPosition": [
+    1,
+    2
+  ],
+  "dependencies": [
+    "orientation"
+  ],
+  "leadsTo": [
+    "operating-cadence"
+  ],
+  "overview": {
+    "description": "Orientation-week baseline. A scorecard exists so that in week 12 you can tell whether the ninety days moved anything, rather than reasoning from how tired you feel.",
+    "objectives": [
+      "Set goals with a number and a date attached",
+      "Distinguish leading from lagging indicators for a company with no revenue",
+      "Build an accountability loop that survives a bad week"
+    ],
+    "prerequisites": [
+      "Orientation: how to read this tree"
+    ]
+  },
+  "steps": {
+    "intro": "Orientation-week baseline. A scorecard exists so that in week 12 you can tell whether the ninety days moved anything, rather than reasoning from how tired you feel.",
+    "estimatedMinutes": 45,
+    "instructions": [
+      "Score yourself now on: science, customers, capital, team, and your own bandwidth.",
+      "Set three goals for the ninety days. Each needs a number and a date.",
+      "Name the one metric you would report weekly even if nobody asked."
+    ]
+  },
+  "submission": {
+    "description": "Produce the Founder Scorecard and log it against this module in Homeroom. Done means the artefact exists, not that you read the page."
+  },
+  "video": null,
+  "resources": [
+    {
+      "title": "YC — essential startup advice",
+      "url": "https://www.ycombinator.com/library/4D-yc-s-essential-startup-advice"
+    },
+    {
+      "title": "Paul Graham — do things that don’t scale",
+      "url": "https://www.paulgraham.com/ds.html"
+    },
+    {
+      "title": "The module in Homeroom, with the deliverable form",
+      "url": "/homeroom/library/module/founder-scorecard"
+    }
+  ]
+}

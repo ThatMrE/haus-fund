@@ -11,10 +11,150 @@ shares the domain, the design system and the sign-in.
 | **Funders** | Rate My Funder — the capital map, rated on five axes, with replies. |
 | **Mentors** | A searchable roster, vetted, bookable on their own calendars. |
 | **Events** | A month calendar, with Luma sync for luma.com/biopunk. |
-| **Library** | The Biopunk Founder Manual as a training system with deliverables. |
+| **Library** | The Biopunk Founder Manual as a training system with deliverables, and the same curriculum as a navigable skill tree. |
 | **Publish** | A member sends a post to the public feed at haus.fund/news. |
 
 Plus jobs, a fundraising pipeline, intro requests and messaging.
+
+Two designs are specified but not built, both about reaching *outside* the
+house under a double opt-in rule:
+
+- [`docs/INTRO-ENGINE.md`](docs/INTRO-ENGINE.md) — partners and contacts in the
+  broader Biopunk network, sourced through Happenstance. People who never
+  agreed to anything.
+- [`docs/MENTOR-ENGINE.md`](docs/MENTOR-ENGINE.md) — mentors onboarded through
+  an Airtable form, with the booking link gated behind a per-request accept.
+  People who did agree, which makes it a different problem. **Phase 1 of this
+  one is built** — see below.
+
+## The mentor desk
+
+A mentor's booking link used to be visible to every signed-in member, and
+downloadable in bulk from `/homeroom/api/mentors`, because `searchMentors()`
+selected `m.*` and `scheduler` rode along. It no longer does: the column is not
+in `MENTOR_FIELDS`, and `mentordesk.schedulerFor()` is the only reader.
+
+A member now writes a short request; the mentor answers it from an email, with
+no Homeroom account, through a tokenised link; and a yes mints a **grant** —
+one member, one mentor, 14 days, revocable, logged — which
+`/homeroom/mentor/:slug/book/:grant` resolves at click time. The URL never
+appears in a page.
+
+The mechanism protecting a mentor is **capacity, not privacy**: they filled in
+a form and a member picked them off a list, so hiding a decline would be
+theatre. What they need is to not be asked an eleventh time this month, so the
+cap is checked *before* a request can be written and a mentor at their limit is
+never asked at all.
+
+| Variable | Default | Notes |
+| --- | --- | --- |
+| `HOMEROOM_MENTOR_GATE` | `1` | `0` restores the old behaviour — the link straight on the page. |
+| `HOMEROOM_MENTOR_MAIL_FROM` | falls back to `HOMEROOM_MAIL_FROM` | Should be its own identity: mentor mail goes outside the house and a spam report must not land on password resets. |
+| `HOMEROOM_MENTOR_CAPACITY_DEFAULT` | `2` | Sessions a month, when the mentor did not say. |
+| `HOMEROOM_MENTOR_MAX_OPEN` | `3` | Open requests per member. |
+| `HOMEROOM_MENTOR_MAX_MONTHLY` | `6` | New requests per member per month. |
+| `HOMEROOM_MENTOR_REASK_DAYS` | `90` | Before asking the same mentor again after a decline. |
+| `HOMEROOM_MENTOR_REQUEST_DAYS` | `10` | Before an unanswered request ages out. |
+| `HOMEROOM_MENTOR_GRANT_DAYS` | `14` | How long a booking link works. |
+
+### Onboarding, and the front door for mentors
+
+Mentors self-onboard through a public Airtable form. `netlify/functions/
+mentor-sync.mjs` pulls the table every six hours, and a steward can fire it
+from `/homeroom/stewards/mentors`.
+
+**A submission is listed nowhere until a steward rules on it.** Not in the
+roster, not in the API, and not at its own URL — a pending profile 404s,
+because a guessable slug should not serve an unvetted stranger's self-written
+bio. `Vetted` being ticked in Airtable does not list anybody either; that
+checkbox is somebody's note to themselves, and the gate is a steward here.
+
+The sweep **fails closed**: Airtable unreachable, a timeout, or a table that
+comes back empty all leave the roster exactly as it was and say so on the
+steward page. An empty response and a wrong base id look identical, and one of
+those must not empty the roster.
+
+Rows match on the Airtable record id, so a mentor can be renamed without
+splitting into two rows; the name slug remains the fallback for rows imported
+before that column existed. A blank field never wipes a booking link or an
+address — Airtable omitting a field must not remove the only way to reach
+someone.
+
+`app/mentorfields.js` holds the field mapping and the **scheduler host
+allowlist** (cal.com, calendly.com, savvycal.com, lu.ma, zcal.co), shared with
+`scripts/import-mentors.js` so the two cannot drift. It is the only thing
+between a public form and a "book time" button that goes wherever a stranger
+typed.
+
+| Variable | Default | Notes |
+| --- | --- | --- |
+| `HOMEROOM_MENTOR_SYNC_TOKEN` | falls back to `AIRTABLE_TOKEN` | Read access to the Mentors base. Without it the sweep skips rather than failing. |
+| `HOMEROOM_MENTORS_BASE` / `_TABLE` | the existing Mentors base | |
+
+The form's field spec — what Airtable has to collect — is in
+[`docs/MENTOR-ENGINE.md`](docs/MENTOR-ENGINE.md) §8.4. Turn on Airtable's own
+rate-limiting and CAPTCHA before publishing the URL.
+
+**No mentor imported by the old script has an email address**, so until the
+form is live and synced, those rows are listed but cannot be asked — the
+profile says so rather than sending a request nobody will receive.
+`/homeroom/health` reports the gate, the roster by state, submissions awaiting
+review, requests waiting on a mentor, and grants issued this month.
+
+### Keeping the roster honest
+
+A mentor list dies by rotting, not by emptying: someone says yes in March,
+changes jobs in June, and is still listed the following March with a Calendly
+that 404s. Three founders waste a week on them and stop trusting the list. This
+is `atlas.js`'s rule applied to people — status is a first-class column, and a
+directory that renders a live entry and a dead one identically is worse than a
+shorter directory.
+
+Three mechanisms, in the same six-hourly sweep as the sync and running before
+it, whether or not Airtable is configured:
+
+- **Auto-pause** after three *consecutive* unanswered requests. Not three in
+  total — answering, missing one, answering again is a busy month. Three in a
+  row usually means the address on file is not one they read.
+- **Re-confirmation** every 180 days: one question, one click, two nudges 14
+  days apart, then dormant.
+- **Dormancy**, not deletion. Off the list, nothing lost, one click back.
+
+All of it is quiet. A mentor who goes silent gets one note, never a sequence,
+and the note leads with the button that brings them back. Withdrawing is a
+single click with no confirmation step and no win-back flow — a volunteer who
+wants out and meets a retention sequence instead does not come back, and tells
+people.
+
+Mentors still have no accounts, so these live at `/homeroom/me/:token`
+(90-day tokens, hashed at rest). Anything that changes state is POST-only:
+mail gateways pre-fetch every URL in a message, and a GET that withdraws
+somebody would be fired by a scanner rather than by a mentor.
+
+| Variable | Default | Notes |
+| --- | --- | --- |
+| `HOMEROOM_MENTOR_RECONFIRM_DAYS` | `180` | How long a standing yes is trusted. |
+| `HOMEROOM_MENTOR_NUDGE_DAYS` | `14` | Gap between the two nudges, and then to dormancy. |
+| `HOMEROOM_MENTOR_SILENCE_PAUSE` | `3` | Consecutive unanswered requests before auto-pause. |
+| `HOMEROOM_MENTOR_OUTCOME_NAG_DAYS` | `14` | One reminder to log an outcome. Exactly one. |
+
+The steward page carries seven numbers, and **the total number of mentors is
+deliberately not one of them**. A roster of 200 where 60 answer is worse than a
+roster of 60, and counting the first is how you get it. The honest version of
+that question is the dormant share.
+
+### Before pointing this at real mentors
+
+Supabase Auth made *accounts* durable. The mentor desk's own state is not:
+`hr_mentor_requests`, `hr_mentor_grants` and `hr_mentor_tokens` are SQLite
+tables in `/tmp` like everything else under `hr_`. A cold container means a
+mentor clicks accept into a 500, or a member's 14-day booking link stops
+existing three days in.
+
+Everything here is correct and tested; it is just not yet safe to send a real
+volunteer an email that depends on a container staying alive. The desk should
+wait for the `hr_*` tables to follow the accounts somewhere durable — the seam
+is `db.js`, and the storage section below names the options.
 
 It started as a reskin of Bookface, Y Combinator's internal network. The idea it
 copies is that the value comes from the room being closed: people say what a
@@ -521,6 +661,21 @@ Derivative, New Energy Nexus and 5050/50Y. Every module states what you should
 be able to do afterwards and what work produces it, and `deliverable` is the
 same artefact the 90-day calendar asks for in that week. Progress is per member
 and "done" means the artefact exists, with a link to it.
+
+**The skill tree is the same curriculum, drawn as a graph.**
+`/homeroom/library/tree` embeds the tool served at `haus.fund/skilltree`, with
+`?embed=1` so it drops its own nav, hero and footer and Homeroom's chrome is the
+only chrome — the same pattern as the Core Facility Finder at
+`/homeroom/labs/cores`. It then calls `/homeroom/api/library` for the signed-in
+member's progress, so a node reads as done exactly when the deliverable is
+logged against its module. It deliberately cannot mark anything done: there is
+one way to finish a module and it is the module's own form. Signed out, or if
+that call fails, the tool falls back to browser-local progress and says nothing.
+
+The tree draws 47 nodes to the manual's 39 modules; the extra eight are an
+orientation, a showcase capstone, and six subjects the live calendar assumes but
+never teaches. It is generated from `curriculum.js` rather than copying it — see
+`tools/biopunk-skill-tree/README.md`.
 
 ## The data sets
 

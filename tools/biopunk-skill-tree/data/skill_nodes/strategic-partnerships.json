@@ -1,0 +1,63 @@
+{
+  "treeId": "biopunk-accelerator",
+  "id": "strategic-partnerships",
+  "title": {
+    "name": "Partnerships, CROs and sponsored research",
+    "level": 7
+  },
+  "track": "customers-and-commercialization",
+  "kind": "reference",
+  "week": 0,
+  "minutes": 45,
+  "deliverable": "",
+  "defaultStatus": "inProgress",
+  "isUnlocked": true,
+  "onMainPath": false,
+  "link": "/homeroom/library/module/strategic-partnerships",
+  "initialPosition": [
+    2,
+    7
+  ],
+  "dependencies": [
+    "business-model"
+  ],
+  "leadsTo": [],
+  "overview": {
+    "description": "Partner or build is a capital allocation question disguised as a strategy question.",
+    "objectives": [
+      "Diligence a partner before signing, including their incentive to stall",
+      "Structure a sponsored research agreement that does not encumber your IP",
+      "Know when a pharma partnership is validation and when it is a holding pattern"
+    ],
+    "prerequisites": [
+      "Business model and pricing for science companies"
+    ]
+  },
+  "steps": {
+    "intro": "Partner or build is a capital allocation question disguised as a strategy question.",
+    "estimatedMinutes": 45,
+    "instructions": [
+      "List what you would have to build to not need this partner.",
+      "Price it. Compare against what the partnership costs in equity, IP and time.",
+      "Take the resulting term sheet to Orrick office hours before signing."
+    ]
+  },
+  "submission": {
+    "description": "No named deliverable. Work the steps and keep the notes with the module in Homeroom."
+  },
+  "video": null,
+  "resources": [
+    {
+      "title": "Orrick Tech Studio — sponsored research and collaboration forms",
+      "url": "https://www.orrick.com/en/tech-studio/resources/forms"
+    },
+    {
+      "title": "NIH — CRADAs and research collaboration agreements",
+      "url": "https://www.techtransfer.nih.gov/policy/crada"
+    },
+    {
+      "title": "LifeSciVC — when a pharma partnership is validation, and when it is a holding pattern",
+      "url": "https://lifescivc.com/"
+    }
+  ]
+}

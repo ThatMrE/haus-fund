@@ -20,10 +20,22 @@ import * as access from './access.js';
 import * as luma from './luma.js';
 import * as sbAuth from './supabase-auth.js';
 import * as invites from './invites.js';
+import * as desk from './mentordesk.js';
+import * as mentormail from './mentormail.js';
+import * as mentorsync from './mentorsync.js';
+import * as mentorlife from './mentorlife.js';
 import { homeroomLayout } from './views/layout.js';
 import * as views from './views/pages.js';
 import { parseWhen, toLocalInput } from './views/components.js';
-import { S26_SEQUENCE } from './data/curriculum.js';
+import { S26_SEQUENCE, LIBRARY_MODULES } from './data/curriculum.js';
+
+/*
+ * How many nodes the skill tree draws. The tree lives outside this function's
+ * bundle (tools/biopunk-skill-tree), so the count is stated here rather than
+ * imported — and tools/biopunk-skill-tree/scripts/validate.mjs fails if this
+ * number and the generated tree ever disagree, so it cannot quietly rot.
+ */
+const SKILL_TREE_NODES = 47;
 
 const PER_PAGE = bf.PAGE_SIZE;
 
@@ -724,7 +736,7 @@ async function libraryHandler(ctx) {
       entries: (await bf.listLibrary({ limit: 12 })).entries,
       sequence: S26_SEQUENCE,
     }),
-    { title: 'Library' },
+    { title: 'Library', subnav: views.subnav(views.LIBRARY_TABS, 'manual') },
   );
 }
 
@@ -1045,15 +1057,51 @@ async function mentorsHandler(ctx) {
   );
 }
 
+/**
+ * Work out what this member may do about this mentor's calendar.
+ *
+ * Assembled here rather than in the view so the view never has the scheduler
+ * URL to leak in the first place. `directLink` is populated only when the gate
+ * is switched off, and only by asking for it by name.
+ */
+async function deskStateFor(ctx, mentor) {
+  if (!desk.gateEnabled()) {
+    return { directLink: await desk.schedulerFor(mentor.id) };
+  }
+  const open = await desk.openRequest(mentor.id, ctx.user.id);
+  if (open?.state === 'accepted') {
+    const grant = await desk.liveGrantFor(open.id);
+    if (grant) return { grant, request: open };
+  }
+  if (open?.state === 'sent') return { pending: open };
+
+  const verdict = await desk.canRequest({ mentor, memberId: ctx.user.id });
+  const capacity = verdict.capacity || await desk.capacityFor(mentor);
+  return {
+    canAsk: verdict.ok,
+    reason: verdict.message,
+    capacity,
+    resetsAt: verdict.reason === 'at-capacity' ? capacity.resetsAt : null,
+  };
+}
+
+/* Which states a member may see a profile for at all. Same allowlist as the
+   roster query: a pending submission is an unvetted stranger's self-written
+   bio, and it should not be readable at a guessable URL just because it is not
+   in the list. */
+const VISIBLE_MENTOR_STATES = new Set(['listed', 'paused']);
+
 async function mentorHandler(ctx, { slug }) {
   const mentor = await bf.getMentor(slug);
   if (!mentor) return notFound(ctx);
+  if (!VISIBLE_MENTOR_STATES.has(mentor.state) && !ctx.user.is_admin) return notFound(ctx);
   await render(
     ctx,
     views.mentorPage(ctx, {
       mentor,
       slots: await bf.mentorSlots(mentor.id),
       member: mentor.user_id ? await bf.getMember(mentor.user_id) : null,
+      desk: await deskStateFor(ctx, mentor),
     }),
     { title: mentor.name },
   );
@@ -1400,6 +1448,228 @@ function defaultStart() {
 }
 
 /** Small POST helper: read the body, check CSRF, run `fn(ctx, fields, params)`. */
+/* ---------------------------------------------------------- mentor desk */
+
+/*
+ * Gating the booking link. See docs/MENTOR-ENGINE.md, and mentordesk.js for
+ * why capacity rather than invisibility is the mechanism here.
+ *
+ * Three things in this block are load-bearing:
+ *
+ *   - the scheduler URL is never handed to a view. The member gets a grant id,
+ *     and /book/:grant resolves it server-side at click time.
+ *   - the /homeroom/m/:token pages run with NO session. Mentors have no
+ *     Homeroom account and never will; the token in the URL is the credential.
+ *   - state changes are POST only, because mail gateways fetch every link in a
+ *     message before delivering it and a GET that accepts would be fired by a
+ *     scanner rather than by a mentor.
+ */
+
+async function mentorRequestForm(ctx, { slug }, error = null, values = {}) {
+  const mentor = await bf.getMentor(slug);
+  if (!mentor) return notFound(ctx);
+  const verdict = await desk.canRequest({ mentor, memberId: ctx.user.id });
+  if (!verdict.ok && !error) {
+    // Never render a form that cannot be submitted. Send them back to the
+    // profile, which already explains the reason in context.
+    return seeOther(ctx, `/homeroom/mentor/${mentor.slug}`);
+  }
+  await render(ctx, views.requestFormPage(ctx, {
+    mentor,
+    capacity: verdict.capacity || await desk.capacityFor(mentor),
+    error,
+    values,
+  }), { title: `Ask ${mentor.name}`, subnav: views.subnav(views.MENTOR_TABS, 'mentors') });
+}
+
+async function mentorRequestCreate(ctx, fields, params) {
+  const mentor = await bf.getMentor(params.slug);
+  if (!mentor) return notFound(ctx);
+
+  const values = {
+    track: trimmed(fields.track, 40),
+    need: trimmed(fields.need, 2000),
+    why_them: trimmed(fields.why_them, 1000),
+    tried: trimmed(fields.tried, 1000),
+    asking_for: trimmed(fields.asking_for, 80),
+  };
+
+  const verdict = await desk.canRequest({ mentor, memberId: ctx.user.id });
+  if (!verdict.ok) return await mentorRequestForm(ctx, params, verdict.message, values);
+  if (values.need.length < 40) {
+    return await mentorRequestForm(ctx, params,
+      'Say more about what you need — 40 characters is not enough for them to answer.', values);
+  }
+  if (values.why_them.length < 20) {
+    return await mentorRequestForm(ctx, params,
+      'Say why this person. It is the difference between a request and a mail merge.', values);
+  }
+
+  const created = await desk.createRequest({
+    mentor,
+    memberId: ctx.user.id,
+    track: values.track,
+    need: values.need,
+    whyThem: values.why_them,
+    tried: values.tried,
+    askingFor: values.asking_for,
+  });
+
+  await desk.logEvent({
+    mentorId: mentor.id, requestId: created.id, actorId: ctx.user.id, actorKind: 'member',
+    event: 'requested', detail: created.auto ? 'auto-accepted per consent mode' : '',
+  });
+
+  const member = await bf.getMember(ctx.user.id);
+  const to = await desk.contactFor(mentor.id);
+  const message = mentormail.requestMessage({
+    mentor, to, member, request: values, token: created.token,
+    capacity: await desk.capacityFor(mentor),
+  });
+  await mentormail.deliver(created.auto
+    // The mentor said "do not ask me". Tell them it happened; do not ask.
+    ? { ...message, subject: `${member?.name || ctx.user.id} booked time with you` }
+    : message);
+
+  seeOther(ctx, '/homeroom/mentors/requests');
+}
+
+/** The grant redirect. The only path from a member to a scheduler URL. */
+async function mentorBook(ctx, { slug, grant }) {
+  const mentor = await bf.getMentor(slug);
+  const result = await desk.redeemGrant({
+    grantId: grant, memberId: ctx.user.id, mentorId: mentor?.id,
+  });
+  if (!result.ok) {
+    return await render(ctx, views.grantGonePage(ctx, { mentor, reason: result.reason }),
+      { title: 'Link no longer works', status: 410 });
+  }
+  await desk.logEvent({
+    mentorId: result.grant.mentor_id, requestId: result.grant.request_id,
+    actorId: ctx.user.id, actorKind: 'member', event: 'booking-opened',
+  });
+  // 302 rather than 303: this is a redirect to a resource, not the result of a
+  // form. `noreferrer` cannot be set on a redirect, so the scheduler will see
+  // the Homeroom path in the Referer — which is why the URL carries a random
+  // grant id and nothing about the member.
+  ctx.res.writeHead(302, { location: result.url, 'referrer-policy': 'no-referrer' });
+  ctx.res.end();
+}
+
+/* --- the mentor's side: no account, no session, token in the URL --------- */
+
+async function mentorTokenPage(ctx, { token }) {
+  const request = await desk.findByToken(token);
+  if (!request) {
+    return sendHtml(ctx.res, views.mentorTokenGonePage({ reason: 'unknown' }), { status: 404 });
+  }
+  if (request.state !== 'sent') {
+    return sendHtml(ctx.res, views.mentorTokenGonePage({ reason: 'already' }), { status: 410 });
+  }
+  const mentor = await bf.getMentor(request.mentor_id);
+  const member = await bf.getMember(request.member_id) || { user_id: request.member_id };
+  sendHtml(ctx.res, views.mentorRequestPage({
+    mentor, request, member, capacity: await desk.capacityFor(mentor), token,
+  }));
+}
+
+async function mentorTokenAnswer(ctx, { token }, decision) {
+  const { fields } = await readBody(ctx.req);
+  const result = await desk.answerRequest({
+    token,
+    decision,
+    note: trimmed(fields.note, 200),
+    pauseDays: decision === 'later' ? 30 : 0,
+  });
+
+  if (!result.ok) {
+    const status = result.reason === 'unknown' ? 404 : 410;
+    return sendHtml(ctx.res, views.mentorTokenGonePage({ reason: result.reason }), { status });
+  }
+
+  const { mentor, request } = result;
+  await desk.logEvent({
+    mentorId: mentor.id, requestId: request.id, actorKind: 'mentor',
+    event: result.decision, detail: result.late ? 'answered after the window closed' : '',
+  });
+
+  if (result.decision === 'accept') {
+    await bf.notify({
+      userId: request.member_id, kind: 'intro',
+      text: `${mentor.name} said yes — your booking link is ready`,
+      href: '/homeroom/mentors/requests',
+    });
+  } else {
+    // Deliberately NOT revoking outstanding grants on a pause. A mentor who is
+    // buried is saying "stop sending me requests", not "take back the yes I
+    // already gave someone else" — and the member holding that grant did
+    // nothing wrong. Pausing stops new requests; it does not cancel a yes.
+    await bf.notify({
+      userId: request.member_id, kind: 'intro',
+      text: `${mentor.name} passed on your request`,
+      href: '/homeroom/mentors/requests',
+    });
+  }
+
+  sendHtml(ctx.res, views.mentorAnsweredPage({
+    mentor, decision: result.decision, paused: !!result.paused,
+  }));
+}
+
+/* ------------------------------- mentor desk: a mentor's own standing consent */
+
+/*
+ * /homeroom/me/:token — no session, ever. Same reasoning as /homeroom/m/:token
+ * and the same POST-only rule for anything that changes state, because these
+ * links live in mail that gateways pre-fetch.
+ */
+
+async function mentorStanding(ctx, { token }) {
+  const row = await mentorlife.findToken(token);
+  if (!row) return sendHtml(ctx.res, views.mentorTokenGonePage({ reason: 'unknown' }), { status: 404 });
+  const mentor = await bf.getMentor(row.mentor_id);
+  if (!mentor) return sendHtml(ctx.res, views.mentorTokenGonePage({ reason: 'unknown' }), { status: 404 });
+  sendHtml(ctx.res, views.mentorStandingPage({ mentor, token, state: mentor.state }));
+}
+
+async function mentorStandingAction(ctx, { token }, action) {
+  await readBody(ctx.req);
+  const result = action === 'confirm' ? await mentorlife.confirm(token)
+    : action === 'pause' ? await mentorlife.pause(token, { days: 90 })
+    : await mentorlife.withdraw(token);
+
+  if (!result.ok) {
+    return sendHtml(ctx.res, views.mentorTokenGonePage({ reason: result.reason }), { status: 404 });
+  }
+  sendHtml(ctx.res, views.mentorStandingDonePage({ action, days: result.days || 0 }));
+}
+
+/* --------------------------------------------------- mentor desk: steward */
+
+async function mentorAdminHandler(ctx, { error = null, flash = null } = {}) {
+  if (!stewardsOnly(ctx)) return;
+  const status = await mentorsync.status();
+  await render(ctx, views.mentorAdminPage(ctx, {
+    pending: await mentorsync.pendingSubmissions(),
+    status,
+    stuck: await mentorsync.stuckRequests(),
+    roster: status.byState,
+    metrics: await mentorlife.metrics(),
+    error,
+    flash,
+  }), { title: 'Mentor desk' });
+}
+
+async function mentorSyncNow(ctx) {
+  if (!stewardsOnly(ctx)) return;
+  const result = await mentorsync.sync();
+  // Fail closed and say so. The roster is untouched either way, which is the
+  // property worth being loud about: a failed sync is not a smaller roster.
+  await mentorAdminHandler(ctx, result.ok
+    ? { flash: `${result.seen} seen, ${result.created} new, ${result.updated} updated.` }
+    : { error: `${result.error} Nothing was changed.` });
+}
+
 function action(fn) {
   return async (ctx, params) => {
     const { fields } = await readBody(ctx.req);
@@ -1557,6 +1827,45 @@ const ROUTES = [
   ['GET', '/homeroom/funder/:slug', funderHandler],
 
   ['GET', '/homeroom/mentors', mentorsHandler],
+  ['GET', '/homeroom/mentors/requests', async (ctx) => {
+    // Each row's outcome is its own read, so they go out together rather than
+    // one after another — this list is as long as the member's history.
+    const requests = await Promise.all(
+      (await desk.requestsFor(ctx.user.id))
+        .map(async (r) => ({ ...r, outcome: await desk.outcomeFor(r.id) })),
+    );
+    await render(ctx, views.myRequestsPage(ctx, { requests }),
+      { title: 'Your mentor requests', subnav: views.subnav(views.MENTOR_TABS, 'requests') });
+  }],
+  ['GET', '/homeroom/mentor/:slug/request', async (ctx, p) => await mentorRequestForm(ctx, p)],
+  ['POST', '/homeroom/mentor/:slug/request', action(mentorRequestCreate)],
+  ['GET', '/homeroom/mentor/:slug/book/:grant', mentorBook],
+  ['POST', '/homeroom/mentor/request/:id/withdraw', action(async (ctx, fields, p) => {
+    await desk.withdrawRequest(p.id, ctx.user.id);
+    seeOther(ctx, '/homeroom/mentors/requests');
+  })],
+  ['POST', '/homeroom/mentor/request/:id/outcome', action(async (ctx, fields, p) => {
+    const request = await desk.getRequest(p.id);
+    if (!request || request.member_id !== ctx.user.id) return notFound(ctx);
+    await desk.logOutcome({
+      requestId: request.id,
+      met: checkbox(fields.met),
+      useful: clampInt(fields.useful, 1, 5, null),
+      note: trimmed(fields.note, 200),
+    });
+    seeOther(ctx, '/homeroom/mentors/requests');
+  })],
+
+  /* The mentor's own three pages. No session: see homeroomRoute below. */
+  ['GET', '/homeroom/m/:token', mentorTokenPage],
+  ['GET', '/homeroom/me/:token', mentorStanding],
+  ['POST', '/homeroom/me/:token/confirm', async (ctx, p) => await mentorStandingAction(ctx, p, 'confirm')],
+  ['POST', '/homeroom/me/:token/pause', async (ctx, p) => await mentorStandingAction(ctx, p, 'pause')],
+  ['POST', '/homeroom/me/:token/withdraw', async (ctx, p) => await mentorStandingAction(ctx, p, 'withdraw')],
+  ['POST', '/homeroom/m/:token/accept', async (ctx, p) => await mentorTokenAnswer(ctx, p, 'accept')],
+  ['POST', '/homeroom/m/:token/decline', async (ctx, p) => await mentorTokenAnswer(ctx, p, 'decline')],
+  ['POST', '/homeroom/m/:token/later', async (ctx, p) => await mentorTokenAnswer(ctx, p, 'later')],
+
   ['GET', '/homeroom/mentor/:slug', mentorHandler],
 
   ['GET', '/homeroom/hours/new', async (ctx) => await render(ctx, views.slotFormPage(ctx, { defaultStart: defaultStart() }),
@@ -1658,9 +1967,12 @@ const ROUTES = [
 
   ['GET', '/homeroom/library/new', async (ctx) => await render(ctx, views.libraryFormPage(ctx, {}), { title: 'Write for the library' })],
   ['POST', '/homeroom/library/new', libraryCreate],
+  ['GET', '/homeroom/library/tree', async (ctx) => await render(ctx, views.treePage(ctx, {
+    moduleCount: LIBRARY_MODULES.length, nodeCount: SKILL_TREE_NODES,
+  }), { title: 'Skill tree', subnav: views.subnav(views.LIBRARY_TABS, 'tree'), wide: true })],
   ['GET', '/homeroom/library/notes', async (ctx) => await render(ctx, views.deliverablesPage(ctx, {
     rows: await bf.deliverables(ctx.user.id), progress: await bf.progressSummary(ctx.user.id),
-  }), { title: 'Your deliverables' })],
+  }), { title: 'Your deliverables', subnav: views.subnav(views.LIBRARY_TABS, 'notes') })],
   ['GET', '/homeroom/library/track/:slug', trackHandler],
   ['GET', '/homeroom/library/module/:slug', moduleHandler],
   ['POST', '/homeroom/library/module/:slug/progress', progressSubmit],
@@ -1701,6 +2013,20 @@ const ROUTES = [
   ['GET', '/homeroom/stewards/invites', async (ctx) => await invitesHandler(ctx)],
   ['POST', '/homeroom/stewards/invites', inviteCreate],
   ['POST', '/homeroom/stewards/invites/:id/revoke', inviteRevoke],
+  ['GET', '/homeroom/stewards/mentors', async (ctx) => await mentorAdminHandler(ctx)],
+  ['POST', '/homeroom/stewards/mentors/sync', action(mentorSyncNow)],
+  ['POST', '/homeroom/stewards/mentors/:id/rule', action(async (ctx, fields, p) => {
+    if (!stewardsOnly(ctx)) return;
+    const decision = fields.decision === 'list' ? 'list' : 'reject';
+    const note = trimmed(fields.note, 300);
+    // A rejection without a reason is a decision the next steward cannot read.
+    if (decision === 'reject' && !note) {
+      return await mentorAdminHandler(ctx, { error: 'Say why, so the next steward is not guessing.' });
+    }
+    const ruled = await mentorsync.rule({ mentorId: p.id, decision, actorId: ctx.user.id, note });
+    if (!ruled) return notFound(ctx);
+    seeOther(ctx, '/homeroom/stewards/mentors');
+  })],
   ['GET', '/homeroom/stewards/access', async (ctx) => await accessAdminHandler(ctx)],
   ['POST', '/homeroom/stewards/access/lookup', accessLookupHandler],
   ['POST', '/homeroom/stewards/access/:hash/decide', action(async (ctx, fields, p) => {
@@ -1767,7 +2093,15 @@ const ROUTES = [
 /** Compile "/homeroom/lab/:slug/edit" into a matcher once, at module load. */
 const COMPILED = ROUTES.map(([method, pattern, handler]) => {
   const segments = pattern.split('/').filter(Boolean);
-  return { method, segments, handler, isApi: pattern.startsWith('/homeroom/api/') };
+  return {
+    method, segments, handler,
+    isApi: pattern.startsWith('/homeroom/api/'),
+    // /homeroom/m/* is the mentor's side of the desk. Mentors have no Homeroom
+    // account — roster.js admits residents and alumni, and a mentor is neither
+    // — so these pages cannot be behind the members-only gate. The token in the
+    // URL is the credential, and it is stored only as a hash.
+    isPublic: pattern.startsWith('/homeroom/m/') || pattern.startsWith('/homeroom/me/'),
+  };
 });
 
 function match(method, pathname) {
@@ -1799,6 +2133,8 @@ export function homeroomRoute(method, pathname) {
       // The API answers in JSON even when it is turning you away.
       if (!ctx.user) return sendJson(ctx.res, { ok: false, error: 'members only' }, { status: 401 });
       await bf.ensureMember(ctx.user.id);
+    } else if (route.isPublic) {
+      if (ctx.user) await bf.ensureMember(ctx.user.id);
     } else if (!await gate(ctx)) {
       return;
     }

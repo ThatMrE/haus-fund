@@ -1,0 +1,70 @@
+{
+  "treeId": "biopunk-accelerator",
+  "id": "venture-math",
+  "title": {
+    "name": "Venture capital, fund economics and venture math",
+    "level": 3
+  },
+  "track": "fundraising-and-capital",
+  "kind": "workshop",
+  "week": 0,
+  "minutes": 90,
+  "deliverable": "Investor Strategy Memo",
+  "defaultStatus": "inProgress",
+  "isUnlocked": true,
+  "onMainPath": false,
+  "link": "/homeroom/library/module/venture-math",
+  "initialPosition": [
+    3,
+    1
+  ],
+  "dependencies": [
+    "raising-on-an-idea"
+  ],
+  "leadsTo": [
+    "investor-psychology",
+    "diligence-room"
+  ],
+  "overview": {
+    "description": "Fund economics explain investor behaviour better than any conversation with an investor will. A fund that needs a $1B outcome cannot fund a $100M company, however good it is.",
+    "objectives": [
+      "Read a fund’s size, vintage and ownership target and predict what it can say yes to",
+      "Model dilution across three rounds without flinching",
+      "Understand SAFEs, valuation caps, lead investors, syndicates and board dynamics"
+    ],
+    "prerequisites": [
+      "Raising on an idea"
+    ]
+  },
+  "steps": {
+    "intro": "Fund economics explain investor behaviour better than any conversation with an investor will. A fund that needs a $1B outcome cannot fund a $100M company, however good it is.",
+    "estimatedMinutes": 90,
+    "instructions": [
+      "Build the dilution model: this round, the next, the one after.",
+      "For your ten target funds, write fund size, typical cheque and ownership target.",
+      "Cut any fund whose model your company cannot satisfy. That list is your strategy memo."
+    ]
+  },
+  "submission": {
+    "description": "Produce the Investor Strategy Memo and log it against this module in Homeroom. Done means the artefact exists, not that you read the page."
+  },
+  "video": {
+    "url": "https://www.youtube.com/watch?v=Dk6JNTDec9I",
+    "title": "Understanding SAFEs and Priced Equity Rounds",
+    "source": "Kirsty Nathoo, Y Combinator"
+  },
+  "resources": [
+    {
+      "title": "YC — the SAFE documents and user guide",
+      "url": "https://www.ycombinator.com/safe"
+    },
+    {
+      "title": "Cooley GO — SAFE generator and dilution modelling",
+      "url": "https://www.cooleygo.com/documents/y-combinator-safe-financing-document-generator/"
+    },
+    {
+      "title": "LifeSciVC — biotech fund economics and ownership targets",
+      "url": "https://lifescivc.com/category/biotech-financing/"
+    }
+  ]
+}

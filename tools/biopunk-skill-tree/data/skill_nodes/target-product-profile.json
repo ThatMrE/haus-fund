@@ -1,0 +1,73 @@
+{
+  "treeId": "biopunk-accelerator",
+  "id": "target-product-profile",
+  "title": {
+    "name": "The target product profile",
+    "level": 3
+  },
+  "track": "legal-ip-and-regulatory",
+  "kind": "playbook",
+  "week": 0,
+  "minutes": 75,
+  "deliverable": "Target Product Profile",
+  "defaultStatus": "inProgress",
+  "isUnlocked": true,
+  "onMainPath": false,
+  "link": "/homeroom/library/module/target-product-profile",
+  "initialPosition": [
+    4,
+    3
+  ],
+  "dependencies": [
+    "risk-mapping",
+    "beachhead-market-memo"
+  ],
+  "leadsTo": [
+    "regulatory-strategy"
+  ],
+  "overview": {
+    "description": "A TPP states what the product must be to be worth approving, buying and reimbursing — population, dose or use, endpoints, effect size, safety, and the label you intend to earn. It is the document a regulatory strategy is derived from, and the one that tells you which experiment is worth running.",
+    "objectives": [
+      "Write a TPP with a minimum acceptable and a target column, and defend both",
+      "Derive your preclinical and clinical plan from the label you intend to earn",
+      "Use the TPP to kill experiments that cannot change what the label would say",
+      "Keep it a living document that development and commercial both edit"
+    ],
+    "prerequisites": [
+      "Technical risk, market risk and the risk map",
+      "Beachhead markets and why superior products fail"
+    ]
+  },
+  "steps": {
+    "intro": "A TPP states what the product must be to be worth approving, buying and reimbursing — population, dose or use, endpoints, effect size, safety, and the label you intend to earn. It is the document a regulatory strategy is derived from, and the one that tells you which experiment is worth running.",
+    "estimatedMinutes": 75,
+    "instructions": [
+      "Write the intended-use statement in one sentence. Everything else follows from it.",
+      "Fill the TPP: population, comparator, endpoints, effect size, safety, route, setting.",
+      "Add the minimum acceptable column. If minimum acceptable is not commercially viable, stop and say so.",
+      "Map each planned experiment to the TPP row it moves. Cut the ones that move none."
+    ]
+  },
+  "submission": {
+    "description": "Produce the Target Product Profile and log it against this module in Homeroom. Done means the artefact exists, not that you read the page."
+  },
+  "video": {
+    "url": "https://www.youtube.com/watch?v=p9BjiXVbopM",
+    "title": "Anatomy of a Target Product Profile",
+    "source": "Marta New"
+  },
+  "resources": [
+    {
+      "title": "FDA — guidance on target product profiles",
+      "url": "https://www.fda.gov/regulatory-information/search-fda-guidance-documents/target-product-profile-strategic-development-process-tool"
+    },
+    {
+      "title": "WHO — target product profiles and how they are written",
+      "url": "https://www.who.int/observatories/global-observatory-on-health-research-and-development/analyses-and-syntheses/target-product-profile/who-target-product-profiles"
+    },
+    {
+      "title": "Facilitating the use of the TPP in academic research (systematic review)",
+      "url": "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC11288132/"
+    }
+  ]
+}

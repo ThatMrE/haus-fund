@@ -1,0 +1,63 @@
+{
+  "treeId": "biopunk-accelerator",
+  "id": "press-and-media",
+  "title": {
+    "name": "Press, personal brand and building in public",
+    "level": 4
+  },
+  "track": "brand-network-and-life",
+  "kind": "playbook",
+  "week": 0,
+  "minutes": 45,
+  "deliverable": "",
+  "defaultStatus": "inProgress",
+  "isUnlocked": true,
+  "onMainPath": false,
+  "link": "/homeroom/library/module/press-and-media",
+  "initialPosition": [
+    6,
+    4
+  ],
+  "dependencies": [
+    "scientific-communication"
+  ],
+  "leadsTo": [],
+  "overview": {
+    "description": "When press matters — recruiting, fundraising, customers — and when it is a distraction dressed as progress.",
+    "objectives": [
+      "Decide whether you need press at all this quarter",
+      "Pitch a journalist without a press release",
+      "Build in public without becoming a content creator"
+    ],
+    "prerequisites": [
+      "Explaining science to people who are not scientists"
+    ]
+  },
+  "steps": {
+    "intro": "When press matters — recruiting, fundraising, customers — and when it is a distraction dressed as progress.",
+    "estimatedMinutes": 45,
+    "instructions": [
+      "Name what press would unlock. If you cannot, skip this module.",
+      "Identify three journalists who have covered your specific area, not your sector.",
+      "Send one, one paragraph, with a specific reason it is interesting now."
+    ]
+  },
+  "submission": {
+    "description": "No named deliverable. Work the steps and keep the notes with the module in Homeroom."
+  },
+  "video": null,
+  "resources": [
+    {
+      "title": "Nature Biotechnology — who covers this field, and how",
+      "url": "https://www.nature.com/nbt/"
+    },
+    {
+      "title": "YC Startup Library — press and launches",
+      "url": "https://www.ycombinator.com/library"
+    },
+    {
+      "title": "Haus Feed — the network’s own publishing surface",
+      "url": "/news"
+    }
+  ]
+}

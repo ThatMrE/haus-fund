@@ -1325,24 +1325,21 @@ export function aboutPage(ctx, { stats }) {
       speculation is welcome; speculation dressed as fact is not.</li>
     <li><b>Reviews are about behaviour, not outcomes.</b> A funder who passed politely and fast
       deserves a better review than one who strung you along and wired.</li>
-    <li><b>Anonymity is for candour, not cover.</b> Use it for the awkward question or the honest
-      review. Stewards can still see who posted.</li>
+    <li><b>Anonymity is for candour, not cover.</b> Use it for the honest review. Stewards can
+      still see who posted.</li>
     <li><b>Nothing that helps anyone hurt people.</b> No protocols, sequences or acquisition routes
       for agents that could cause mass harm — same line as the public side, no exceptions here either.</li>
   </ol>
   <h2>Where things live</h2>
-  <p><b>Chat</b> for anything that does not need to survive the week — nothing there is ranked,
-    scored or surfaced anywhere else, which is what makes it usable. <b>Forum</b> for the question
-    whose answer should still be findable in a year. If you find yourself writing something good in
-    chat, move it.</p>
   <p><b>Yearbook</b> for who everyone is and what they were before. <b>Labs</b> for where you can
     physically do the work: the Global Biolab Atlas for community and open-science labs worldwide,
     with an activity status a member has confirmed, and the Core Facility Finder for instrument time
     by technique. <b>Perks</b> for money you do not have to spend. <b>Funders</b> for who to talk to
     and what happened to the last person who did. <b>Mentors</b> and office hours for a real half
     hour with someone who has done it. <b>Library</b> for the Founder Manual, which is a training
-    system rather than a reading list: every module ends in something you produced.
-    Search covers all of it at once.</p>
+    system rather than a reading list: every module ends in something you produced — and for the
+    question whose answer should still be findable in a year, which is what the entries members
+    write alongside it are for. Search covers all of it at once.</p>
   <p><b>Publishing.</b> Anything worth the public seeing goes out through
     <a href="/homeroom/publish">Publish to news</a>, under your handle, after a steward reads it.
     That is the only door between this room and the public site, and it only opens outward.</p>
@@ -1364,3 +1361,4 @@ export function errorPage(message = 'Something went wrong.') {
  * routes.js keeps its single `import * as views from './views/pages.js'`.
  */
 export * from './surfaces.js';
+export * from './mentordesk.js';

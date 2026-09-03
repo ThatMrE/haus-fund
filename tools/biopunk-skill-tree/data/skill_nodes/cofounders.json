@@ -1,0 +1,67 @@
+{
+  "treeId": "biopunk-accelerator",
+  "id": "cofounders",
+  "title": {
+    "name": "Cofounders: alignment, conflict and breakups",
+    "level": 2
+  },
+  "track": "team-and-operations",
+  "kind": "playbook",
+  "week": 0,
+  "minutes": 45,
+  "deliverable": "",
+  "defaultStatus": "inProgress",
+  "isUnlocked": true,
+  "onMainPath": false,
+  "link": "/homeroom/library/module/cofounders",
+  "initialPosition": [
+    5,
+    0
+  ],
+  "dependencies": [
+    "company-formation"
+  ],
+  "leadsTo": [],
+  "overview": {
+    "description": "Founder breakups kill more early companies than technology does, and almost all of them were visible months earlier.",
+    "objectives": [
+      "Have the equity, role and exit conversation before it is urgent",
+      "Recognise the drift that precedes a breakup",
+      "Structure vesting so a departure is survivable"
+    ],
+    "prerequisites": [
+      "Orrick 1: Formation and startup foundations"
+    ]
+  },
+  "steps": {
+    "intro": "Founder breakups kill more early companies than technology does, and almost all of them were visible months earlier.",
+    "estimatedMinutes": 45,
+    "instructions": [
+      "Write down each founder’s decision rights. Compare answers.",
+      "Confirm vesting and acceleration terms are documented and signed.",
+      "Agree how a departure would be handled, in writing, now."
+    ]
+  },
+  "submission": {
+    "description": "No named deliverable. Work the steps and keep the notes with the module in Homeroom."
+  },
+  "video": {
+    "url": "https://www.youtube.com/watch?v=qhmvwOevsSo",
+    "title": "The Founder's Dilemmas [Entire Talk]",
+    "source": "Noam Wasserman, Stanford eCorner"
+  },
+  "resources": [
+    {
+      "title": "Noam Wasserman — The Founder’s Dilemmas",
+      "url": "https://www.founders-dilemmas.com/"
+    },
+    {
+      "title": "Orrick — founder stock purchase and vesting forms",
+      "url": "https://www.orrick.com/Total-Access/Tool-Kit/Start-Up-Forms/Founders-Stock-Purchase"
+    },
+    {
+      "title": "YC — the cofounder relationship, and how it breaks",
+      "url": "https://www.ycombinator.com/library"
+    }
+  ]
+}

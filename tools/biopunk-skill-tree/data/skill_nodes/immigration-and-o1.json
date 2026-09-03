@@ -1,0 +1,69 @@
+{
+  "treeId": "biopunk-accelerator",
+  "id": "immigration-and-o1",
+  "title": {
+    "name": "Immigration, the O-1 and building from abroad",
+    "level": 2
+  },
+  "track": "brand-network-and-life",
+  "kind": "reference",
+  "week": 0,
+  "minutes": 45,
+  "deliverable": "",
+  "defaultStatus": "inProgress",
+  "isUnlocked": true,
+  "onMainPath": false,
+  "link": "/homeroom/library/module/immigration-and-o1",
+  "initialPosition": [
+    6,
+    5
+  ],
+  "dependencies": [
+    "company-formation"
+  ],
+  "leadsTo": [],
+  "overview": {
+    "description": "The S26 flex session, and the reason this network runs a Visa Desk. For a foreign founder the visa is on the critical path of the company, not beside it — and the evidence an O-1 wants is evidence you can start accumulating in week one.",
+    "objectives": [
+      "Read the O-1A criteria as a checklist you can deliberately build toward",
+      "Know which programme artefacts — showcase, press, judging, mentorship — count as evidence",
+      "Plan the petition timeline against your cohort dates and your raise",
+      "Understand what a support letter needs to say to be worth requesting"
+    ],
+    "prerequisites": [
+      "Orrick 1: Formation and startup foundations"
+    ]
+  },
+  "steps": {
+    "intro": "The S26 flex session, and the reason this network runs a Visa Desk. For a foreign founder the visa is on the critical path of the company, not beside it — and the evidence an O-1 wants is evidence you can start accumulating in week one.",
+    "estimatedMinutes": 45,
+    "instructions": [
+      "Audit yourself against the O-1A criteria. Name the three you are closest to satisfying.",
+      "For each gap, name the artefact this programme could produce and when.",
+      "Request letters from mentors and partners while you are in front of them, not afterwards.",
+      "Draft the letters through the Visa Desk and take the package to counsel."
+    ]
+  },
+  "submission": {
+    "description": "No named deliverable. Work the steps and keep the notes with the module in Homeroom."
+  },
+  "video": {
+    "url": "https://www.youtube.com/watch?v=ybgavFQ32pM",
+    "title": "O-1 Visa Q&A with an Immigration Lawyer: Agent Petitions, Criteria, O-1A vs. O-1B",
+    "source": "Nicole Gunara, Manifest Law"
+  },
+  "resources": [
+    {
+      "title": "USCIS — O-1A, extraordinary ability in the sciences and business",
+      "url": "https://www.uscis.gov/working-in-the-united-states/temporary-workers/o-1-visa-individuals-with-extraordinary-ability-or-achievement"
+    },
+    {
+      "title": "USCIS — evidentiary criteria, and the STEM policy update",
+      "url": "https://www.uscis.gov/policy-manual/volume-2-part-m-chapter-4"
+    },
+    {
+      "title": "Haus Visa Desk — draft the support letters",
+      "url": "/visa"
+    }
+  ]
+}
