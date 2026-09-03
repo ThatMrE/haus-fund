@@ -177,10 +177,17 @@ async function openPglite() {
    * in a function bundle. Its absence therefore means production is running
    * without HOMEROOM_DATABASE_URL, which is a configuration mistake worth
    * saying out loud rather than a module resolution error to decipher.
+   *
+   * The specifier is assembled rather than written out because esbuild follows
+   * a literal one even inside a try/catch: it would inline PGlite's 1.4MB of
+   * JavaScript into the function while leaving the .wasm and .data files it
+   * loads from its own package directory behind, so the fallback would fail
+   * with a wasm error instead of the sentence below. Built at runtime, the
+   * bundler cannot see it, and a deploy without a database says why.
    */
   let PGlite;
   try {
-    ({ PGlite } = await import('@electric-sql/pglite'));
+    ({ PGlite } = await import(['@electric-sql', 'pglite'].join('/')));
   } catch {
     throw new Error(
       'No database. Set HOMEROOM_DATABASE_URL to your Postgres connection string '
