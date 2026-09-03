@@ -42,7 +42,7 @@ export async function assess(email) {
   if (mode === 'closed') return { verdict: 'closed', reason: 'signup-closed' };
 
   const hash = roster.emailHash(address);
-  const cached = hr.rosterRow(hash);
+  const cached = await hr.rosterRow(hash);
 
   // A steward who has ruled on a conflict outranks the rule until they change
   // their mind. Re-deriving it from Airtable every week would undo their work.
@@ -71,7 +71,7 @@ export async function assess(email) {
     return { verdict: 'error', reason: 'roster-unreachable', error: result.error };
   }
 
-  hr.recordVerdict({
+  await hr.recordVerdict({
     hash,
     masked: roster.maskEmail(address),
     verdict: result.verdict,
@@ -107,25 +107,25 @@ export function loginAllowed(assessment) {
 }
 
 /** Attach the account to its roster row, and remember what let them in. */
-export function bindAccount({ email, userId, assessment }) {
-  hr.setUserRoster(userId, `${assessment.verdict}:${assessment.reason}`.slice(0, 120));
-  if (roster.configured()) hr.linkRosterUser(roster.emailHash(email), userId);
+export async function bindAccount({ email, userId, assessment }) {
+  await hr.setUserRoster(userId, `${assessment.verdict}:${assessment.reason}`.slice(0, 120));
+  if (roster.configured()) await hr.linkRosterUser(roster.emailHash(email), userId);
 }
 
 /**
  * Prefill what the roster already knows, so a new member's first screen is not
  * an empty form. Never overwrites something they have already typed.
  */
-export function seedProfile(userId, person = {}) {
+export async function seedProfile(userId, person = {}) {
   if (!person || (!person.name && !person.cohort && !person.house)) return;
-  const member = hr.ensureMember(userId);
+  const member = await hr.ensureMember(userId);
   const patch = {};
   if (person.name && !member.name) patch.name = person.name;
   if (person.cohort && !member.cohort) patch.cohort = person.cohort;
-  if (Object.keys(patch).length) hr.updateMember(userId, patch);
+  if (Object.keys(patch).length) await hr.updateMember(userId, patch);
   if (person.cohort || person.house) {
-    const entry = hr.getYearbook(userId) || {};
-    hr.upsertYearbook(userId, {
+    const entry = await hr.getYearbook(userId) || {};
+    await hr.upsertYearbook(userId, {
       cohort: entry.cohort || person.cohort || '',
       house: entry.house || person.house || '',
     });

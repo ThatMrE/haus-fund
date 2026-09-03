@@ -7,7 +7,6 @@ import { readFile } from 'node:fs/promises';
 import { extname, join, normalize } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-process.env.HOMEROOM_DB ||= './data/homeroom.db';
 process.env.HOMEROOM_STATIC_BASE ||= '/homeroom-assets';
 
 const SITE = fileURLToPath(new URL('../../../', import.meta.url));
@@ -24,10 +23,10 @@ const MIME = {
 };
 
 const { getDb } = await import('./app/db.js');
-const db = getDb();
-if (db.prepare('SELECT COUNT(*) AS n FROM users').get().n === 0) {
+const db = await getDb();
+if ((await db.prepare('SELECT COUNT(*) AS n FROM users').get()).n === 0) {
   const { seedHomeroom } = await import('./app/seed.js');
-  const result = seedHomeroom();
+  const result = await seedHomeroom();
   if (result?.stats) console.log('Seeded the sample network.');
 }
 const { handle } = await import('./app/app.js');

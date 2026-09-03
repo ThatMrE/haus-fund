@@ -32,6 +32,12 @@
   directory = "netlify/functions"
   node_bundler = "esbuild"
 
+# The Postgres driver ships as-is rather than through esbuild: `pg` resolves its
+# optional native bindings at require time, and a bundler that inlines those
+# either fails the build or produces a client that cannot connect.
+[functions.homeroom]
+  external_node_modules = ["pg"]
+
 # ── Mentors: server-side Airtable proxy ──
 # The token stays server-side; only whitelisted mentor fields are returned.
 [[edge_functions]]
