@@ -2232,9 +2232,9 @@ var SKILLTREE = {
     "description": "Produce the Regulatory Strategy and log it against this module in Homeroom. Done means the artefact exists, not that you read the page."
    },
    "video": {
-    "url": "https://www.youtube.com/watch?v=0kbpCoFwhak",
+    "url": "https://www.youtube.com/watch?v=hTJ2d3YH-DQ",
     "title": "Navigating the FDA's Medical Device Pre-submission Process",
-    "source": "Utah Life Sciences Summit panel"
+    "source": "2024 Utah Life Sciences Summit panel"
    },
    "resources": [
     {
@@ -2720,7 +2720,7 @@ var SKILLTREE = {
    },
    "video": {
     "url": "https://www.youtube.com/watch?v=Lc8xWm5sarA",
-    "title": "Electronic lab notebooks for data management and collaboration",
+    "title": "Lab Management Tools: Using Electronic Lab Notebooks to Support Data Management & Collaboration",
     "source": "Research data management seminar"
    },
    "resources": [
@@ -3065,7 +3065,7 @@ var SKILLTREE = {
    "video": {
     "url": "https://www.youtube.com/watch?v=t1AHFTCj4yo",
     "title": "What VCs Look for When Investing in Bio and Healthcare",
-    "source": "a16z Bio + Health"
+    "source": "Venrock, a16z and Khosla — investor panel"
    },
    "resources": [
     {
@@ -3394,8 +3394,8 @@ var SKILLTREE = {
    },
    "video": {
     "url": "https://www.youtube.com/watch?v=ybgavFQ32pM",
-    "title": "O-1 Visa Q&A: agent petitions, criteria, O-1A vs O-1B",
-    "source": "Immigration counsel Q&A"
+    "title": "O-1 Visa Q&A with an Immigration Lawyer: Agent Petitions, Criteria, O-1A vs. O-1B",
+    "source": "Nicole Gunara, Manifest Law"
    },
    "resources": [
     {
