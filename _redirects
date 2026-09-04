@@ -4,6 +4,23 @@
 https://www.haus.fund/* https://haus.fund/:splat 301!
 https://www.haus.fund https://haus.fund 301!
 
+# The mentor network is members-only.
+#
+# It used to be a public page at /mentors, rendered from the Airtable Mentors
+# table. Homeroom already has a mentor directory behind its sign-in, so this
+# sends both paths there rather than adding a second gate: whoever is signed in
+# gets the directory, whoever is not gets the Homeroom sign-in page.
+#
+# Forced, because publish = "." would otherwise serve a file at /mentors.html
+# straight past the redirect. 302 rather than 301: a permanent redirect is
+# cached hard by browsers, and this is a policy that could be reversed.
+#
+# The /api/mentors edge function that fed the old page is gone from
+# netlify.toml. Hiding the page while leaving the JSON open would have moved
+# the front door without locking it.
+/mentors /homeroom/mentors 302!
+/mentors.html /homeroom/mentors 302!
+
 # Internal docs live in the repo for reference but must not be served.
 # publish = "." means every committed file is otherwise reachable.
 #
