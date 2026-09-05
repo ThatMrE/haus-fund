@@ -1,34 +1,49 @@
-import { DatabaseSync } from 'node:sqlite';
-import { mkdirSync } from 'node:fs';
-import { dirname, resolve } from 'node:path';
-import { HOMEROOM_SCHEMA } from './schema.js';
+import * as sql from './sql.js';
+import { HOMEROOM_SCHEMA, ACCOUNT_SCHEMA, ADDED_COLUMNS } from './schema.js';
 
-const DEFAULT_PATH = resolve(process.cwd(), 'data/homeroom.db');
+export { ACCOUNT_SCHEMA, ADDED_COLUMNS };
 
-let db = null;
+export * from './sql.js';
 
-/** Open (or reuse) the SQLite handle and make sure the schema is present. */
-export function getDb(path = process.env.HOMEROOM_DB || DEFAULT_PATH) {
-  if (db) return db;
-  if (path !== ':memory:') mkdirSync(dirname(path), { recursive: true });
-  db = new DatabaseSync(path);
-  db.exec('PRAGMA journal_mode = WAL');
-  db.exec('PRAGMA foreign_keys = ON');
-  db.exec('PRAGMA busy_timeout = 5000');
-  migrate(db);
-  return db;
+/**
+ * Schema, migrations, and the SQLite dialect made portable.
+ *
+ * `schema.js` stays the single source of truth and stays written in SQLite, so
+ * `npm start` and 232 tests keep working with nothing configured. `toPostgres`
+ * below translates it on the way out. Generating the Postgres DDL rather than
+ * maintaining a second copy is the whole point: two schemas drift, and the
+ * drift is silent until a column is missing in production only.
+ */
+
+/**
+ * SQLite DDL to Postgres DDL.
+ *
+ * Deliberately small. It handles exactly the constructs `schema.js` uses, and
+ * throws nothing away silently — anything it does not recognise passes through
+ * and Postgres complains loudly, which is the failure mode to want.
+ */
+export function toPostgres(ddl) {
+  return ddl
+    // Autoincrementing keys. IDENTITY over SERIAL: it is the standard spelling
+    // and it does not leave a stray sequence with its own permissions.
+    .replace(/INTEGER PRIMARY KEY AUTOINCREMENT/g,
+             'BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY')
+    // Epoch seconds in INTEGER columns overflow int4 in 2038. Everything here
+    // is a timestamp or a small counter, so widening all of them is safe and
+    // cheaper than auditing which is which.
+    .replace(/\bINTEGER\b/g, 'BIGINT')
+    .replace(/\bREAL\b/g, 'DOUBLE PRECISION')
+    // Postgres has no NOCASE collation. The four query sites that wanted it now
+    // say lower() instead, which both engines speak — so this is a safety net
+    // for DDL rather than the actual fix. A COLLATE that reached Postgres at
+    // runtime would fail inside a query, where no schema translation can help.
+    .replace(/ COLLATE NOCASE/g, '');
 }
 
-/** Point the process at a different database (used by the tests). */
-export function setDb(instance) {
-  db = instance;
-  if (db) migrate(db);
-  return db;
-}
-
-export function closeDb() {
-  if (db) db.close();
-  db = null;
+/** The whole schema, in the dialect the configured backend speaks. */
+export function schemaFor(backend) {
+  const ddl = ACCOUNT_SCHEMA + HOMEROOM_SCHEMA + addedColumnsDdl();
+  return backend === 'postgres' ? toPostgres(ddl) : ddl;
 }
 
 /**
@@ -36,40 +51,7 @@ export function closeDb() {
  * identity provider: it is one table, one scrypt hash, and one signed cookie,
  * and it keeps the whole thing deployable with nothing to sign up for.
  */
-export const ACCOUNT_SCHEMA = `
-CREATE TABLE IF NOT EXISTS users (
-  id            TEXT PRIMARY KEY,
-  email         TEXT UNIQUE,
-  password_hash TEXT NOT NULL,
-  karma         INTEGER NOT NULL DEFAULT 1,
-  created_at    INTEGER NOT NULL,
-  is_admin      INTEGER NOT NULL DEFAULT 0,
-  banned        INTEGER NOT NULL DEFAULT 0
-);
 
-CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
-
-CREATE TABLE IF NOT EXISTS sessions (
-  token      TEXT PRIMARY KEY,
-  user_id    TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  created_at INTEGER NOT NULL,
-  expires_at INTEGER NOT NULL
-);
-
-CREATE INDEX IF NOT EXISTS idx_sessions_user ON sessions(user_id);
-
-/* Password resets. The row stores a hash of the token, never the token, so a
-   copy of the database does not let anyone take over an account. */
-CREATE TABLE IF NOT EXISTS password_resets (
-  token_hash TEXT PRIMARY KEY,
-  user_id    TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  created_at INTEGER NOT NULL,
-  expires_at INTEGER NOT NULL,
-  used_at    INTEGER
-);
-
-CREATE INDEX IF NOT EXISTS idx_resets_user ON password_resets(user_id);
-`;
 
 /*
  * Columns added after the first release.
@@ -80,80 +62,68 @@ CREATE INDEX IF NOT EXISTS idx_resets_user ON password_resets(user_id);
  * ALTER and ignore the duplicate-column error than to parse table_info on
  * every boot.
  */
-const ADDED_COLUMNS = [
-  // Rate My Funder: the axes a founder actually compares funders on.
-  ['hr_funder_reviews', 'founder_friendly', 'INTEGER'],
-  ['hr_funder_reviews', 'terms', 'INTEGER'],
-  ['hr_funder_reviews', 'would_again', "INTEGER NOT NULL DEFAULT 0"],
-  ['hr_funder_reviews', 'tags', "TEXT NOT NULL DEFAULT ''"],
-  ['hr_funder_reviews', 'stage', "TEXT NOT NULL DEFAULT ''"],
-  ['hr_funder_reviews', 'outcome', "TEXT NOT NULL DEFAULT ''"],
-  ['hr_funder_reviews', 'helpful', "INTEGER NOT NULL DEFAULT 0"],
-  // Office hours held by a mentor rather than by a member.
-  ['hr_slots', 'mentor_id', 'INTEGER'],
-  ['hr_slots', 'url', "TEXT NOT NULL DEFAULT ''"],
-  // Which roster verdict let this account in, and when it was last confirmed.
-  ['users', 'roster_status', "TEXT NOT NULL DEFAULT ''"],
-  ['users', 'roster_checked_at', 'INTEGER NOT NULL DEFAULT 0'],
-  // Perks: how you actually redeem the thing.
-  ['hr_deals', 'access', "TEXT NOT NULL DEFAULT 'code'"],
-  ['hr_deals', 'requirement', "TEXT NOT NULL DEFAULT ''"],
-  ['hr_deals', 'checked', "TEXT NOT NULL DEFAULT ''"],
-  // Mentor desk: standing consent, availability and how much of it there is.
-  // `state` defaults to 'listed' so every existing row keeps behaving as it
-  // did — a migration that quietly unlisted the whole roster would be worse
-  // than no gate at all.
-  ['hr_mentors', 'state', "TEXT NOT NULL DEFAULT 'listed'"],
-  ['hr_mentors', 'consent_mode', "TEXT NOT NULL DEFAULT 'ask-me'"],
-  ['hr_mentors', 'capacity', 'INTEGER NOT NULL DEFAULT 2'],
-  ['hr_mentors', 'tracks', "TEXT NOT NULL DEFAULT ''"],
-  ['hr_mentors', 'email', "TEXT NOT NULL DEFAULT ''"],
-  ['hr_mentors', 'airtable_id', "TEXT NOT NULL DEFAULT ''"],
-  ['hr_mentors', 'confirmed_at', 'INTEGER'],
-  ['hr_mentors', 'paused_until', 'INTEGER'],
-  ['hr_mentors', 'synced_at', 'INTEGER'],
-  // Phase 3: keeping the roster honest. `confirmed_at` is when they last said
-  // yes to being here at all; the two nudge columns are how a silence becomes
-  // dormancy rather than a listing nobody ever checks again.
-  ['hr_mentors', 'reconfirm_sent_at', 'INTEGER'],
-  ['hr_mentors', 'reconfirm_nudges', 'INTEGER NOT NULL DEFAULT 0'],
-  // Which Supabase credential this account signs in with, when HOMEROOM_AUTH
-  // is supabase. Empty for a local account, so the two can coexist.
-  ['users', 'supabase_id', "TEXT NOT NULL DEFAULT ''"],
-];
 
-function addColumns(instance) {
-  for (const [table, column, type] of ADDED_COLUMNS) {
-    try {
-      instance.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${type}`);
-    } catch (err) {
-      // "duplicate column name" is the expected outcome on every boot but the
-      // first. Anything else is a real schema problem and should be seen.
-      if (!/duplicate column/i.test(String(err?.message))) throw err;
-    }
-  }
+
+
+/**
+ * Added columns, as DDL rather than as attempted ALTERs.
+ *
+ * SQLite has no ADD COLUMN IF NOT EXISTS and Postgres does, so the old
+ * try-and-swallow-the-error loop becomes one statement per column on Postgres
+ * and stays a loop on SQLite.
+ */
+function addedColumnsDdl() {
+  return ADDED_COLUMNS
+    .map(([table, column, type]) => `ALTER TABLE ${table} ADD COLUMN IF NOT EXISTS ${column} ${type};`)
+    .join('\n');
 }
 
-function migrate(instance) {
-  instance.exec(ACCOUNT_SCHEMA);
-  instance.exec(HOMEROOM_SCHEMA);
-  addColumns(instance);
+let migrated = false;
+
+/**
+ * The synchronous handle, migrated, for tests and terminal scripts.
+ *
+ * SQLite's migration is genuinely synchronous, so this can keep the old
+ * contract exactly: call it, get a migrated database. On Postgres it throws —
+ * see `rawSqlite`.
+ */
+export function getDb() {
+  return sql.rawSqlite();
 }
 
-/** Run a function inside a transaction, rolling back if it throws. */
-export function transaction(fn) {
-  const instance = getDb();
-  instance.exec('BEGIN');
-  try {
-    const result = fn(instance);
-    instance.exec('COMMIT');
-    return result;
-  } catch (err) {
-    try {
-      instance.exec('ROLLBACK');
-    } catch {
-      /* the outer error is the interesting one */
+/**
+ * Bring the database up to the current schema.
+ *
+ * Idempotent and safe to call on every boot, which is what a serverless
+ * container needs — there is no deploy step to hang a migration off.
+ */
+export async function migrate({ force = false } = {}) {
+  if (migrated && !force) return;
+  const backend = sql.backend();
+  if (backend === 'postgres') {
+    await sql.exec(schemaFor('postgres'));
+  } else {
+    await sql.exec(ACCOUNT_SCHEMA);
+    await sql.exec(HOMEROOM_SCHEMA);
+    for (const [table, column, type] of ADDED_COLUMNS) {
+      try {
+        await sql.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${type}`);
+      } catch (err) {
+        // "duplicate column name" is the expected outcome on every boot but
+        // the first. Anything else is a real schema problem and should be seen.
+        if (!/duplicate column/i.test(String(err?.message))) throw err;
+      }
     }
-    throw err;
   }
+  migrated = true;
+}
+
+/** Used by the tests to start from nothing. */
+export function resetMigrations() {
+  migrated = false;
+}
+
+export async function closeDb() {
+  await sql.close();
+  migrated = false;
 }

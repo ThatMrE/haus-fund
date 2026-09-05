@@ -42,7 +42,7 @@
  * importer, where the destructive step runs only after a clean fetch.
  */
 
-import { getDb, transaction } from './db.js';
+import * as sql from './db.js';
 import { nowSeconds } from './util.js';
 import { normalize } from './mentorfields.js';
 import * as hr from './models.js';
@@ -143,13 +143,13 @@ export async function fetchRows() {
  * either. The slug stays as the fallback so rows imported before this column
  * existed are adopted rather than duplicated on the first sweep.
  */
-function findExisting(db, mentor) {
+async function findExisting(db, mentor) {
   if (mentor.airtableId) {
-    const byId = db.prepare('SELECT * FROM hr_mentors WHERE airtable_id = ?').get(mentor.airtableId);
+    const byId = await db.get('SELECT * FROM hr_mentors WHERE airtable_id = ?', mentor.airtableId);
     if (byId) return byId;
   }
   const slug = hr.slugify(mentor.name, 'mentor');
-  return db.prepare('SELECT * FROM hr_mentors WHERE slug = ?').get(slug) ?? null;
+  return await db.get('SELECT * FROM hr_mentors WHERE slug = ?', slug) ?? null;
 }
 
 /**
@@ -166,33 +166,29 @@ function findExisting(db, mentor) {
  *     A mentor blanking a field by accident, or Airtable omitting it from a
  *     response, must not silently remove the only way to reach them.
  */
-function applyRow(db, mentor, now) {
-  const existing = findExisting(db, mentor);
+async function applyRow(db, mentor, now) {
+  const existing = await findExisting(db, mentor);
   const tags = mentor.tags.join(',');
   const tracks = mentor.tracks.join(',');
 
   if (!existing) {
-    const info = db.prepare(
-      `INSERT INTO hr_mentors (slug, name, role, org, track, tags, location, bio, format,
+    const info = await db.run(`INSERT INTO hr_mentors (slug, name, role, org, track, tags, location, bio, format,
                                scheduler, vetted, active, source, created_at,
                                state, consent_mode, capacity, tracks, email, airtable_id, synced_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 1, 'form', ?, 'pending', ?, ?, ?, ?, ?, ?)`,
-    ).run(hr.slugify(mentor.name, 'mentor'), mentor.name, mentor.role, mentor.org, mentor.track,
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 1, 'form', ?, 'pending', ?, ?, ?, ?, ?, ?)`, hr.slugify(mentor.name, 'mentor'), mentor.name, mentor.role, mentor.org, mentor.track,
       tags, mentor.location, mentor.bio, mentor.format, mentor.scheduler, now,
       mentor.consentMode, mentor.capacity, tracks, mentor.email, mentor.airtableId, now);
-    return { id: Number(info.lastInsertRowid), created: true };
+    return { id: info.id, created: true };
   }
 
-  db.prepare(
-    `UPDATE hr_mentors SET name = ?, role = ?, org = ?, track = ?, tags = ?, location = ?,
+  await db.run(`UPDATE hr_mentors SET name = ?, role = ?, org = ?, track = ?, tags = ?, location = ?,
             bio = ?, format = ?,
             scheduler = CASE WHEN ? != '' THEN ? ELSE scheduler END,
             email     = CASE WHEN ? != '' THEN ? ELSE email     END,
             consent_mode = ?, capacity = CASE WHEN ? > 0 THEN ? ELSE capacity END,
             tracks = ?, airtable_id = CASE WHEN ? != '' THEN ? ELSE airtable_id END,
             synced_at = ?
-     WHERE id = ?`,
-  ).run(mentor.name, mentor.role, mentor.org, mentor.track, tags, mentor.location,
+     WHERE id = ?`, mentor.name, mentor.role, mentor.org, mentor.track, tags, mentor.location,
     mentor.bio, mentor.format,
     mentor.scheduler, mentor.scheduler,
     mentor.email, mentor.email,
@@ -225,12 +221,12 @@ export async function sync() {
   }
 
   const now = nowSeconds();
-  const result = transaction((db) => {
+  const result = await sql.tx(async (db) => {
     let created = 0;
     let updated = 0;
     const pending = [];
     for (const mentor of mentors) {
-      const { id, created: isNew } = applyRow(db, mentor, now);
+      const { id, created: isNew } = await applyRow(db, mentor, now);
       if (isNew) { created += 1; pending.push({ id, name: mentor.name }); }
       else updated += 1;
     }
@@ -238,7 +234,7 @@ export async function sync() {
   });
 
   for (const row of result.pending) {
-    logEvent({ mentorId: row.id, actorKind: 'system', event: 'submitted', detail: 'from the onboarding form' });
+    await logEvent({ mentorId: row.id, actorKind: 'system', event: 'submitted', detail: 'from the onboarding form' });
   }
   markSync({ ok: true, seen: mentors.length, ...result });
   return { ok: true, seen: mentors.length, ...result };
@@ -264,11 +260,9 @@ export function lastSync() {
   return lastRun;
 }
 
-export function status() {
-  const db = getDb();
-  const counts = db.prepare(
-    `SELECT state, COUNT(*) AS n FROM hr_mentors GROUP BY state`,
-  ).all();
+export async function status() {
+  const db = sql;
+  const counts = await db.all(`SELECT state, COUNT(*) AS n FROM hr_mentors GROUP BY state`,);
   return {
     configured: configured(),
     last: lastRun,
@@ -279,16 +273,14 @@ export function status() {
 /* ---------------------------------------------------------------- gate A */
 
 /** The queue: submissions nobody has ruled on. */
-export function pendingSubmissions({ limit = 50 } = {}) {
-  return getDb().prepare(
-    `SELECT id, slug, name, role, org, track, tags, location, bio, format,
+export async function pendingSubmissions({ limit = 50 } = {}) {
+  return await sql.all(`SELECT id, slug, name, role, org, track, tags, location, bio, format,
             capacity, consent_mode, tracks, source, created_at, synced_at
-     FROM hr_mentors WHERE state = 'pending' ORDER BY created_at ASC LIMIT ?`,
-  ).all(limit);
+     FROM hr_mentors WHERE state = 'pending' ORDER BY created_at ASC LIMIT ?`, limit);
 }
 
-export function pendingCount() {
-  return getDb().prepare("SELECT COUNT(*) AS n FROM hr_mentors WHERE state = 'pending'").get().n;
+export async function pendingCount() {
+  return (await sql.get("SELECT COUNT(*) AS n FROM hr_mentors WHERE state = 'pending'")).n;
 }
 
 /**
@@ -299,15 +291,14 @@ export function pendingCount() {
  * members. A rejection keeps the row so the next sweep does not re-add it as a
  * fresh submission, and requires a note so the next steward knows why.
  */
-export function rule({ mentorId, decision, actorId, note = '' }) {
+export async function rule({ mentorId, decision, actorId, note = '' }) {
   const state = decision === 'list' ? 'listed' : 'rejected';
-  const db = getDb();
-  const mentor = db.prepare('SELECT id, name, state FROM hr_mentors WHERE id = ?').get(Number(mentorId));
+  const db = sql;
+  const mentor = await db.get('SELECT id, name, state FROM hr_mentors WHERE id = ?', Number(mentorId));
   if (!mentor) return null;
 
-  db.prepare('UPDATE hr_mentors SET state = ?, vetted = ?, active = ? WHERE id = ?')
-    .run(state, state === 'listed' ? 1 : 0, state === 'listed' ? 1 : 0, mentor.id);
-  logEvent({
+  await db.run('UPDATE hr_mentors SET state = ?, vetted = ?, active = ? WHERE id = ?', state, state === 'listed' ? 1 : 0, state === 'listed' ? 1 : 0, mentor.id);
+  await logEvent({
     mentorId: mentor.id, actorId, actorKind: 'steward',
     event: state === 'listed' ? 'listed' : 'rejected', detail: note.slice(0, 300),
   });
@@ -315,13 +306,11 @@ export function rule({ mentorId, decision, actorId, note = '' }) {
 }
 
 /** Requests a mentor has left sitting — the early warning before dormancy. */
-export function stuckRequests({ days = 5, limit = 30 } = {}) {
+export async function stuckRequests({ days = 5, limit = 30 } = {}) {
   const cutoff = nowSeconds() - days * 86400;
-  return getDb().prepare(
-    `SELECT r.id, r.created_at, r.member_id, m.name AS mentor_name, m.slug AS mentor_slug
+  return await sql.all(`SELECT r.id, r.created_at, r.member_id, m.name AS mentor_name, m.slug AS mentor_slug
      FROM hr_mentor_requests r JOIN hr_mentors m ON m.id = r.mentor_id
-     WHERE r.state = 'sent' AND r.created_at < ? ORDER BY r.created_at ASC LIMIT ?`,
-  ).all(cutoff, limit);
+     WHERE r.state = 'sent' AND r.created_at < ? ORDER BY r.created_at ASC LIMIT ?`, cutoff, limit);
 }
 
 /* ------------------------------------------------------------- the sweep */
@@ -343,46 +332,61 @@ export async function lifecycle({ now = undefined } = {}) {
   const at = now ?? nowSeconds();
   const result = { paused: 0, reconfirmed: 0, dormant: 0, nagged: 0 };
 
-  for (const mentor of life.autoPauseSilent(at)) {
+  for (const mentor of await life.autoPauseSilent(at)) {
     result.paused += 1;
-    const to = contactFor(mentor.id);
+    const to = await contactFor(mentor.id);
     if (to) {
-      await mentormail.deliver(mentormail.autoPausedMessage({
-        mentor, to, token: life.mintToken(mentor.id, { now: at }),
-      })).catch(() => {});
+      try {
+        await mentormail.deliver(mentormail.autoPausedMessage({
+        mentor, to, token: await life.mintToken(mentor.id, { now: at }),
+      }));
+      } catch {
+        // A mentor who could not be told they were paused is still paused.
+        // Losing the rest of the sweep over one send would be worse.
+      }
     }
   }
 
-  const { due, dormant } = life.reconfirmDue(at);
+  const { due, dormant } = await life.reconfirmDue(at);
 
   for (const mentor of due) {
-    const to = contactFor(mentor.id);
-    life.markNudged(mentor.id, at);
+    const to = await contactFor(mentor.id);
+    await life.markNudged(mentor.id, at);
     result.reconfirmed += 1;
     if (!to) continue;
-    await mentormail.deliver(mentormail.reconfirmMessage({
-      mentor, to, token: life.mintToken(mentor.id, { kind: 'reconfirm', now: at }),
-    })).catch(() => {});
+    try {
+      await mentormail.deliver(mentormail.reconfirmMessage({
+      mentor, to, token: await life.mintToken(mentor.id, { kind: 'reconfirm', now: at }),
+    }));
+    } catch {
+      // A mentor who could not be told they were paused is still paused.
+      // Losing the rest of the sweep over one send would be worse.
+    }
   }
 
   for (const mentor of dormant) {
-    life.makeDormant(mentor.id, at);
+    await life.makeDormant(mentor.id, at);
     result.dormant += 1;
-    const to = contactFor(mentor.id);
+    const to = await contactFor(mentor.id);
     if (!to) continue;
-    await mentormail.deliver(mentormail.dormantMessage({
-      mentor, to, token: life.mintToken(mentor.id, { now: at }),
-    })).catch(() => {});
+    try {
+      await mentormail.deliver(mentormail.dormantMessage({
+      mentor, to, token: await life.mintToken(mentor.id, { now: at }),
+    }));
+    } catch {
+      // A mentor who could not be told they were paused is still paused.
+      // Losing the rest of the sweep over one send would be worse.
+    }
   }
 
-  for (const row of life.outcomeNagsDue(at)) {
-    hr.notify({
+  for (const row of await life.outcomeNagsDue(at)) {
+    await hr.notify({
       userId: row.member_id,
       kind: 'intro',
       text: `How did it go with ${row.mentor_name}?`,
       href: '/homeroom/mentors/requests',
     });
-    logEvent({ requestId: row.id, actorKind: 'system', event: 'outcome-nagged' });
+    await logEvent({ requestId: row.id, actorKind: 'system', event: 'outcome-nagged' });
     result.nagged += 1;
   }
 

@@ -109,7 +109,7 @@ async function request(path, { method = 'GET', body = null, prefer = null } = {}
  * for the pattern, and why it is worth the indirection.
  */
 export async function rpc(name, args = {}) {
-  return request(`rpc/${name}`, { method: 'POST', body: args });
+  return await request(`rpc/${name}`, { method: 'POST', body: args });
 }
 
 /**
@@ -121,7 +121,7 @@ export async function rpc(name, args = {}) {
  * something a submission can assert about itself.
  */
 export async function submitToNews({ handle, title, url = '', body = '', topic = 'general' }) {
-  return request(newsTable(), {
+  return await request(newsTable(), {
     method: 'POST',
     prefer: 'return=representation',
     body: [{
@@ -144,7 +144,7 @@ export async function mySubmissions(handle, { limit = 30 } = {}) {
     order: 'created_at.desc',
     limit: String(limit),
   });
-  return request(`${newsTable()}?${query}`);
+  return await request(`${newsTable()}?${query}`);
 }
 
 /** What has actually gone live, for the "published from Homeroom" rail. */
@@ -156,7 +156,7 @@ export async function publishedFromHomeroom({ limit = 10 } = {}) {
     order: 'published_at.desc',
     limit: String(limit),
   });
-  return request(`${newsTable()}?${query}`);
+  return await request(`${newsTable()}?${query}`);
 }
 
 /** Cheap reachability probe for /homeroom/health. Never throws. */

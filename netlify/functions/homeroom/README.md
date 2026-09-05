@@ -143,18 +143,85 @@ deliberately not one of them**. A roster of 200 where 60 answer is worse than a
 roster of 60, and counting the first is how you get it. The honest version of
 that question is the dormant share.
 
+### Storage
+
+**The `hr_` tables are durable when `DATABASE_URL` is set.** Before this, they
+lived on the function container's `/tmp`: a cold container started empty, and a
+mentor's booking grant or an emailed consent token was a coin flip. Supabase
+Auth had already rescued accounts and Supabase had rescued invites; this is the
+rest.
+
+| | |
+| --- | --- |
+| Unset | SQLite at `HOMEROOM_DB` (default `/tmp/haus-homeroom.db`). Not durable. What `npm start` and the tests use. |
+| `DATABASE_URL` / `HOMEROOM_DATABASE_URL` | Postgres, over the wire. Durable. |
+
+`/homeroom/health` reports `storage.backend` and `storage.durable`, so "is this
+real" is one curl.
+
+Point it at Supabase's **transaction pooler** (port 6543), not the direct
+connection: serverless functions open and abandon connections faster than
+Postgres reclaims them, and the pooler exists to absorb exactly that.
+
+```
+DATABASE_URL=postgres://postgres.<ref>:<password>@aws-0-<region>.pooler.supabase.com:6543/postgres
+```
+
+The schema migrates itself on boot — idempotent, and there is no deploy step to
+hang a migration off.
+
+#### The one fact that shaped the change
+
+Node has no synchronous network I/O, and `node:sqlite` is synchronous. So every
+durable store forced the data layer async; nothing about choosing Postgres over
+anything else avoided it. What it did *not* have to cost was the SQL: all 203
+queries are unchanged, because `app/sql.js` translates `?` to `$1` and nothing
+else.
+
+`app/schema.js` stays the single source of truth and stays written in SQLite;
+`toPostgres()` in `db.js` generates the Postgres dialect from it. Two schemas
+would drift, and the drift would be invisible until a column was missing in
+production only. A test asserts both dialects describe the same tables.
+
+#### What differs between the two backends, and why
+
+| | Why it needed handling |
+| --- | --- |
+| `AUTOINCREMENT` → `GENERATED ALWAYS AS IDENTITY` | Postgres has no AUTOINCREMENT. |
+| `INTEGER` → `BIGINT` | Epoch seconds outgrow int4 in 2038. |
+| `lastInsertRowid` → `RETURNING id` | Postgres will not tell you otherwise. Only appended for the 24 tables that have an `id`, computed from the schema — junction tables correctly excluded. |
+| int8 parsed as a number | node-postgres returns bigint as a **string**. Left alone, every count and timestamp arrives as text, `nudges + 1` becomes `"11"`, and nothing throws. |
+| `COLLATE NOCASE` → `lower()` | Postgres has no NOCASE. The four query sites say `lower()` now, which both engines speak — a schema translation cannot help a COLLATE inside a query. |
+| SSL on for remote, off for loopback | Supabase requires TLS and its pooler presents a certificate for the pooler host; a local Postgres usually refuses TLS outright. Hardcoding it on made the code untestable against a real server. |
+
+#### Testing it
+
+The 243-test suite runs on SQLite and needs no credentials — that is what let
+the async refactor be validated before the Postgres driver existed. It cannot
+run on Postgres, because its fixtures use the synchronous `getDb()` handle by
+design.
+
+`test/postgres.test.js` covers what only a real server can prove — the DDL
+parsing, placeholder translation through joins and subqueries, `RETURNING id`,
+int8 typing, and that a transaction really is one transaction so the mentor
+desk's capacity race still holds. It skips unless you give it a throwaway
+database, and it drops and recreates the public schema, so never point it at
+anything real:
+
+```bash
+HOMEROOM_TEST_DATABASE_URL=postgres://user@host:5432/throwaway npm test
+```
+
 ### Before pointing this at real mentors
 
-Supabase Auth made *accounts* durable. The mentor desk's own state is not:
-`hr_mentor_requests`, `hr_mentor_grants` and `hr_mentor_tokens` are SQLite
-tables in `/tmp` like everything else under `hr_`. A cold container means a
-mentor clicks accept into a 500, or a member's 14-day booking link stops
-existing three days in.
+`hr_mentor_requests`, `hr_mentor_grants` and `hr_mentor_tokens` are durable
+once `DATABASE_URL` is set — see **Storage** above. Without it they are still
+SQLite on `/tmp`, and a cold container means a mentor clicks accept into a 500
+or a member's 14-day booking link stops existing three days in.
 
-Everything here is correct and tested; it is just not yet safe to send a real
-volunteer an email that depends on a container staying alive. The desk should
-wait for the `hr_*` tables to follow the accounts somewhere durable — the seam
-is `db.js`, and the storage section below names the options.
+So the remaining checklist before real volunteers get email: set
+`DATABASE_URL`, confirm `storage.durable` is `true` on `/homeroom/health`, and
+build the onboarding form (§8.4 of the mentor spec).
 
 It started as a reskin of Bookface, Y Combinator's internal network. The idea it
 copies is that the value comes from the room being closed: people say what a

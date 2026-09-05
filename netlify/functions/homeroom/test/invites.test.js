@@ -29,7 +29,7 @@ let server;
 let base;
 
 before(async () => {
-  server = createServer((req, res) => handle(req, res));
+  server = createServer(async (req, res) => await handle(req, res));
   await new Promise((r) => server.listen(0, '127.0.0.1', r));
   base = `http://127.0.0.1:${server.address().port}`;
 });
@@ -69,10 +69,10 @@ const uniq = () => ++n;
 
 /** A steward with a session, since only they can mint an invite. */
 async function steward(id) {
-  hr.createUser({ id, email: `${id}@haus.fund`, passwordHash: hashPassword('a-good-passphrase'), isAdmin: true });
-  hr.ensureMember(id, { name: id });
+  await hr.createUser({ id, email: `${id}@haus.fund`, passwordHash: hashPassword('a-good-passphrase'), isAdmin: true });
+  await hr.ensureMember(id, { name: id });
   const { createSession } = await import('../app/auth.js');
-  const token = createSession(id);
+  const token = await createSession(id);
   const call = agent();
   await call('/homeroom', { headers: { cookie: `homeroom_session=${token}` } });
   // The agent's jar starts empty, so carry the cookie explicitly.
@@ -181,7 +181,7 @@ test('joining creates the account, signs you in and lands on the welcome page', 
 
   assert.equal(res.status, 303);
   assert.equal(res.headers.get('location'), '/homeroom/welcome');
-  const account = hr.getUser('newbie');
+  const account = await hr.getUser('newbie');
   assert.ok(account, 'the account should exist');
   assert.equal(account.email, email, 'with the invited address, not one they typed');
   assert.equal(account.is_admin, 0, 'joining by invite never grants stewardship');
@@ -217,7 +217,7 @@ test('the password has to be real, and the two have to match', async () => {
 });
 
 test('a taken handle is refused without spending the invite', async () => {
-  hr.createUser({ id: 'incumbent2', email: 'incumbent2@haus.fund', passwordHash: hashPassword('x'.repeat(12)) });
+  await hr.createUser({ id: 'incumbent2', email: 'incumbent2@haus.fund', passwordHash: hashPassword('x'.repeat(12)) });
   const token = await inviteFor(`taken${uniq()}@example.org`);
   const call = agent();
   const csrf = await csrfFor(call, `/homeroom/join/${token}`);
@@ -255,16 +255,16 @@ test('the account you get can actually sign in afterwards', async () => {
     csrf, handle: 'cansignin', password: 'the-chosen-passphrase', confirm: 'the-chosen-passphrase',
   }));
 
-  assert.ok(verifyPassword('the-chosen-passphrase', hr.getUser('cansignin').password_hash));
+  assert.ok(verifyPassword('the-chosen-passphrase', (await hr.getUser('cansignin')).password_hash));
 });
 
 /* ====================================================== the steward screen */
 
 test('only a steward can see or mint invites', async () => {
-  hr.createUser({ id: 'ordinaryone', email: 'ordinaryone@haus.fund', passwordHash: hashPassword('x'.repeat(12)) });
-  hr.ensureMember('ordinaryone', { name: 'Ordinary' });
+  await hr.createUser({ id: 'ordinaryone', email: 'ordinaryone@haus.fund', passwordHash: hashPassword('x'.repeat(12)) });
+  await hr.ensureMember('ordinaryone', { name: 'Ordinary' });
   const { createSession } = await import('../app/auth.js');
-  const token = createSession('ordinaryone');
+  const token = await createSession('ordinaryone');
 
   const res = await fetch(`${base}/homeroom/stewards/invites`, {
     headers: { cookie: `homeroom_session=${token}` }, redirect: 'manual',
@@ -290,7 +290,7 @@ test('a steward mints one and is shown the link exactly once', async () => {
 
 test('a steward cannot invite an address that already has an account', async () => {
   const { call, csrf } = await steward('steward2');
-  hr.createUser({ id: 'already', email: 'already@example.org', passwordHash: hashPassword('x'.repeat(12)) });
+  await hr.createUser({ id: 'already', email: 'already@example.org', passwordHash: hashPassword('x'.repeat(12)) });
 
   const res = await call('/homeroom/stewards/invites', form({ csrf, email: 'already@example.org' }));
   assert.match(await res.text(), /already has an account/i);
@@ -334,7 +334,7 @@ test('the checklist is derived from what the member has actually done', async ()
     csrf, handle: 'checklister', password: 'a-good-passphrase', confirm: 'a-good-passphrase',
   }));
 
-  const before = hr.onboardingProgress('checklister');
+  const before = await hr.onboardingProgress('checklister');
   assert.equal(before.complete, false);
   assert.equal(before.steps.find((s) => s.key === 'profile').done, false);
 
@@ -343,23 +343,23 @@ test('the checklist is derived from what the member has actually done', async ()
     csrf: settingsCsrf, headline: 'Directed evolution in a garage', expertise: 'crispr, ferment',
   }));
 
-  const after = hr.onboardingProgress('checklister');
+  const after = await hr.onboardingProgress('checklister');
   assert.equal(after.steps.find((s) => s.key === 'profile').done, true, 'doing the thing ticks it');
   assert.equal(after.done, before.done + 1);
 });
 
-test('optional steps do not hold the count back', () => {
-  const steps = hr.onboardingSteps('checklister');
+test('optional steps do not hold the count back', async () => {
+  const steps = await hr.onboardingSteps('checklister');
   const optional = steps.filter((s) => s.optional);
   assert.ok(optional.length, 'at least one step should be optional');
-  assert.equal(hr.onboardingProgress('checklister').total, steps.length - optional.length);
+  assert.equal((await hr.onboardingProgress('checklister')).total, steps.length - optional.length);
 });
 
 test('the welcome page renders and links every step somewhere real', async () => {
   const { call } = await steward('steward6');
   const html = await (await call('/homeroom/welcome')).text();
   assert.match(html, /Welcome/);
-  for (const step of hr.onboardingSteps('steward6')) {
+  for (const step of await hr.onboardingSteps('steward6')) {
     assert.match(html, new RegExp(step.href.replace(/\//g, '\\/')), `${step.key} should link out`);
   }
 });

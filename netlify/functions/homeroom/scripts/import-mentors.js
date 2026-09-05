@@ -151,7 +151,7 @@ async function main() {
   db.exec('BEGIN');
   try {
     for (const mentor of mentors) {
-      hr.upsertMentor(mentor);
+      await hr.upsertMentor(mentor);
       imported++;
     }
     db.exec('COMMIT');
@@ -180,4 +180,4 @@ main()
     console.error(err.message);
     process.exitCode = 1;
   })
-  .finally(() => closeDb());
+  .finally(async () => await closeDb());

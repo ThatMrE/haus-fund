@@ -28,13 +28,15 @@ const MIME = {
   '.json': 'application/json; charset=utf-8',
 };
 
-const { getDb } = await import('./app/db.js');
-const db = getDb();
-if (db.prepare('SELECT COUNT(*) AS n FROM users').get().n === 0) {
+const { migrate } = await import('./app/db.js');
+const sql = await import('./app/sql.js');
+await migrate();
+if (await sql.value('SELECT COUNT(*) AS n FROM users') === 0) {
   const { seedHomeroom } = await import('./app/seed.js');
-  const result = seedHomeroom();
+  const result = await seedHomeroom();
   if (result?.stats) console.log('Seeded the sample network.');
 }
+console.log(`Storage: ${sql.backend()}${sql.durable() ? ' (durable)' : ' — /tmp, not durable'}`);
 const { handle } = await import('./app/app.js');
 
 /**

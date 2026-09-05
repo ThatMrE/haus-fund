@@ -27,6 +27,7 @@
  */
 
 import { hashPassword, validateUsername, validateEmail, validatePassword } from '../app/auth.js';
+import { closeDb } from '../app/db.js';
 import { randomBytes } from 'node:crypto';
 
 const BOLD = '\x1b[1m';
@@ -123,7 +124,7 @@ async function main() {
   if (apply) {
     const { ensureSteward } = await import('../app/steward.js');
     const { closeDb } = await import('../app/db.js');
-    const result = ensureSteward({
+    const result = await ensureSteward({
       env: {
         ...process.env,
         HOMEROOM_STEWARD: handle,
@@ -133,7 +134,7 @@ async function main() {
       force,
       quiet: true,
     });
-    closeDb();
+    await closeDb();
     if (result.status === 'error') {
       console.error(`Local database: ${result.message}\n`);
       process.exitCode = 1;

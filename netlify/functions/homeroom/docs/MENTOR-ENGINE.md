@@ -610,19 +610,14 @@ worse than a roster of 60, and counting the first number is how you get it.
 
 ## 15. Phases
 
-**Prerequisite:** durable storage, the same P-1 as the intro engine — and it is
-now only *half* solved, which is worth being precise about.
+**Prerequisite: durable storage. DONE.** The `hr_` tables now live in Postgres
+when `DATABASE_URL` is set — `hr_mentor_requests`, `hr_mentor_grants` and
+`hr_mentor_tokens` included. A mentor clicking accept, and a member's 14-day
+booking link, survive a cold container.
 
-Supabase Auth and a steward rebuilt from configuration made **identity**
-durable: an account survives a cold container. Everything this design writes
-does not. `hr_mentor_requests`, `hr_mentor_grants` and `hr_mentor_tokens` are
-SQLite tables in `/tmp`, so a container recycle still means a mentor clicks
-accept into a 500, or a member's 14-day booking link stops existing three days
-in — having done exactly what was asked of them.
-
-So the phases below are built and correct, and the desk should not be pointed
-at real mentors until the `hr_*` tables follow the accounts somewhere durable.
-The seam is `db.js`, and the README already names the two options.
+Without that variable the desk still runs on SQLite in `/tmp`, which is right
+for development and wrong for real volunteers. `/homeroom/health` reports
+`storage.durable`, and the Homeroom README documents the rest.
 
 **Phase 1 — the gate, on the roster that already exists. BUILT.**
 `state`, `capacity`, `consent_mode`; requests and grants; the redirect; the

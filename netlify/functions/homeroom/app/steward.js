@@ -36,7 +36,7 @@
  */
 
 import * as hr from './models.js';
-import { getDb } from './db.js';
+import * as sql from './db.js';
 import { hashPassword, validateUsername, validateEmail, validatePassword } from './auth.js';
 
 /** A stored hash, so the plaintext never has to live in the environment. */
@@ -95,7 +95,7 @@ export function stewardFromEnv(env = process.env) {
  * @returns {{status: 'created'|'promoted'|'reset'|'present'|'skipped'|'error',
  *            handle?: string, message?: string}}
  */
-export function ensureSteward({ env = process.env, force = false, quiet = true } = {}) {
+export async function ensureSteward({ env = process.env, force = false, quiet = true } = {}) {
   const config = stewardFromEnv(env);
 
   if (config.skip) return { status: 'skipped', message: config.skip };
@@ -107,38 +107,38 @@ export function ensureSteward({ env = process.env, force = false, quiet = true }
   }
 
   const { handle, email, hash } = config;
-  const db = getDb();
-  const existing = hr.getUser(handle);
+  const db = sql;
+  const existing = await hr.getUser(handle);
 
   if (!existing) {
     // Guard the address as well as the handle: two rows sharing an email would
     // make "sign in with your email" ambiguous.
-    const byEmail = hr.getUserByEmail(email);
+    const byEmail = await hr.getUserByEmail(email);
     if (byEmail && byEmail.id !== handle) {
       const message = `${email} already belongs to "${byEmail.id}". `
         + 'Set HOMEROOM_STEWARD_EMAIL to a different address, or set HOMEROOM_STEWARD to that handle.';
       console.error(`[homeroom] steward: ${message}`);
       return { status: 'error', message };
     }
-    hr.createUser({ id: handle, email, passwordHash: hash, isAdmin: true });
-    hr.ensureMember(handle, { name: handle, headline: 'Steward.' });
+    await hr.createUser({ id: handle, email, passwordHash: hash, isAdmin: true });
+    await hr.ensureMember(handle, { name: handle, headline: 'Steward.' });
     if (!quiet) console.log(`[homeroom] steward "${handle}" created.`);
     return { status: 'created', handle };
   }
 
   let status = 'present';
   if (!existing.is_admin) {
-    db.prepare('UPDATE users SET is_admin = 1 WHERE id = ?').run(handle);
+    await db.run('UPDATE users SET is_admin = 1 WHERE id = ?', handle);
     status = 'promoted';
   }
   if (force) {
-    db.prepare('UPDATE users SET password_hash = ?, email = ? WHERE id = ?').run(hash, email, handle);
+    await db.run('UPDATE users SET password_hash = ?, email = ? WHERE id = ?', hash, email, handle);
     // Any session opened under the old password stops working, which is the
     // point of rotating one.
-    db.prepare('DELETE FROM sessions WHERE user_id = ?').run(handle);
+    await db.run('DELETE FROM sessions WHERE user_id = ?', handle);
     status = 'reset';
   }
-  hr.ensureMember(handle);
+  await hr.ensureMember(handle);
   if (!quiet) console.log(`[homeroom] steward "${handle}" ${status}.`);
   return { status, handle };
 }

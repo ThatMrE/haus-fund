@@ -30,7 +30,7 @@
  */
 
 import { randomBytes, createHash } from 'node:crypto';
-import { getDb, transaction } from './db.js';
+import * as sql from './db.js';
 import { nowSeconds } from './util.js';
 import { logEvent } from './mentordesk.js';
 
@@ -57,27 +57,23 @@ const hashToken = (token) => createHash('sha256').update(String(token)).digest('
  * six-monthly email that people answer late, and an expired "still up for
  * this?" link is a mentor who tried to stay and could not.
  */
-export function mintToken(mentorId, { kind = 'standing', days = 90, now = undefined } = {}) {
+export async function mintToken(mentorId, { kind = 'standing', days = 90, now = undefined } = {}) {
   const token = randomBytes(32).toString('hex');
   const at = now ?? nowSeconds();
-  getDb().prepare(
-    `INSERT INTO hr_mentor_tokens (token_hash, mentor_id, kind, created_at, expires_at)
-     VALUES (?, ?, ?, ?, ?)`,
-  ).run(hashToken(token), Number(mentorId), kind, at, at + days * DAY);
+  await sql.run(`INSERT INTO hr_mentor_tokens (token_hash, mentor_id, kind, created_at, expires_at)
+     VALUES (?, ?, ?, ?, ?)`, hashToken(token), Number(mentorId), kind, at, at + days * DAY);
   return token;
 }
 
-export function findToken(token, now = nowSeconds()) {
+export async function findToken(token, now = nowSeconds()) {
   if (!token) return null;
-  const row = getDb().prepare('SELECT * FROM hr_mentor_tokens WHERE token_hash = ?')
-    .get(hashToken(token));
+  const row = await sql.get('SELECT * FROM hr_mentor_tokens WHERE token_hash = ?', hashToken(token));
   if (!row || row.expires_at <= now) return null;
   return row;
 }
 
-function spend(tokenHash, now) {
-  getDb().prepare('UPDATE hr_mentor_tokens SET used_at = COALESCE(used_at, ?) WHERE token_hash = ?')
-    .run(now, tokenHash);
+async function spend(tokenHash, now) {
+  await sql.run('UPDATE hr_mentor_tokens SET used_at = COALESCE(used_at, ?) WHERE token_hash = ?', now, tokenHash);
 }
 
 /* ------------------------------------------------------- what a mentor does */
@@ -86,37 +82,33 @@ function spend(tokenHash, now) {
  * "Still up for this." Resets the clock, and brings them back from paused or
  * dormant — that is the one-click return the whole design promises.
  */
-export function confirm(token, now = nowSeconds()) {
-  const row = findToken(token, now);
+export async function confirm(token, now = nowSeconds()) {
+  const row = await findToken(token, now);
   if (!row) return { ok: false, reason: 'unknown' };
-  return transaction((db) => {
-    const mentor = db.prepare('SELECT * FROM hr_mentors WHERE id = ?').get(row.mentor_id);
+  return sql.tx(async (db) => {
+    const mentor = await db.get('SELECT * FROM hr_mentors WHERE id = ?', row.mentor_id);
     if (!mentor) return { ok: false, reason: 'unknown' };
     const back = ['paused', 'dormant'].includes(mentor.state);
-    db.prepare(
-      `UPDATE hr_mentors SET confirmed_at = ?, reconfirm_sent_at = NULL, reconfirm_nudges = 0,
+    await db.run(`UPDATE hr_mentors SET confirmed_at = ?, reconfirm_sent_at = NULL, reconfirm_nudges = 0,
               state = CASE WHEN state IN ('paused','dormant') THEN 'listed' ELSE state END,
               active = CASE WHEN state IN ('paused','dormant') THEN 1 ELSE active END,
               paused_until = NULL
-       WHERE id = ?`,
-    ).run(now, mentor.id);
-    spend(row.token_hash, now);
-    logEvent({ mentorId: mentor.id, actorKind: 'mentor', event: 'confirmed', detail: back ? 'and came back' : '' });
+       WHERE id = ?`, now, mentor.id);
+    await spend(row.token_hash, now);
+    await logEvent({ mentorId: mentor.id, actorKind: 'mentor', event: 'confirmed', detail: back ? 'and came back' : '' });
     return { ok: true, mentor, cameBack: back };
   });
 }
 
 /** Pause for a window they chose. Grants already given survive; see mentordesk. */
-export function pause(token, { days = 30, now = nowSeconds() } = {}) {
-  const row = findToken(token, now);
+export async function pause(token, { days = 30, now = nowSeconds() } = {}) {
+  const row = await findToken(token, now);
   if (!row) return { ok: false, reason: 'unknown' };
-  const mentor = getDb().prepare('SELECT * FROM hr_mentors WHERE id = ?').get(row.mentor_id);
+  const mentor = await sql.get('SELECT * FROM hr_mentors WHERE id = ?', row.mentor_id);
   if (!mentor) return { ok: false, reason: 'unknown' };
-  getDb().prepare(
-    "UPDATE hr_mentors SET state = 'paused', paused_until = ?, reconfirm_nudges = 0, reconfirm_sent_at = NULL WHERE id = ?",
-  ).run(now + days * DAY, mentor.id);
-  spend(row.token_hash, now);
-  logEvent({ mentorId: mentor.id, actorKind: 'mentor', event: 'paused', detail: `${days} days` });
+  await sql.run("UPDATE hr_mentors SET state = 'paused', paused_until = ?, reconfirm_nudges = 0, reconfirm_sent_at = NULL WHERE id = ?", now + days * DAY, mentor.id);
+  await spend(row.token_hash, now);
+  await logEvent({ mentorId: mentor.id, actorKind: 'mentor', event: 'paused', detail: `${days} days` });
   return { ok: true, mentor, days };
 }
 
@@ -128,19 +120,17 @@ export function pause(token, { days = 30, now = nowSeconds() } = {}) {
  * back, and tells people. Outstanding grants are revoked here — unlike a pause,
  * this is someone saying they are gone.
  */
-export function withdraw(token, now = nowSeconds()) {
-  const row = findToken(token, now);
+export async function withdraw(token, now = nowSeconds()) {
+  const row = await findToken(token, now);
   if (!row) return { ok: false, reason: 'unknown' };
-  return transaction((db) => {
-    const mentor = db.prepare('SELECT * FROM hr_mentors WHERE id = ?').get(row.mentor_id);
+  return sql.tx(async (db) => {
+    const mentor = await db.get('SELECT * FROM hr_mentors WHERE id = ?', row.mentor_id);
     if (!mentor) return { ok: false, reason: 'unknown' };
-    db.prepare("UPDATE hr_mentors SET state = 'withdrawn', active = 0 WHERE id = ?").run(mentor.id);
-    db.prepare('UPDATE hr_mentor_grants SET revoked = 1 WHERE mentor_id = ? AND revoked = 0')
-      .run(mentor.id);
-    db.prepare("UPDATE hr_mentor_requests SET state = 'expired', answered_at = ? WHERE mentor_id = ? AND state = 'sent'")
-      .run(now, mentor.id);
-    spend(row.token_hash, now);
-    logEvent({ mentorId: mentor.id, actorKind: 'mentor', event: 'withdrew' });
+    await db.run("UPDATE hr_mentors SET state = 'withdrawn', active = 0 WHERE id = ?", mentor.id);
+    await db.run('UPDATE hr_mentor_grants SET revoked = 1 WHERE mentor_id = ? AND revoked = 0', mentor.id);
+    await db.run("UPDATE hr_mentor_requests SET state = 'expired', answered_at = ? WHERE mentor_id = ? AND state = 'sent'", now, mentor.id);
+    await spend(row.token_hash, now);
+    await logEvent({ mentorId: mentor.id, actorKind: 'mentor', event: 'withdrew' });
     return { ok: true, mentor };
   });
 }
@@ -154,28 +144,23 @@ export function withdraw(token, now = nowSeconds()) {
  * engaged. Three consecutive expiries is a pattern, and the pattern usually
  * means the address we have is not one they read.
  */
-export function autoPauseSilent(now = nowSeconds()) {
-  const db = getDb();
+export async function autoPauseSilent(now = nowSeconds()) {
+  const db = sql;
   const threshold = silencePause();
   const paused = [];
 
-  const candidates = db.prepare(
-    `SELECT DISTINCT m.id, m.name FROM hr_mentors m
+  const candidates = await db.all(`SELECT DISTINCT m.id, m.name FROM hr_mentors m
      JOIN hr_mentor_requests r ON r.mentor_id = m.id
-     WHERE m.state = 'listed' AND r.state = 'expired'`,
-  ).all();
+     WHERE m.state = 'listed' AND r.state = 'expired'`,);
 
   for (const mentor of candidates) {
-    const recent = db.prepare(
-      `SELECT state FROM hr_mentor_requests WHERE mentor_id = ?
-       ORDER BY created_at DESC LIMIT ?`,
-    ).all(mentor.id, threshold);
+    const recent = await db.all(`SELECT state FROM hr_mentor_requests WHERE mentor_id = ?
+       ORDER BY created_at DESC LIMIT ?`, mentor.id, threshold);
     if (recent.length < threshold) continue;
     if (!recent.every((r) => r.state === 'expired')) continue;
 
-    db.prepare("UPDATE hr_mentors SET state = 'paused', paused_until = ? WHERE id = ?")
-      .run(now + 90 * DAY, mentor.id);
-    logEvent({
+    await db.run("UPDATE hr_mentors SET state = 'paused', paused_until = ? WHERE id = ?", now + 90 * DAY, mentor.id);
+    await logEvent({
       mentorId: mentor.id, actorKind: 'system', event: 'auto-paused',
       detail: `${threshold} requests in a row went unanswered`,
     });
@@ -190,41 +175,34 @@ export function autoPauseSilent(now = nowSeconds()) {
  * Returns the work rather than doing the sending, so the caller owns the mail
  * and this stays testable without a provider.
  */
-export function reconfirmDue(now = nowSeconds()) {
-  const db = getDb();
+export async function reconfirmDue(now = nowSeconds()) {
+  const db = sql;
   const cutoff = now - reconfirmDays() * DAY;
   const gap = nudgeDays() * DAY;
 
-  const due = db.prepare(
-    `SELECT id, name, role, org, tags, capacity, reconfirm_nudges, reconfirm_sent_at
+  const due = await db.all(`SELECT id, name, role, org, tags, capacity, reconfirm_nudges, reconfirm_sent_at
      FROM hr_mentors
      WHERE state = 'listed'
        AND COALESCE(confirmed_at, created_at) < ?
        AND (reconfirm_nudges = 0
-            OR (reconfirm_nudges = 1 AND reconfirm_sent_at IS NOT NULL AND reconfirm_sent_at < ?))`,
-  ).all(cutoff, now - gap);
+            OR (reconfirm_nudges = 1 AND reconfirm_sent_at IS NOT NULL AND reconfirm_sent_at < ?))`, cutoff, now - gap);
 
-  const dormant = db.prepare(
-    `SELECT id, name FROM hr_mentors
+  const dormant = await db.all(`SELECT id, name FROM hr_mentors
      WHERE state = 'listed' AND reconfirm_nudges >= 2
-       AND reconfirm_sent_at IS NOT NULL AND reconfirm_sent_at < ?`,
-  ).all(now - 2 * gap);
+       AND reconfirm_sent_at IS NOT NULL AND reconfirm_sent_at < ?`, now - 2 * gap);
 
   return { due, dormant };
 }
 
-export function markNudged(mentorId, now = nowSeconds()) {
-  getDb().prepare(
-    `UPDATE hr_mentors SET reconfirm_nudges = reconfirm_nudges + 1,
-            reconfirm_sent_at = COALESCE(reconfirm_sent_at, ?) WHERE id = ?`,
-  ).run(now, Number(mentorId));
+export async function markNudged(mentorId, now = nowSeconds()) {
+  await sql.run(`UPDATE hr_mentors SET reconfirm_nudges = reconfirm_nudges + 1,
+            reconfirm_sent_at = COALESCE(reconfirm_sent_at, ?) WHERE id = ?`, now, Number(mentorId));
 }
 
 /** Silence, twice over. Nothing is deleted; one click brings them back. */
-export function makeDormant(mentorId, now = nowSeconds()) {
-  getDb().prepare("UPDATE hr_mentors SET state = 'dormant', active = 0 WHERE id = ?")
-    .run(Number(mentorId));
-  logEvent({
+export async function makeDormant(mentorId, now = nowSeconds()) {
+  await sql.run("UPDATE hr_mentors SET state = 'dormant', active = 0 WHERE id = ?", Number(mentorId));
+  await logEvent({
     mentorId: Number(mentorId), actorKind: 'system', event: 'dormant',
     detail: 'no answer to two re-confirmations',
   });
@@ -238,17 +216,15 @@ export function makeDormant(mentorId, now = nowSeconds()) {
  * first — so it gets exactly one reminder and no more, because a system that
  * nags is one people learn to ignore entirely.
  */
-export function outcomeNagsDue(now = nowSeconds()) {
-  return getDb().prepare(
-    `SELECT r.id, r.member_id, m.name AS mentor_name
+export async function outcomeNagsDue(now = nowSeconds()) {
+  return await sql.all(`SELECT r.id, r.member_id, m.name AS mentor_name
      FROM hr_mentor_requests r
      JOIN hr_mentors m ON m.id = r.mentor_id
      LEFT JOIN hr_mentor_outcomes o ON o.request_id = r.id
      WHERE r.state = 'accepted' AND o.request_id IS NULL AND r.answered_at < ?
        AND NOT EXISTS (SELECT 1 FROM hr_mentor_events e
                        WHERE e.request_id = r.id AND e.event = 'outcome-nagged')
-     LIMIT 100`,
-  ).all(now - outcomeNagDays() * DAY);
+     LIMIT 100`, now - outcomeNagDays() * DAY);
 }
 
 /* --------------------------------------------------------------- metrics */
@@ -270,12 +246,10 @@ const rate = (part, whole) => (whole ? Math.round((part / whole) * 100) : null);
  * than a roster of 60, and counting the first number is exactly how you get
  * it. `dormantShare` is the honest version of the same question.
  */
-export function metrics(now = nowSeconds()) {
-  const db = getDb();
-  const answered = db.prepare(
-    `SELECT state, created_at, answered_at FROM hr_mentor_requests
-     WHERE state IN ('accepted','declined','expired')`,
-  ).all();
+export async function metrics(now = nowSeconds()) {
+  const db = sql;
+  const answered = await db.all(`SELECT state, created_at, answered_at FROM hr_mentor_requests
+     WHERE state IN ('accepted','declined','expired')`,);
 
   const decided = answered.filter((r) => r.state !== 'expired');
   const accepted = answered.filter((r) => r.state === 'accepted');
@@ -283,25 +257,22 @@ export function metrics(now = nowSeconds()) {
     .filter((r) => r.answered_at && r.answered_at > r.created_at)
     .map((r) => r.answered_at - r.created_at);
 
-  const grants = db.prepare('SELECT clicks FROM hr_mentor_grants').all();
-  const outcomes = db.prepare('SELECT met, useful FROM hr_mentor_outcomes').all();
+  const grants = await db.all('SELECT clicks FROM hr_mentor_grants');
+  const outcomes = await db.all('SELECT met, useful FROM hr_mentor_outcomes');
   const useful = outcomes.map((o) => o.useful).filter((n) => Number.isFinite(n));
 
-  const listed = db.prepare("SELECT id, capacity FROM hr_mentors WHERE state = 'listed'").all();
+  const listed = await db.all("SELECT id, capacity FROM hr_mentors WHERE state = 'listed'");
   const { start, end } = monthBounds(now);
-  const atCapacity = listed.filter((m) => {
+  let atCapacity = 0;
+  for (const m of listed) {
     const cap = m.capacity > 0 ? m.capacity : 2;
-    const { n } = db.prepare(
-      `SELECT COUNT(*) AS n FROM hr_mentor_requests
-       WHERE mentor_id = ? AND state = 'accepted' AND answered_at >= ? AND answered_at < ?`,
-    ).get(m.id, start, end);
-    return n >= cap;
-  }).length;
+    const { n } = await db.get(`SELECT COUNT(*) AS n FROM hr_mentor_requests
+       WHERE mentor_id = ? AND state = 'accepted' AND answered_at >= ? AND answered_at < ?`, m.id, start, end);
+    if (n >= cap) atCapacity += 1;
+  }
 
-  const roster = db.prepare(
-    "SELECT COUNT(*) AS n FROM hr_mentors WHERE state IN ('listed','paused','dormant')",
-  ).get().n;
-  const dormant = db.prepare("SELECT COUNT(*) AS n FROM hr_mentors WHERE state = 'dormant'").get().n;
+  const roster = (await db.get("SELECT COUNT(*) AS n FROM hr_mentors WHERE state IN ('listed','paused','dormant')",)).n;
+  const dormant = (await db.get("SELECT COUNT(*) AS n FROM hr_mentors WHERE state = 'dormant'")).n;
 
   return {
     acceptRate: rate(accepted.length, answered.length),
