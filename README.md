@@ -8,6 +8,7 @@ no build step, no framework.
 | File | Purpose |
 |---|---|
 | `index.html` | Home — hero, thesis, program, what you get, nodes, ecosystem, apply |
+| `biopunk.html` | **The Program** — the full Biopunk accelerator at `/biopunk`: the deal, the 90-day calendar, the six curriculum tracks and their 39 modules, the 22 deliverables, the Orrick series, the delivered S26 schedule, and how to apply. Linked from the public nav as **Program**. Its content is the Founder Manual in `netlify/functions/homeroom/app/data/curriculum.js` — change that file and this page needs the same edit by hand |
 | `sponsors.html` | Partnerships — audiences, sponsorship tiers, FAQ |
 | `mentors.html` | Mentor roster and mentor signup |
 | `expansion.html` | Global Nodes — node protocol, active nodes, candidate cities |
@@ -24,7 +25,8 @@ no build step, no framework.
 
 ```
 website/
-├── index.html · sponsors.html · mentors.html · expansion.html · showcase.html
+├── index.html · biopunk.html · sponsors.html · mentors.html · expansion.html
+├── showcase.html
 ├── cores.html · cores.js            # Core Facility Finder
 ├── visa.html · visa.js · visa-data.js  # Visa Desk (visa-data.js is the data layer)
 ├── skilltree.html · skilltree.js · skilltree-data.js  # Skill Tree (data layer generated)
