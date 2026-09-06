@@ -343,7 +343,18 @@ export async function answerRequest({ token, decision, note = '', pauseDays = 0 
       return { ok: false, reason: 'already', request, answered: request.state };
     }
 
-    const mentor = await db.get('SELECT * FROM hr_mentors WHERE id = ?', request.mentor_id);
+    // FOR UPDATE, on Postgres only.
+    //
+    // The capacity check below counts accepted requests and compares; without
+    // a lock two accepts can both count the same free slot and both take it.
+    // A transaction is not enough: READ COMMITTED takes no predicate lock on
+    // rows that do not exist yet. Locking the mentor row serialises accepts
+    // per mentor, which is exactly the grain the capacity is defined at.
+    //
+    // SQLite has no FOR UPDATE and does not need one: a write transaction
+    // takes a database-wide lock, so the race cannot arise there.
+    const lock = sql.backend() === 'postgres' ? ' FOR UPDATE' : '';
+    const mentor = await db.get(`SELECT * FROM hr_mentors WHERE id = ?${lock}`, request.mentor_id);
     if (!mentor) return { ok: false, reason: 'unknown' };
 
     const late = !!request.token_expires && request.token_expires < now;
