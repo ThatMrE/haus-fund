@@ -20,7 +20,8 @@
 export default async function lumaSyncHandler() {
   process.env.HOMEROOM_DB ||= '/tmp/haus-homeroom.db';
 
-  const { getDb } = await import('./homeroom/app/db.js');
+  const { migrate } = await import('./homeroom/app/db.js');
+  const sql = await import('./homeroom/app/sql.js');
   const luma = await import('./homeroom/app/luma.js');
 
   if (!luma.configured()) {
@@ -28,13 +29,13 @@ export default async function lumaSyncHandler() {
     return json({ ok: true, ran: false, reason: 'not configured' });
   }
 
-  const db = getDb();
+  await migrate();
   // Imported events need a local owner. Prefer the configured importer, then
   // the first steward, then the first account: an event with no host cannot be
   // written, and failing the whole sweep over it would be worse than picking.
   const host = process.env.LUMA_IMPORT_AS
-    || db.prepare('SELECT id FROM users WHERE is_admin = 1 ORDER BY created_at LIMIT 1').get()?.id
-    || db.prepare('SELECT id FROM users ORDER BY created_at LIMIT 1').get()?.id;
+    || (await sql.get('SELECT id FROM users WHERE is_admin = 1 ORDER BY created_at LIMIT 1'))?.id
+    || (await sql.get('SELECT id FROM users ORDER BY created_at LIMIT 1'))?.id;
 
   if (!host) {
     console.log('[luma] skipped — no account to attribute imported events to');

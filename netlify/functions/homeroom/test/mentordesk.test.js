@@ -39,7 +39,7 @@ let server;
 let base;
 
 before(async () => {
-  server = createServer((req, res) => handle(req, res));
+  server = createServer(async (req, res) => await handle(req, res));
   await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
   base = `http://127.0.0.1:${server.address().port}`;
 });
@@ -90,9 +90,9 @@ async function member(handleName) {
 }
 
 let mentorSeq = 0;
-function mentor(overrides = {}) {
+async function mentor(overrides = {}) {
   mentorSeq += 1;
-  const id = hr.upsertMentor({
+  const id = await hr.upsertMentor({
     name: overrides.name || `Quiet Mentor ${mentorSeq}`,
     role: 'Regulatory lead',
     org: 'Somewhere',
@@ -113,7 +113,7 @@ function mentor(overrides = {}) {
     `UPDATE hr_mentors SET state = ?, consent_mode = ?, capacity = ?, tracks = ?, email = ?
      WHERE id = ?`,
   ).run(patch.state, patch.consent_mode, patch.capacity, patch.tracks, patch.email, id);
-  return hr.getMentor(id);
+  return await hr.getMentor(id);
 }
 
 const ASK = {
@@ -131,27 +131,27 @@ const ASK = {
  * through HTTP signup for each one would make them slow and would test the
  * roster gate over and over instead of the thing under test.
  */
-function user(id) {
+async function user(id) {
   getDb().prepare(
     'INSERT OR IGNORE INTO users (id, email, password_hash, created_at) VALUES (?, ?, ?, ?)',
   ).run(id, `${id}@fixture.test`, 'not-a-real-hash', Math.floor(Date.now() / 1000));
-  hr.ensureMember(id);
+  await hr.ensureMember(id);
   return id;
 }
 
 const M1 = 'fixture-one';
 const M2 = 'fixture-two';
 
-beforeEach(() => {
+beforeEach(async () => {
   resetRateLimits();
-  user(M1);
-  user(M2);
+  await user(M1);
+  await user(M2);
 });
 
 /* ================================================================= the leak */
 
 test('the scheduler URL never reaches a member-facing response', async () => {
-  const m = mentor();
+  const m = await mentor();
   const { call } = await member('leakcheck');
 
   const page = await (await call(`/homeroom/mentor/${m.slug}`)).text();
@@ -166,19 +166,19 @@ test('the scheduler URL never reaches a member-facing response', async () => {
   assert.doesNotMatch(api, /"scheduler"/, 'the column should not be in the payload at all');
 });
 
-test('the model layer does not return the scheduler column', () => {
-  const m = mentor();
-  assert.ok(!('scheduler' in hr.getMentor(m.slug)), 'getMentor must not carry it');
-  const { mentors } = hr.searchMentors({ q: m.name });
+test('the model layer does not return the scheduler column', async () => {
+  const m = await mentor();
+  assert.ok(!('scheduler' in await hr.getMentor(m.slug)), 'getMentor must not carry it');
+  const { mentors } = await hr.searchMentors({ q: m.name });
   assert.ok(mentors.length, 'the fixture should be findable');
   assert.ok(!('scheduler' in mentors[0]), 'searchMentors must not carry it');
-  assert.equal(desk.schedulerFor(m.id), SCHEDULER, 'and it is still readable on purpose');
+  assert.equal(await desk.schedulerFor(m.id), SCHEDULER, 'and it is still readable on purpose');
 });
 
 /* ============================================================ the happy path */
 
 test('a request reaches the mentor, and their yes produces a working link', async () => {
-  const m = mentor();
+  const m = await mentor();
   const { call, csrf } = await member('asker1');
 
   const sent = await call(`/homeroom/mentor/${m.slug}/request`, form({ csrf, ...ASK }));
@@ -213,47 +213,47 @@ test('a request reaches the mentor, and their yes produces a working link', asyn
 
 /* ================================================================= capacity */
 
-test('a mentor at capacity is never asked at all', () => {
-  const m = mentor({ capacity: 1 });
-  const first = desk.createRequest({ mentor: m, memberId: M1, ...askArgs() });
-  desk.answerRequest({ token: first.token, decision: 'accept' });
+test('a mentor at capacity is never asked at all', async () => {
+  const m = await mentor({ capacity: 1 });
+  const first = await desk.createRequest({ mentor: m, memberId: M1, ...askArgs() });
+  await desk.answerRequest({ token: first.token, decision: 'accept' });
 
-  const verdict = desk.canRequest({ mentor: hr.getMentor(m.id), memberId: M2 });
+  const verdict = await desk.canRequest({ mentor: await hr.getMentor(m.id), memberId: M2 });
   assert.equal(verdict.ok, false);
   assert.equal(verdict.reason, 'at-capacity');
   assert.match(verdict.message, /fully booked/);
 });
 
-test('two mentors racing the last slot: the first accept wins', () => {
-  const m = mentor({ capacity: 1 });
+test('two mentors racing the last slot: the first accept wins', async () => {
+  const m = await mentor({ capacity: 1 });
   // Both requests are written before either is answered, which is the race.
-  const a = desk.createRequest({ mentor: m, memberId: M1, ...askArgs() });
-  const b = desk.createRequest({ mentor: m, memberId: M2, ...askArgs() });
+  const a = await desk.createRequest({ mentor: m, memberId: M1, ...askArgs() });
+  const b = await desk.createRequest({ mentor: m, memberId: M2, ...askArgs() });
 
-  const first = desk.answerRequest({ token: a.token, decision: 'accept' });
+  const first = await desk.answerRequest({ token: a.token, decision: 'accept' });
   assert.equal(first.ok, true);
 
-  const second = desk.answerRequest({ token: b.token, decision: 'accept' });
+  const second = await desk.answerRequest({ token: b.token, decision: 'accept' });
   assert.equal(second.ok, false);
   assert.equal(second.reason, 'at-capacity');
-  assert.equal(desk.getRequest(b.id).state, 'sent', 'the loser is left answerable, not corrupted');
+  assert.equal((await desk.getRequest(b.id)).state, 'sent', 'the loser is left answerable, not corrupted');
 });
 
-test('a decline does not spend capacity', () => {
-  const m = mentor({ capacity: 1 });
-  const a = desk.createRequest({ mentor: m, memberId: M1, ...askArgs() });
-  desk.answerRequest({ token: a.token, decision: 'decline' });
-  assert.equal(desk.capacityFor(hr.getMentor(m.id)).used, 0,
+test('a decline does not spend capacity', async () => {
+  const m = await mentor({ capacity: 1 });
+  const a = await desk.createRequest({ mentor: m, memberId: M1, ...askArgs() });
+  await desk.answerRequest({ token: a.token, decision: 'decline' });
+  assert.equal((await desk.capacityFor(await hr.getMentor(m.id))).used, 0,
     'saying no must never make a mentor look busier');
 });
 
 /* ================================================================== tokens */
 
-test('a token cannot be spent twice', () => {
-  const m = mentor();
-  const r = desk.createRequest({ mentor: m, memberId: M1, ...askArgs() });
-  assert.equal(desk.answerRequest({ token: r.token, decision: 'accept' }).ok, true);
-  const again = desk.answerRequest({ token: r.token, decision: 'decline' });
+test('a token cannot be spent twice', async () => {
+  const m = await mentor();
+  const r = await desk.createRequest({ mentor: m, memberId: M1, ...askArgs() });
+  assert.equal((await desk.answerRequest({ token: r.token, decision: 'accept' })).ok, true);
+  const again = await desk.answerRequest({ token: r.token, decision: 'decline' });
   assert.equal(again.ok, false);
   assert.equal(again.reason, 'already');
 });
@@ -266,97 +266,97 @@ test('an unknown token is not an error page that leaks anything', async () => {
   assert.doesNotMatch(html, /cal\.com/);
 });
 
-test('a late answer is honoured rather than refused', () => {
-  const m = mentor();
-  const r = desk.createRequest({ mentor: m, memberId: M1, ...askArgs() });
+test('a late answer is honoured rather than refused', async () => {
+  const m = await mentor();
+  const r = await desk.createRequest({ mentor: m, memberId: M1, ...askArgs() });
   getDb().prepare('UPDATE hr_mentor_requests SET token_expires = ? WHERE id = ?')
     .run(desk.monthWindow().start - 1, r.id);
-  const result = desk.answerRequest({ token: r.token, decision: 'accept' });
+  const result = await desk.answerRequest({ token: r.token, decision: 'accept' });
   assert.equal(result.ok, true, 'a mentor who answers slowly did the right thing slowly');
   assert.equal(result.late, true);
 });
 
 /* ================================================================== grants */
 
-test('a grant is bound to one member and expires at click time', () => {
-  const m = mentor();
-  const r = desk.createRequest({ mentor: m, memberId: M1, ...askArgs() });
-  const { grant } = desk.answerRequest({ token: r.token, decision: 'accept' });
+test('a grant is bound to one member and expires at click time', async () => {
+  const m = await mentor();
+  const r = await desk.createRequest({ mentor: m, memberId: M1, ...askArgs() });
+  const { grant } = await desk.answerRequest({ token: r.token, decision: 'accept' });
 
-  assert.equal(desk.redeemGrant({ grantId: grant.id, memberId: M2 }).reason, 'not-yours');
-  assert.equal(desk.redeemGrant({ grantId: grant.id, memberId: M1 }).ok, true);
+  assert.equal((await desk.redeemGrant({ grantId: grant.id, memberId: M2 })).reason, 'not-yours');
+  assert.equal((await desk.redeemGrant({ grantId: grant.id, memberId: M1 })).ok, true);
 
   getDb().prepare('UPDATE hr_mentor_grants SET expires_at = 1 WHERE id = ?').run(grant.id);
-  assert.equal(desk.redeemGrant({ grantId: grant.id, memberId: M1 }).reason, 'expired');
+  assert.equal((await desk.redeemGrant({ grantId: grant.id, memberId: M1 })).reason, 'expired');
 });
 
-test('a revoked grant stops working', () => {
-  const m = mentor();
-  const r = desk.createRequest({ mentor: m, memberId: M1, ...askArgs() });
-  const { grant } = desk.answerRequest({ token: r.token, decision: 'accept' });
-  desk.revokeGrantsForMentor(m.id);
-  assert.equal(desk.redeemGrant({ grantId: grant.id, memberId: M1 }).reason, 'revoked');
+test('a revoked grant stops working', async () => {
+  const m = await mentor();
+  const r = await desk.createRequest({ mentor: m, memberId: M1, ...askArgs() });
+  const { grant } = await desk.answerRequest({ token: r.token, decision: 'accept' });
+  await desk.revokeGrantsForMentor(m.id);
+  assert.equal((await desk.redeemGrant({ grantId: grant.id, memberId: M1 })).reason, 'revoked');
 });
 
 /* ============================================================ consent modes */
 
-test('auto skips the ask and issues the link immediately', () => {
-  const m = mentor({ consent_mode: 'auto' });
-  const r = desk.createRequest({ mentor: m, memberId: M1, ...askArgs() });
+test('auto skips the ask and issues the link immediately', async () => {
+  const m = await mentor({ consent_mode: 'auto' });
+  const r = await desk.createRequest({ mentor: m, memberId: M1, ...askArgs() });
   assert.equal(r.auto, true);
-  assert.equal(desk.getRequest(r.id).state, 'accepted');
+  assert.equal((await desk.getRequest(r.id)).state, 'accepted');
   assert.ok(r.grant, 'and the grant exists without anyone being emailed a question');
 });
 
-test('auto-track only auto-accepts the tracks the mentor named', () => {
-  const m = mentor({ consent_mode: 'auto-track', tracks: 'regulatory,grants' });
-  const inTrack = desk.createRequest({ mentor: m, memberId: M1, ...askArgs('regulatory') });
+test('auto-track only auto-accepts the tracks the mentor named', async () => {
+  const m = await mentor({ consent_mode: 'auto-track', tracks: 'regulatory,grants' });
+  const inTrack = await desk.createRequest({ mentor: m, memberId: M1, ...askArgs('regulatory') });
   assert.equal(inTrack.auto, true);
 
-  const outOfTrack = desk.createRequest({ mentor: m, memberId: M2, ...askArgs('hiring') });
+  const outOfTrack = await desk.createRequest({ mentor: m, memberId: M2, ...askArgs('hiring') });
   assert.equal(outOfTrack.auto, false);
-  assert.equal(desk.getRequest(outOfTrack.id).state, 'sent');
+  assert.equal((await desk.getRequest(outOfTrack.id)).state, 'sent');
 });
 
 /* ================================================================ refusals */
 
-test('an unlisted, paused or link-less mentor cannot be asked', () => {
-  const paused = mentor({ state: 'paused' });
-  assert.equal(desk.canRequest({ mentor: paused, memberId: M1 }).reason, 'paused');
+test('an unlisted, paused or link-less mentor cannot be asked', async () => {
+  const paused = await mentor({ state: 'paused' });
+  assert.equal((await desk.canRequest({ mentor: paused, memberId: M1 })).reason, 'paused');
 
-  const unlisted = mentor({ state: 'pending' });
-  assert.equal(desk.canRequest({ mentor: unlisted, memberId: M1 }).reason, 'unlisted');
+  const unlisted = await mentor({ state: 'pending' });
+  assert.equal((await desk.canRequest({ mentor: unlisted, memberId: M1 })).reason, 'unlisted');
 
-  const linkless = mentor({ scheduler: '' });
-  assert.equal(desk.canRequest({ mentor: linkless, memberId: M1 }).reason, 'no-scheduler');
+  const linkless = await mentor({ scheduler: '' });
+  assert.equal((await desk.canRequest({ mentor: linkless, memberId: M1 })).reason, 'no-scheduler');
 
   // The roster imported today has no addresses at all, so this is the common
   // case rather than the edge one. Writing a request that can never be
   // delivered would look, ten days later, like a mentor who ignored it.
-  const unreachable = mentor({ email: '' });
-  assert.equal(desk.canRequest({ mentor: unreachable, memberId: M1 }).reason, 'no-contact');
+  const unreachable = await mentor({ email: '' });
+  assert.equal((await desk.canRequest({ mentor: unreachable, memberId: M1 })).reason, 'no-contact');
 });
 
 test('the mentor address is not in the shared row either', async () => {
-  const m = mentor({ email: 'private@example.org' });
-  assert.ok(!('email' in hr.getMentor(m.slug)), 'getMentor must not carry it');
+  const m = await mentor({ email: 'private@example.org' });
+  assert.ok(!('email' in await hr.getMentor(m.slug)), 'getMentor must not carry it');
   const { call } = await member('contactcheck');
   const api = await (await call('/homeroom/api/mentors')).text();
   assert.doesNotMatch(api, /private@example\.org/);
   const page = await (await call(`/homeroom/mentor/${m.slug}`)).text();
   assert.doesNotMatch(page, /private@example\.org/);
-  assert.equal(desk.contactFor(m.id), 'private@example.org', 'read on purpose, not by default');
+  assert.equal(await desk.contactFor(m.id), 'private@example.org', 'read on purpose, not by default');
 });
 
-test('a member cannot ask the same mentor twice while one is open', () => {
-  const m = mentor();
-  desk.createRequest({ mentor: m, memberId: M1, ...askArgs() });
-  const verdict = desk.canRequest({ mentor: hr.getMentor(m.id), memberId: M1 });
+test('a member cannot ask the same mentor twice while one is open', async () => {
+  const m = await mentor();
+  await desk.createRequest({ mentor: m, memberId: M1, ...askArgs() });
+  const verdict = await desk.canRequest({ mentor: await hr.getMentor(m.id), memberId: M1 });
   assert.equal(verdict.reason, 'already-open');
 });
 
 test('the request form refuses a vague ask', async () => {
-  const m = mentor();
+  const m = await mentor();
   const { call, csrf } = await member('vague');
   const res = await call(`/homeroom/mentor/${m.slug}/request`,
     form({ csrf, ...ASK, need: 'help pls' }));
@@ -370,7 +370,7 @@ test('the request form refuses a vague ask', async () => {
 /* ============================================================ vetting gate */
 
 test('a pending submission is invisible to members, everywhere', async () => {
-  const m = mentor({ state: 'pending', name: 'Unvetted Stranger' });
+  const m = await mentor({ state: 'pending', name: 'Unvetted Stranger' });
   const { call } = await member('vetgate');
 
   assert.equal((await call(`/homeroom/mentor/${m.slug}`)).status, 404,
@@ -390,9 +390,9 @@ test('the vetting queue is stewards only', async () => {
 /* ================================================ standing consent, no session */
 
 test('a mentor manages their own standing with no account at all', async () => {
-  const m = mentor();
+  const m = await mentor();
   const life = await import('../app/mentorlife.js');
-  const token = life.mintToken(m.id);
+  const token = await life.mintToken(m.id);
 
   const page = await fetch(`${base}/homeroom/me/${token}`);
   assert.equal(page.status, 200, 'no cookie, no session, no sign-in');
@@ -404,25 +404,25 @@ test('a mentor manages their own standing with no account at all', async () => {
   const paused = await fetch(`${base}/homeroom/me/${token}/pause`, form({}));
   assert.equal(paused.status, 200);
   assert.match(await paused.text(), /Paused/);
-  assert.equal(hr.getMentor(m.id).state, 'paused');
+  assert.equal((await hr.getMentor(m.id)).state, 'paused');
 });
 
 test('the standing page is POST-only for anything that changes state', async () => {
-  const m = mentor();
+  const m = await mentor();
   const life = await import('../app/mentorlife.js');
-  const token = life.mintToken(m.id);
+  const token = await life.mintToken(m.id);
 
   // A mail gateway pre-fetching every URL in the message must not withdraw
   // somebody. GET renders; only a submitted form acts.
   const res = await fetch(`${base}/homeroom/me/${token}/withdraw`);
   assert.equal(res.status, 404, 'there is no GET that changes anything');
-  assert.equal(hr.getMentor(m.id).state, 'listed');
+  assert.equal((await hr.getMentor(m.id)).state, 'listed');
 });
 
 /* =================================================================== gate off */
 
 test('HOMEROOM_MENTOR_GATE=0 restores the direct link', async () => {
-  const m = mentor();
+  const m = await mentor();
   const { call } = await member('gateoff');
   process.env.HOMEROOM_MENTOR_GATE = '0';
   try {

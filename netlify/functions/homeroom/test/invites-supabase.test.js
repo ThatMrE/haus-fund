@@ -146,7 +146,7 @@ before(async () => {
   process.env.SUPABASE_URL = `http://127.0.0.1:${rest.address().port}`;
   process.env.SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_test';
 
-  server = createServer((req, res) => handle(req, res));
+  server = createServer(async (req, res) => await handle(req, res));
   await new Promise((r) => server.listen(0, '127.0.0.1', r));
   base = `http://127.0.0.1:${server.address().port}`;
 });
@@ -223,8 +223,8 @@ test('the token never leaves this process', async () => {
 test('redeeming is atomic across the RPC too', async () => {
   const created = await invites.create({ email: `race${uniq()}@example.org`, invitedBy: 's' });
   const [first, second] = await Promise.all([
-    invites.redeem(created.token, 'racer-one'),
-    invites.redeem(created.token, 'racer-two'),
+    await invites.redeem(created.token, 'racer-one'),
+    await invites.redeem(created.token, 'racer-two'),
   ]);
   const winners = [first, second].filter((r) => r.invite);
   assert.equal(winners.length, 1, 'exactly one of two simultaneous claims may win');
@@ -296,14 +296,14 @@ test('the whole join flow works end to end on Supabase', async () => {
 
   assert.equal(res.status, 303);
   assert.equal(res.headers.get('location'), '/homeroom/welcome');
-  assert.equal(hr.getUser('sbjoiner').email, email);
+  assert.equal((await hr.getUser('sbjoiner')).email, email);
   assert.equal((await invites.peek(created.token)).invite.status, 'redeemed');
 });
 
 test('the steward page does not warn when the store is durable', async () => {
-  hr.createUser({ id: 'sbsteward', email: 'sbsteward@haus.fund', passwordHash: hashPassword('x'.repeat(12)), isAdmin: true });
-  hr.ensureMember('sbsteward', { name: 'Steward' });
-  const token = createSession('sbsteward');
+  await hr.createUser({ id: 'sbsteward', email: 'sbsteward@haus.fund', passwordHash: hashPassword('x'.repeat(12)), isAdmin: true });
+  await hr.ensureMember('sbsteward', { name: 'Steward' });
+  const token = await createSession('sbsteward');
   const html = await (await fetch(`${base}/homeroom/stewards/invites`, {
     headers: { cookie: `homeroom_session=${token}` },
   })).text();

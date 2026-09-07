@@ -37,7 +37,7 @@
  */
 
 import { randomBytes, createHash } from 'node:crypto';
-import { getDb } from './db.js';
+import * as sql from './db.js';
 import { nowSeconds } from './util.js';
 import * as supabase from './supabase.js';
 
@@ -98,23 +98,20 @@ async function rpc(name, args) {
  * The local fallback
  * ======================================================================== */
 
-function localCreate({ tokenHash, email, invitedBy, note, rosterVerdict, ttlDays }) {
-  const db = getDb();
+async function localCreate({ tokenHash, email, invitedBy, note, rosterVerdict, ttlDays }) {
+  const db = sql;
   const now = nowSeconds();
   // Same rule as the Supabase function: re-inviting replaces the live link
   // rather than leaving two that both work.
-  db.prepare(`UPDATE hr_invites SET status = 'revoked' WHERE email = ? AND status = 'pending'`)
-    .run(email);
-  db.prepare(
-    `INSERT INTO hr_invites (token_hash, email, invited_by, note, roster_verdict, status,
+  await db.run(`UPDATE hr_invites SET status = 'revoked' WHERE email = ? AND status = 'pending'`, email);
+  await db.run(`INSERT INTO hr_invites (token_hash, email, invited_by, note, roster_verdict, status,
                              expires_at, created_at)
-     VALUES (?, ?, ?, ?, ?, 'pending', ?, ?)`,
-  ).run(tokenHash, email, invitedBy, note, rosterVerdict, now + Math.max(1, ttlDays) * 86400, now);
-  return db.prepare('SELECT id FROM hr_invites WHERE token_hash = ?').get(tokenHash)?.id;
+     VALUES (?, ?, ?, ?, ?, 'pending', ?, ?)`, tokenHash, email, invitedBy, note, rosterVerdict, now + Math.max(1, ttlDays) * 86400, now);
+  return (await db.get('SELECT id FROM hr_invites WHERE token_hash = ?', tokenHash))?.id;
 }
 
-function localPeek(tokenHash) {
-  const row = getDb().prepare('SELECT * FROM hr_invites WHERE token_hash = ?').get(tokenHash);
+async function localPeek(tokenHash) {
+  const row = await sql.get('SELECT * FROM hr_invites WHERE token_hash = ?', tokenHash);
   if (!row) return null;
   return {
     email: row.email,
@@ -126,22 +123,18 @@ function localPeek(tokenHash) {
   };
 }
 
-function localRedeem(tokenHash, handle) {
-  const db = getDb();
+async function localRedeem(tokenHash, handle) {
+  const db = sql;
   // One statement, so two simultaneous redemptions cannot both match.
-  const changed = db.prepare(
-    `UPDATE hr_invites SET status = 'redeemed', redeemed_by = ?, redeemed_at = ?
-      WHERE token_hash = ? AND status = 'pending' AND expires_at > ?`,
-  ).run(handle, nowSeconds(), tokenHash, nowSeconds()).changes;
+  const changed = (await db.run(`UPDATE hr_invites SET status = 'redeemed', redeemed_by = ?, redeemed_at = ?
+      WHERE token_hash = ? AND status = 'pending' AND expires_at > ?`, handle, nowSeconds(), tokenHash, nowSeconds())).changes;
   if (!changed) return null;
-  const row = db.prepare('SELECT * FROM hr_invites WHERE token_hash = ?').get(tokenHash);
+  const row = await db.get('SELECT * FROM hr_invites WHERE token_hash = ?', tokenHash);
   return { email: row.email, invitedBy: row.invited_by, rosterVerdict: row.roster_verdict };
 }
 
-function localList(limit) {
-  return getDb()
-    .prepare('SELECT * FROM hr_invites ORDER BY created_at DESC LIMIT ?')
-    .all(Math.min(Math.max(1, limit), 500))
+async function localList(limit) {
+  return (await sql.all('SELECT * FROM hr_invites ORDER BY created_at DESC LIMIT ?', Math.min(Math.max(1, limit), 500)))
     .map(shapeLocal);
 }
 
@@ -196,7 +189,7 @@ export async function create({
     return { ok: true, token, id: String(result.data ?? ''), durable: true };
   }
 
-  const id = localCreate({
+  const id = await localCreate({
     tokenHash, email: address, invitedBy,
     note: String(note).slice(0, 500),
     rosterVerdict: String(rosterVerdict).slice(0, 80),
@@ -225,7 +218,7 @@ export async function peek(token) {
       },
     };
   }
-  return { ok: true, invite: localPeek(tokenHash) };
+  return { ok: true, invite: await localPeek(tokenHash) };
 }
 
 /**
@@ -247,7 +240,7 @@ export async function redeem(token, handle) {
       invite: { email: row.email, invitedBy: row.invited_by, rosterVerdict: row.roster_verdict },
     };
   }
-  return { ok: true, invite: localRedeem(tokenHash, handle) };
+  return { ok: true, invite: await localRedeem(tokenHash, handle) };
 }
 
 export async function list({ limit = 100 } = {}) {
@@ -272,7 +265,7 @@ export async function list({ limit = 100 } = {}) {
       })),
     };
   }
-  return { ok: true, invites: localList(limit) };
+  return { ok: true, invites: await localList(limit) };
 }
 
 export async function revoke(id) {
@@ -281,9 +274,7 @@ export async function revoke(id) {
     if (!result.ok) return { ok: false, error: describe(result.error) };
     return { ok: true, revoked: !!result.data };
   }
-  const changed = getDb()
-    .prepare(`UPDATE hr_invites SET status = 'revoked' WHERE id = ? AND status = 'pending'`)
-    .run(Number(id)).changes;
+  const changed = (await sql.run(`UPDATE hr_invites SET status = 'revoked' WHERE id = ? AND status = 'pending'`, Number(id))).changes;
   return { ok: true, revoked: changed > 0 };
 }
 

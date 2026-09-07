@@ -26,8 +26,8 @@ import { verifyPassword } from '../app/auth.js';
 getDb();
 const count = (table) => getDb().prepare(`SELECT COUNT(*) AS n FROM ${table}`).get().n;
 
-test('it loads every researched data set', () => {
-  seedReal();
+test('it loads every researched data set', async () => {
+  await seedReal();
   assert.equal(count('hr_deals'), PERKS.length);
   assert.equal(count('hr_funders'), CAPITAL_MAP.length);
   assert.equal(count('hr_atlas'), ATLAS_LABS.length);
@@ -45,9 +45,9 @@ test('and creates nothing invented', () => {
   }
 });
 
-test('the only account is the house, and it cannot be signed into', () => {
+test('the only account is the house, and it cannot be signed into', async () => {
   assert.equal(count('users'), 1);
-  const house = hr.getUser(SYSTEM_HANDLE);
+  const house = await hr.getUser(SYSTEM_HANDLE);
   assert.ok(house, 'the house account owns the reference rows');
   assert.equal(house.is_admin, 0, 'a byline is not a steward');
   // Its password is random and discarded at creation, so no known string opens it.
@@ -56,28 +56,28 @@ test('the only account is the house, and it cannot be signed into', () => {
   }
 });
 
-test('no funder ships with a rating', () => {
+test('no funder ships with a rating', async () => {
   assert.equal(count('hr_funder_reviews'), 0);
-  for (const funder of hr.listFunders({ limit: 500 }).funders) {
+  for (const funder of (await hr.listFunders({ limit: 500 })).funders) {
     assert.equal(funder.review_count, 0, `${funder.name} should have no seeded reviews`);
   }
 });
 
-test('re-running refreshes rather than duplicating', () => {
+test('re-running refreshes rather than duplicating', async () => {
   const before = { deals: count('hr_deals'), funders: count('hr_funders'), labs: count('hr_atlas') };
-  seedReal();
-  seedReal();
+  await seedReal();
+  await seedReal();
   assert.deepEqual(
     { deals: count('hr_deals'), funders: count('hr_funders'), labs: count('hr_atlas') },
     before,
   );
 });
 
-test('a steward-entered perk code survives a refresh', () => {
-  const { deals } = hr.listDeals({ limit: 5 });
-  hr.setDealCode(deals[0].id, 'REAL-CODE-FROM-A-PARTNER');
-  seedReal();
-  assert.equal(hr.getDeal(deals[0].slug).code, 'REAL-CODE-FROM-A-PARTNER',
+test('a steward-entered perk code survives a refresh', async () => {
+  const { deals } = await hr.listDeals({ limit: 5 });
+  await hr.setDealCode(deals[0].id, 'REAL-CODE-FROM-A-PARTNER');
+  await seedReal();
+  assert.equal((await hr.getDeal(deals[0].slug)).code, 'REAL-CODE-FROM-A-PARTNER',
     'refreshing the catalogue must not wipe a code a steward pasted in');
 });
 

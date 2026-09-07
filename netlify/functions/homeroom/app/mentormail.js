@@ -220,5 +220,5 @@ export function dormantMessage({ mentor, to, token }) {
 }
 
 export async function deliver(message) {
-  return send(message);
+  return await send(message);
 }

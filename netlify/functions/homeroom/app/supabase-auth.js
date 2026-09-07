@@ -55,7 +55,7 @@ export function anonKey() {
  *
  * Both halves matter. `HOMEROOM_AUTH=supabase` with no project configured would
  * take the front door off its hinges — every login failing with a connection
- * error — so an unconfigured project means local auth, and `health()` says so.
+ * error — so an unconfigured project means local auth, and `await health()` says so.
  */
 export function configured() {
   return mode() === 'supabase' && !!url() && !!anonKey();

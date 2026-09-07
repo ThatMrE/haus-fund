@@ -262,7 +262,7 @@ export async function lookup(email) {
 
 async function decorate(person) {
   if (!person) return person;
-  const [cohorts, homes] = await Promise.all([linkNames('cohorts'), linkNames('homes')]);
+  const [cohorts, homes] = await Promise.all([await linkNames('cohorts'), await linkNames('homes')]);
   return {
     ...person,
     cohort: (person.cohortIds || []).map((id) => cohorts.get(id)).filter(Boolean)[0] || '',

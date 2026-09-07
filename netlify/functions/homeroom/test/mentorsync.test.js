@@ -82,10 +82,10 @@ test('a form submission arrives pending, and is listed nowhere', async () => {
   assert.equal(row.source, 'form');
 
   // Not on the roster, not in the search, not askable.
-  assert.equal(hr.searchMentors({}).total, 0, 'searchMentors filters on active/state');
-  assert.equal(desk.canRequest({ mentor: hr.getMentor(row.id), memberId: 'nobody' }).reason,
+  assert.equal((await hr.searchMentors({})).total, 0, 'searchMentors filters on active/state');
+  assert.equal((await desk.canRequest({ mentor: await hr.getMentor(row.id), memberId: 'nobody' })).reason,
     'unlisted');
-  assert.equal(sync.pendingCount(), 1, 'it is in the steward queue instead');
+  assert.equal(await sync.pendingCount(), 1, 'it is in the steward queue instead');
 });
 
 test('Airtable saying Vetted does not list anybody', async () => {
@@ -102,24 +102,24 @@ test('a steward listing them is what makes them askable', async () => {
   await sync.sync();
   const row = getDb().prepare('SELECT * FROM hr_mentors').get();
 
-  sync.rule({ mentorId: row.id, decision: 'list', actorId: 'steward1' });
-  const listed = hr.getMentor(row.id);
+  await sync.rule({ mentorId: row.id, decision: 'list', actorId: 'steward1' });
+  const listed = await hr.getMentor(row.id);
   assert.equal(listed.state, 'listed');
   assert.equal(listed.vetted, 1);
-  assert.equal(hr.searchMentors({}).total, 1);
+  assert.equal((await hr.searchMentors({})).total, 1);
 });
 
 test('a rejection keeps the row so the next sweep does not re-add it', async () => {
   airtable([record('recAAA')]);
   await sync.sync();
   const row = getDb().prepare('SELECT * FROM hr_mentors').get();
-  sync.rule({ mentorId: row.id, decision: 'reject', actorId: 'steward1', note: 'not a real org' });
+  await sync.rule({ mentorId: row.id, decision: 'reject', actorId: 'steward1', note: 'not a real org' });
 
   await sync.sync();
   const after = getDb().prepare('SELECT * FROM hr_mentors').all();
   assert.equal(after.length, 1, 'still one row');
   assert.equal(after[0].state, 'rejected', 'and a sweep must not resurrect it as a new submission');
-  assert.equal(sync.pendingCount(), 0);
+  assert.equal(await sync.pendingCount(), 0);
 });
 
 /* ========================================================= untrusted input */
@@ -143,7 +143,7 @@ test('the allowlist is the one the importer uses, not a second copy', () => {
 test('a malformed address is dropped rather than stored', async () => {
   airtable([record('recAAA', { Email: 'not an address' })]);
   await sync.sync();
-  assert.equal(desk.contactFor(getDb().prepare('SELECT id FROM hr_mentors').get().id), '');
+  assert.equal(await desk.contactFor(getDb().prepare('SELECT id FROM hr_mentors').get().id), '');
 });
 
 test('an unrecognised consent mode falls back to ask-me', async () => {
@@ -179,7 +179,7 @@ test('a mentor who changes their name keeps their row', async () => {
 });
 
 test('a row imported before this column existed is adopted, not duplicated', async () => {
-  hr.upsertMentor({ name: 'Dana Okonkwo', role: 'Old role', source: 'import' });
+  await hr.upsertMentor({ name: 'Dana Okonkwo', role: 'Old role', source: 'import' });
   airtable([record('recAAA')]);
   const result = await sync.sync();
   assert.equal(result.created, 0, 'matched on the name slug fallback');
@@ -190,10 +190,10 @@ test('a listed mentor is not un-listed by a sweep', async () => {
   airtable([record('recAAA')]);
   await sync.sync();
   const id = getDb().prepare('SELECT id FROM hr_mentors').get().id;
-  sync.rule({ mentorId: id, decision: 'list', actorId: 'steward1' });
+  await sync.rule({ mentorId: id, decision: 'list', actorId: 'steward1' });
 
   await sync.sync();
-  assert.equal(hr.getMentor(id).state, 'listed',
+  assert.equal((await hr.getMentor(id)).state, 'listed',
     'editing a form must not undo a steward');
 });
 
@@ -204,8 +204,8 @@ test('a blank field does not wipe the link or the address', async () => {
 
   airtable([record('recAAA', { Scheduler: '', Email: '' })]);
   await sync.sync();
-  assert.equal(desk.schedulerFor(id), 'https://cal.com/dana/30min');
-  assert.equal(desk.contactFor(id), 'dana@example.org',
+  assert.equal(await desk.schedulerFor(id), 'https://cal.com/dana/30min');
+  assert.equal(await desk.contactFor(id), 'dana@example.org',
     'Airtable omitting a field must not remove the only way to reach them');
 });
 

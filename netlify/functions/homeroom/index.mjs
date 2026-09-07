@@ -20,8 +20,11 @@ async function boot() {
   ready = (async () => {
     process.env.HOMEROOM_DB ||= '/tmp/haus-homeroom.db';
     process.env.HOMEROOM_STATIC_BASE ||= '/homeroom-assets';
-    const { getDb } = await import('./app/db.js');
-    const db = getDb();
+    const { migrate } = await import('./app/db.js');
+    const sql = await import('./app/sql.js');
+    // Explicit now, and awaited: on Postgres there is no `open` to hang the
+    // migration off, and it must finish before the first request is served.
+    await migrate();
     // An empty Homeroom is indistinguishable from a broken one, so a fresh
     // container fills itself. What with, depends:
     //
@@ -41,13 +44,13 @@ async function boot() {
     // count stays 0 and they would be — which is why `off` should be paired
     // with HOMEROOM_ACCESS=closed or a roster token.
     const seedMode = process.env.HOMEROOM_SEED;
-    if (seedMode !== 'off' && db.prepare('SELECT COUNT(*) AS n FROM users').get().n === 0) {
+    if (seedMode !== 'off' && await sql.value('SELECT COUNT(*) AS n FROM users') === 0) {
       if (seedMode === 'real') {
         const { seedReal } = await import('./app/seed-real.js');
         seedReal();
       } else {
         const { seedHomeroom } = await import('./app/seed.js');
-        seedHomeroom();
+        await seedHomeroom();
       }
     }
 

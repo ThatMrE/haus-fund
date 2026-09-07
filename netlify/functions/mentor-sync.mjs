@@ -19,10 +19,10 @@
 export default async function mentorSyncHandler() {
   process.env.HOMEROOM_DB ||= '/tmp/haus-homeroom.db';
 
-  const { getDb } = await import('./homeroom/app/db.js');
+  const { migrate } = await import('./homeroom/app/db.js');
   const sync = await import('./homeroom/app/mentorsync.js');
 
-  getDb();
+  await migrate();
 
   // The lifecycle pass runs FIRST and unconditionally. Keeping the roster
   // honest — auto-pause, re-confirmation, dormancy — does not depend on
