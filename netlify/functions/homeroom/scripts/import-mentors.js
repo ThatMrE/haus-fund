@@ -32,8 +32,9 @@ import { getDb, closeDb } from '../app/db.js';
 import * as hr from '../app/models.js';
 import { normalize } from '../app/mentorfields.js';
 
-const AIRTABLE_BASE = process.env.AIRTABLE_MENTORS_BASE || 'appisCTsCCcBCMSk0';
-const AIRTABLE_TABLE = process.env.AIRTABLE_MENTORS_TABLE || 'tblwHSlwNLXIfXFX9';
+// Haus Fund — Fund OS / Mentors, the same table app/mentorsync.js sweeps.
+const AIRTABLE_BASE = process.env.AIRTABLE_MENTORS_BASE || 'appxqPp1CYEDNLXHS';
+const AIRTABLE_TABLE = process.env.AIRTABLE_MENTORS_TABLE || 'tblnV5zn3t2aQHQaX';
 
 const args = process.argv.slice(2);
 const has = (flag) => args.includes(flag);

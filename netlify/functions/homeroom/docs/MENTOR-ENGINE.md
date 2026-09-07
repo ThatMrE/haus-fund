@@ -345,9 +345,38 @@ Nothing outside the list is ever requested.
 
 ### 8.4 The form's fields
 
-What the Airtable form must collect, and what each one does once it arrives.
-The sweep reads these names (with the aliases in `mentorfields.js`); anything
-else on the form is ignored rather than stored.
+**Status: the table is BUILT. The form page itself is not, and cannot be — see
+8.4.1.**
+
+| Where | What |
+| --- | --- |
+| Base | `appxqPp1CYEDNLXHS` — Haus Fund — Fund OS |
+| Table | `tblnV5zn3t2aQHQaX` — Mentors |
+
+The defaults in `mentorsync.js` and `import-mentors.js` used to be
+`appisCTsCCcBCMSk0` / `tblwHSlwNLXIfXFX9`, which point at a base that does not
+exist under this account — a stale id from before the Biopunk to Fund OS
+migration. Every sync against it would have failed on every run, whatever the
+form did.
+
+All nineteen names in the `FIELDS` allowlist (§8.3) exist on the table, checked
+name by name. That check is not cosmetic: `fetchRows()` sends every one of them
+as a `fields[]` parameter, and Airtable answers a single unknown name with 422
+for the whole request. `scripts/check-roster.js` already names this failure —
+"A field name in FIELDS does not exist on the table." Renaming a column in the
+Airtable UI breaks the entire sweep, not one field, which is why every field
+carries a description saying so.
+
+Each field's description is written **to the mentor, not to us**, because
+Airtable's form builder offers exactly that text as the field's help text. The
+two things §8.4 requires the form to say in its own words are already in the
+descriptions of the fields they belong to: what `auto` waives, on Consent Mode,
+and what happens to the booking link, on Scheduler.
+
+
+What the form collects, and what each one does once it arrives. The sweep reads
+these names (with the aliases in `mentorfields.js`); anything else on the form
+is ignored rather than stored.
 
 | Field | Type | What it does |
 | --- | --- | --- |
@@ -375,6 +404,31 @@ them later:
 
 Rate-limiting and CAPTCHA are Airtable's settings, not Homeroom's. Turn them on
 before the URL is published anywhere.
+
+### 8.4.1 Building the form page
+
+The Airtable API cannot create a form. Interface pages can be created
+programmatically for grids, dashboards and record details; forms are UI-only.
+So this last step is a person's, and it is about ten minutes:
+
+1. Open the Mentors table in **Haus Fund — Fund OS**, then **Interfaces → new
+   page → Form**, source table Mentors.
+2. Add, in this order: Name, Email, Role, Organization, Area of Expertise,
+   Tags, Location, Bio, Scheduler, Capacity, Consent Mode, Tracks, Format.
+3. Mark **Name** and **Email** required. Leave everything else optional —
+   every one of them has a safe default in `normalize()`, and a field a mentor
+   skipped must not become a claim about what they agreed to.
+4. Turn **on** the per-field help text, which is prefilled from the field
+   descriptions. The Consent Mode and Scheduler descriptions are the two
+   disclosures §8.4 requires; dropping them takes the disclosure with them.
+5. Do **not** put Vetted, Status, Title, Company, Calendly or Booking Link on
+   the form. The first two are steward-side; the rest are import fallbacks that
+   exist only so the `FIELDS` request does not 422.
+6. Turn on **rate limiting and CAPTCHA** before the URL is published anywhere.
+   Airtable's settings, not Homeroom's, and the form is a public write endpoint.
+
+Then set `HOMEROOM_MENTOR_SYNC_TOKEN` (or `AIRTABLE_TOKEN`) to a token scoped
+to this base, and confirm with `npm run roster:check` before the URL goes out.
 
 ### 8.5 Failure direction
 

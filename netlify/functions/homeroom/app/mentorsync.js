@@ -50,8 +50,14 @@ import { logEvent, contactFor } from './mentordesk.js';
 import * as life from './mentorlife.js';
 import * as mentormail from './mentormail.js';
 
-const BASE = () => process.env.HOMEROOM_MENTORS_BASE || 'appisCTsCCcBCMSk0';
-const TABLE = () => process.env.HOMEROOM_MENTORS_TABLE || 'tblwHSlwNLXIfXFX9';
+// Haus Fund — Fund OS / Mentors. The onboarding form writes here.
+//
+// The previous defaults (appisCTsCCcBCMSk0 / tblwHSlwNLXIfXFX9) pointed at a
+// base that does not exist under this account — a stale id from before the
+// Biopunk → Fund OS migration, left behind when the mentors edge function it
+// cited was dropped. A sync against it fails on every run.
+const BASE = () => process.env.HOMEROOM_MENTORS_BASE || 'appxqPp1CYEDNLXHS';
+const TABLE = () => process.env.HOMEROOM_MENTORS_TABLE || 'tblnV5zn3t2aQHQaX';
 const TIMEOUT_MS = 12_000;
 
 /**
