@@ -24,6 +24,9 @@ import * as desk from './mentordesk.js';
 import * as mentormail from './mentormail.js';
 import * as mentorsync from './mentorsync.js';
 import * as mentorlife from './mentorlife.js';
+import * as intro from './introengine.js';
+import * as intromail from './intromail.js';
+import * as hsapi from './happenstance.js';
 import { homeroomLayout } from './views/layout.js';
 import * as views from './views/pages.js';
 import { parseWhen, toLocalInput } from './views/components.js';
@@ -49,6 +52,9 @@ const LIMITS = {
   chat: { limit: 120, windowMs: 5 * 60_000 },
   // Publishing reaches the public feed. Five an hour is more than anyone needs.
   publish: { limit: 5, windowMs: 60 * 60_000 },
+  // A network search costs the house real credits, so this one is a budget
+  // rather than an anti-abuse measure. Cached repeats do not reach it.
+  introSearch: { limit: 10, windowMs: 60 * 60_000 },
 };
 
 /* ------------------------------------------------------------- plumbing */
@@ -1225,6 +1231,262 @@ async function progressSubmit(ctx, { slug }) {
   seeOther(ctx, `/homeroom/library/module/${module.slug}`);
 }
 
+/* =========================================================== intro engine ==
+ *
+ * Introductions OUTSIDE the house: a member searches the connector's network
+ * by keyword, clicks to ask, and a steward decides whether anything is sent.
+ *
+ * Three things these handlers enforce that the views merely display:
+ *
+ *   - Every member-facing response goes through `intro.memberView()`. A member
+ *     is never handed a candidate's real status, in HTML or in JSON, in any
+ *     state. That is what keeps a target's "no" free to give.
+ *   - Only `permissionSend` and `introduceSend` put anything in front of a
+ *     stranger, and both are steward-session POSTs behind CSRF. There is no
+ *     background job and no token that reaches them.
+ *   - /homeroom/i/:token is the target's side. No session, ever, and every
+ *     state change is a POST, because mail gateways pre-fetch links.
+ */
+
+function introOff(ctx) {
+  if (intro.enabled()) return false;
+  notFound(ctx);
+  return true;
+}
+
+async function introSearchHandler(ctx, { error = null, flash = null } = {}) {
+  if (introOff(ctx)) return;
+  const query = trimmed(ctx.query.get('q'), 300);
+  const wanted = clampInt(ctx.query.get('s'), 1, 2 ** 31, 0);
+
+  let search = wanted ? await intro.getSearch(wanted) : null;
+  let people = [];
+  let running = false;
+
+  if (search) {
+    const collected = await intro.collect(search.id);
+    if (!collected.ok) {
+      // Fails closed: an empty list and a failed search look identical
+      // otherwise, and a member would read the empty list as "nobody in the
+      // network can help", which may be false.
+      error = error || collected.error;
+    } else {
+      search = collected.search || search;
+      people = collected.people || [];
+      running = !!collected.running;
+    }
+  }
+
+  await render(ctx, views.networkSearchPage(ctx, {
+    query: query || search?.query || '',
+    search, people, running, error, flash,
+    configured: intro.searchable(),
+    budget: await intro.creditsThisMonth(),
+    load: await intro.memberLoad(ctx.user.id),
+  }), { title: 'Outside the house' });
+}
+
+async function introSearchRun(ctx, fields) {
+  if (introOff(ctx)) return;
+  if (limited(ctx, 'introsearch', LIMITS.introSearch)) return;
+  const query = trimmed(fields.q, 300);
+  const result = await intro.runSearch({ query, actorId: ctx.user.id, actorKind: 'member' });
+  if (!result.ok) return await introSearchHandler(ctx, { error: result.error });
+  seeOther(ctx, `/homeroom/intros/search?s=${result.search.id}&q=${encodeURIComponent(query)}`);
+}
+
+async function introAskForm(ctx, { id }, error = null, values = {}) {
+  if (introOff(ctx)) return;
+  const person = await intro.getPerson(id);
+  if (!person) return notFound(ctx);
+  const verdict = await intro.canRequest({ personHash: person.person_hash, memberId: ctx.user.id });
+  await render(ctx, views.introAskPage(ctx, {
+    person, values, error: error || (verdict.ok ? null : verdict.message),
+  }), { title: `Introduction to ${person.name}` });
+}
+
+async function introAskCreate(ctx, fields, params) {
+  if (introOff(ctx)) return;
+  const person = await intro.getPerson(params.id);
+  if (!person) return notFound(ctx);
+
+  const values = {
+    need: trimmed(fields.need, 2000),
+    why_them: trimmed(fields.why_them, 1000),
+    asking_for: trimmed(fields.asking_for, 80),
+  };
+  if (values.need.length < 40) {
+    return await introAskForm(ctx, params,
+      'Say more about what you need — 40 characters is not enough for anyone to answer.', values);
+  }
+  if (values.why_them.length < 20) {
+    return await introAskForm(ctx, params,
+      'Say why this person. It is the difference between a request and a mail merge.', values);
+  }
+
+  const created = await intro.createRequest({
+    person, memberId: ctx.user.id, need: values.need,
+    whyThem: values.why_them, askingFor: values.asking_for,
+  });
+  if (!created.ok) return await introAskForm(ctx, params, created.message, values);
+  seeOther(ctx, '/homeroom/intros/mine?flash=Sent+to+a+steward.');
+}
+
+async function introMineHandler(ctx) {
+  if (introOff(ctx)) return;
+  const requests = await intro.requestsFor(ctx.user.id);
+  const outcomes = {};
+  for (const request of requests) {
+    if (request.introduced) outcomes[request.id] = await intro.outcomeFor(request.id);
+  }
+  await render(ctx, views.introRequestsPage(ctx, { requests, outcomes }), { title: 'Your introductions' });
+}
+
+/* --- the target's side: no account, no session, token in the URL -------- */
+
+async function introTokenPage(ctx, { token }) {
+  if (introOff(ctx)) return;
+  const request = await intro.findByToken(token);
+  if (!request) return sendHtml(ctx.res, views.introTokenGonePage({ reason: 'unknown' }), { status: 404 });
+  if (request.status !== 'permission_sent') {
+    return sendHtml(ctx.res, views.introTokenGonePage({ reason: 'already' }), { status: 410 });
+  }
+  const member = await bf.getMember(request.member_id) || { user_id: request.member_id };
+  sendHtml(ctx.res, views.introPermissionPage({
+    request, member, token, connector: intromail.connectorName(),
+  }));
+}
+
+async function introTokenAnswer(ctx, { token }, decision) {
+  if (introOff(ctx)) return;
+  const { fields } = await readBody(ctx.req);
+  const result = await intro.answer({ token, decision, note: trimmed(fields.note, 200) });
+  if (!result.ok) {
+    const status = result.reason === 'unknown' ? 404 : 410;
+    return sendHtml(ctx.res, views.introTokenGonePage({ reason: result.reason }), { status });
+  }
+
+  // The member is told an introduction is coming; on anything else they are
+  // told nothing at all, which is the whole point of the gate. "Still open" is
+  // what their page already says.
+  if (decision === 'yes') {
+    await bf.notify({
+      userId: result.request.member_id, kind: 'intro',
+      text: 'Someone said yes — an introduction is on its way',
+      href: '/homeroom/intros/mine',
+    });
+  }
+  sendHtml(ctx.res, views.introAnsweredPage({ decision }));
+}
+
+/* --- the steward's side ------------------------------------------------- */
+
+async function introStewardHandler(ctx, { error = null, flash = null, preview = null } = {}) {
+  if (introOff(ctx)) return;
+  if (!stewardsOnly(ctx)) return;
+  const balance = intro.searchable() ? await hsapi.credits() : { ok: false, balance: null };
+  await render(ctx, views.introStewardPage(ctx, {
+    queue: await intro.queue(),
+    closed: await intro.recentlyClosed(),
+    stats: await intro.stats(),
+    balance: balance.ok ? balance.balance : null,
+    error, flash, preview,
+  }), { title: 'Introductions' });
+}
+
+/**
+ * Compose, but do not send.
+ *
+ * The steward reads the complete outgoing message — not a preview of a
+ * template — and sends from that screen. A steward who cannot read the exact
+ * words that will arrive in somebody's inbox is not meaningfully consenting on
+ * the connector's behalf.
+ */
+async function introCompose(ctx, fields, { id }) {
+  if (introOff(ctx)) return;
+  if (!stewardsOnly(ctx)) return;
+  const request = await intro.getRequest(id);
+  if (!request) return notFound(ctx);
+  const to = trimmed(fields.to, 200).toLowerCase();
+  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(to)) {
+    return await introStewardHandler(ctx, { error: 'That does not look like an email address.' });
+  }
+  const member = await bf.getMember(request.member_id) || { user_id: request.member_id };
+  const draft = intromail.permissionMessage({ request, member, token: 'PREVIEW', to });
+  await introStewardHandler(ctx, {
+    preview: { request, to, subject: draft.subject, text: draft.text },
+  });
+}
+
+async function introPermissionSend(ctx, fields, { id }) {
+  if (introOff(ctx)) return;
+  if (!stewardsOnly(ctx)) return;
+  const sent = await intro.sendPermission({
+    requestId: id, actor: ctx.user, address: trimmed(fields.to, 200),
+  });
+  if (!sent.ok) return await introStewardHandler(ctx, { error: sent.message });
+
+  const member = await bf.getMember(sent.request.member_id) || { user_id: sent.request.member_id };
+  const message = intromail.permissionMessage({
+    request: sent.request, member, token: sent.token, to: sent.to,
+  });
+  const delivery = await intromail.deliver(message);
+  await introStewardHandler(ctx, {
+    flash: delivery.sent
+      ? `Asked ${sent.request.name}. They have 10 days, and we will not chase.`
+      : `Recorded, but the mail provider did not take it (${delivery.reason}). The link is in the function log.`,
+  });
+}
+
+/**
+ * The one-click introduction. Reachable only from a recorded yes.
+ *
+ * The introduction fails OPEN by design: once somebody has agreed, this must
+ * go out even if everything else is down, because losing a yes is the worst
+ * outcome the engine has. So the state moves first and the mail follows, and a
+ * failed send leaves a steward looking at a flash that says so rather than a
+ * silent nothing.
+ */
+async function introduceSend(ctx, fields, { id }) {
+  if (introOff(ctx)) return;
+  if (!stewardsOnly(ctx)) return;
+  const result = await intro.introduce({ requestId: id, actor: ctx.user });
+  if (!result.ok) return await introStewardHandler(ctx, { error: result.message });
+
+  const request = result.request;
+  const member = await bf.getMember(request.member_id) || { user_id: request.member_id };
+  const account = await bf.getUser(request.member_id);
+  const delivery = await intromail.deliver(intromail.introductionMessage({
+    request, member, to: result.to, memberEmail: account?.email || '',
+  }));
+
+  // The member is told on their own side too, and told nothing about who was
+  // approached before this point.
+  await bf.notify({
+    userId: request.member_id, kind: 'intro',
+    text: `You have been introduced to ${request.name}`,
+    href: '/homeroom/intros/mine',
+  });
+  const note = intromail.memberIntroducedMessage({ request });
+  console.log(`[homeroom] ${note.subject} for ${request.member_id}`);
+
+  await introStewardHandler(ctx, {
+    flash: delivery.sent
+      ? `Introduced ${member.name || request.member_id} to ${request.name}.`
+      : `Marked introduced, but the mail provider did not take it (${delivery.reason}). Send it by hand.`,
+  });
+}
+
+async function introAuditHandler(ctx, { id }) {
+  if (introOff(ctx)) return;
+  if (!stewardsOnly(ctx)) return;
+  const request = await intro.getRequest(id);
+  if (!request) return notFound(ctx);
+  await render(ctx, views.introAuditPage(ctx, {
+    request, events: await intro.eventsFor(request.id),
+  }), { title: 'Introduction trail' });
+}
+
 /* ------------------------------------------------------- the front door */
 
 function stewardsOnly(ctx) {
@@ -1851,6 +2113,10 @@ const ROUTES = [
   })],
 
   /* The mentor's own three pages. No session: see homeroomRoute below. */
+  ['GET', '/homeroom/i/:token', introTokenPage],
+  ['POST', '/homeroom/i/:token/yes', async (ctx, p) => await introTokenAnswer(ctx, p, 'yes')],
+  ['POST', '/homeroom/i/:token/no', async (ctx, p) => await introTokenAnswer(ctx, p, 'no')],
+  ['POST', '/homeroom/i/:token/never', async (ctx, p) => await introTokenAnswer(ctx, p, 'never')],
   ['GET', '/homeroom/m/:token', mentorTokenPage],
   ['GET', '/homeroom/me/:token', mentorStanding],
   ['POST', '/homeroom/me/:token/confirm', async (ctx, p) => await mentorStandingAction(ctx, p, 'confirm')],
@@ -1975,6 +2241,26 @@ const ROUTES = [
   /* Member-written entries used to live at /library/:slug. Keep those links. */
   ['GET', '/homeroom/library/:slug', libraryEntryHandler],
 
+  /* Outside the house — the intro engine. Concrete paths first, as ever. */
+  ['GET', '/homeroom/intros/search', async (ctx) => await introSearchHandler(ctx)],
+  ['POST', '/homeroom/intros/search', action(introSearchRun)],
+  ['GET', '/homeroom/intros/mine', introMineHandler],
+  ['POST', '/homeroom/intros/mine/:id/withdraw', action(async (ctx, fields, p) => {
+    if (introOff(ctx)) return;
+    await intro.withdraw({ requestId: p.id, memberId: ctx.user.id });
+    seeOther(ctx, '/homeroom/intros/mine');
+  })],
+  ['POST', '/homeroom/intros/mine/:id/outcome', action(async (ctx, fields, p) => {
+    if (introOff(ctx)) return;
+    await intro.logOutcome({
+      requestId: p.id, memberId: ctx.user.id, met: checkbox(fields.met),
+      note: trimmed(fields.note, 200),
+    });
+    seeOther(ctx, '/homeroom/intros/mine');
+  })],
+  ['GET', '/homeroom/intros/ask/:id', async (ctx, p) => await introAskForm(ctx, p)],
+  ['POST', '/homeroom/intros/ask/:id', action(introAskCreate)],
+
   ['GET', '/homeroom/intros/new', async (ctx) => {
     const target = await bf.getMember(ctx.query.get('to'));
     if (!target) return notFound(ctx);
@@ -1982,7 +2268,9 @@ const ROUTES = [
   }],
   ['POST', '/homeroom/intros/new', introCreate],
   ['POST', '/homeroom/intros/:id/resolve', introResolve],
-  ['GET', '/homeroom/intros', async (ctx) => await render(ctx, views.introsPage(ctx, await bf.introsFor(ctx.user.id)), { title: 'Intros' })],
+  ['GET', '/homeroom/intros', async (ctx) => await render(ctx, views.introsPage(ctx, {
+    ...await bf.introsFor(ctx.user.id), outside: intro.enabled(),
+  }), { title: 'Intros' })],
 
   ['GET', '/homeroom/messages/new', async (ctx) => await render(ctx, views.newMessagePage(ctx, { to: ctx.query.get('to') || '' }),
     { title: 'New message' })],
@@ -2021,6 +2309,19 @@ const ROUTES = [
     if (!ruled) return notFound(ctx);
     seeOther(ctx, '/homeroom/stewards/mentors');
   })],
+  ['GET', '/homeroom/stewards/intros', async (ctx) => await introStewardHandler(ctx)],
+  ['POST', '/homeroom/stewards/intros/:id/compose', action(introCompose)],
+  ['POST', '/homeroom/stewards/intros/:id/permission', action(introPermissionSend)],
+  ['POST', '/homeroom/stewards/intros/:id/introduce', action(introduceSend)],
+  ['POST', '/homeroom/stewards/intros/:id/refuse', action(async (ctx, fields, p) => {
+    if (introOff(ctx)) return;
+    if (!stewardsOnly(ctx)) return;
+    const result = await intro.refuse({ requestId: p.id, actor: ctx.user, note: trimmed(fields.note, 200) });
+    await introStewardHandler(ctx, result.ok
+      ? { flash: 'Closed. The member is told the ask is still open, not that you refused it.' }
+      : { error: result.message });
+  })],
+  ['GET', '/homeroom/stewards/intros/:id/audit', introAuditHandler],
   ['GET', '/homeroom/stewards/access', async (ctx) => await accessAdminHandler(ctx)],
   ['POST', '/homeroom/stewards/access/lookup', accessLookupHandler],
   ['POST', '/homeroom/stewards/access/:hash/decide', action(async (ctx, fields, p) => {
@@ -2094,7 +2395,8 @@ const COMPILED = ROUTES.map(([method, pattern, handler]) => {
     // account — roster.js admits residents and alumni, and a mentor is neither
     // — so these pages cannot be behind the members-only gate. The token in the
     // URL is the credential, and it is stored only as a hash.
-    isPublic: pattern.startsWith('/homeroom/m/') || pattern.startsWith('/homeroom/me/'),
+    isPublic: pattern.startsWith('/homeroom/m/') || pattern.startsWith('/homeroom/me/')
+      || pattern.startsWith('/homeroom/i/'),
   };
 });
 

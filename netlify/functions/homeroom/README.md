@@ -21,11 +21,139 @@ house under a double opt-in rule:
 
 - [`docs/INTRO-ENGINE.md`](docs/INTRO-ENGINE.md) — partners and contacts in the
   broader Biopunk network, sourced through Happenstance. People who never
-  agreed to anything.
+  agreed to anything. **Built** — see The intro desk below, and §20 of that
+  document for where the build departs from the design and why.
 - [`docs/MENTOR-ENGINE.md`](docs/MENTOR-ENGINE.md) — mentors onboarded through
   an Airtable form, with the booking link gated behind a per-request accept.
   People who did agree, which makes it a different problem. **Phase 1 of this
   one is built** — see below.
+
+## The intro desk
+
+Founders search the Haus network by keyword, click to be introduced, and a
+steward decides whether anything is sent. `/homeroom/intros` grows a second
+half: **in the house** is the member-to-member flow that was already there, and
+**outside the house** is this.
+
+The graph is Elliot's Happenstance account — his own connections plus the 37
+friends whose networks are shared. It is not a directory, and the distinction
+is the whole design:
+
+> The connector's network is a list of people who trust one person, and every
+> introduction spends a little of that trust.
+
+So the click that matters is not the member's. A member's click writes a row.
+`introengine.sendPermission()` is the only function in this app that puts a
+message in front of somebody outside it, it refuses any actor without an
+interactive steward session, and `introduce()` is reachable only from a
+recorded yes — no override, not for a steward either.
+
+### What each person sees
+
+| | |
+| --- | --- |
+| **Member** | The search, the results with the evidence that matched and the mutual they are reachable through, and an ask form. Afterwards: `still open`, `introduced` or `withdrawn`, and nothing else, ever. |
+| **Target** | One email, one link, three buttons. No account, no login, no tracking pixel, and a "never ask me again" that takes effect before anybody at Haus sees a list again. |
+| **Steward** | Everything, including who declined and what they said. A connector who cannot see a no cannot do the job. |
+
+### The member only ever hears about a yes
+
+This is the part to understand before turning it on, because it is a departure
+from the design document and it is deliberate.
+
+In the document the steward picks the candidates and the member never learns
+who was approached, so the member can be told "asked, waiting" safely. Here the
+member names the person themselves — that is the feature they wanted — and once
+they have, **any status that moves is a disclosure.** A label that changes from
+"asked, waiting" to "still open" on the day that person declines is a decline
+told in pixels. Some fraction of targets can feel that coming and say yes to
+avoid the awkwardness, and an extracted yes is worse than no introduction.
+
+So `memberView()` collapses everything before an introduction into one word.
+Waiting on a steward, waiting on the target, a no, a silence, and a steward who
+decided not to forward it all read as `still open` and never change. The ask
+form says so in as many words, and `test/introengine.test.js` asserts it
+against the rendered bytes rather than the model — the member's page is
+byte-identical before and after a decline. The withdraw button is offered on
+every open-looking row for the same reason: a button that disappears the day
+somebody declines is the same leak wearing a different hat.
+
+The honest cost: a member whose ask quietly died sees the same page as one
+whose ask is live. The alternative costs the target their ability to say no, so
+this is the trade taken, and it is written on the form rather than hidden.
+
+### What is stored about people who never agreed to anything
+
+Search results are the allowlisted slice in `happenstance.js` and nothing else:
+name, current title and company, the summary, the evidence lines for traits
+that actually scored, the mutuals, and one public profile URL. Not phone
+numbers, not employment history, not whatever the API adds next year. Adding a
+field is a code change and therefore a reviewed one.
+
+**Happenstance returns no email addresses**, which is load-bearing rather than
+inconvenient: a steward types the address out of their own contacts, so no
+message can go out on a member's click alone. That address is encrypted at rest
+(AES-256-GCM under a key derived from `HOMEROOM_SECRET`) and deleted the moment
+it is spent — on the introduction, on a decline, or on a withdrawal. Only the
+SHA-256 survives, so the record of who was written to outlives the ability to
+write to them again.
+
+Searches are cached on a normalised query for 30 days, so two members asking
+the same question in a month cost 2 credits rather than 4, and the whole search
+row and its people are purged on expiry. Requests are not purged: they are the
+accountability record, and they keep their own copy of the person's details
+precisely so the search can be thrown away.
+
+### The failure directions
+
+| Situation | Direction | Behaviour |
+| --- | --- | --- |
+| Happenstance unreachable while searching | **Closed** | "Could not reach Happenstance." Never an empty list — a member reads an empty list as "nobody can help", which may be false. |
+| The do-not-ask check fails | **Closed** | Nothing is sent, at all. There is no reading of "we could not check whether they opted out" that resolves to contacting them. |
+| Credits exhausted, or the monthly budget spent | **Closed, loudly** | The search is refused with the number shown, never a silent empty result. |
+| The weekly cap is reached | **Closed, and it waits** | 20 permission asks a week house-wide is a rate limit on the connector's reputation. Requests queue in the steward's view rather than being lost. |
+| Mail provider down after a yes | **Open** | The state moves first and the send follows. Losing a yes is the worst outcome this engine has. |
+| A target clicks their link twice | **Idempotent** | First answer wins; the second shows them what they already said. |
+| Two stewards click send at once | **Idempotent** | Guarded on the status predicate inside the update. One email. |
+
+### Configuration
+
+The master switch is off. With `HOMEROOM_INTRO_ENABLED` unset the surfaces
+404 — they do not exist rather than sitting there disabled.
+
+| Variable | Default | Notes |
+| --- | --- | --- |
+| `HOMEROOM_INTRO_ENABLED` | `0` | Master switch. |
+| `HOMEROOM_HAPPENSTANCE_KEY` | — | Without it members cannot search; existing requests still work and the steward page says so. |
+| `HOMEROOM_INTRO_MAIL_FROM` | falls back to the mentor sender, then `HOMEROOM_MAIL_FROM` | Should be its own identity. This mail goes to people who signed up for nothing, and a spam report must not land on password resets. |
+| `HOMEROOM_INTRO_CONNECTOR` | `Haus` | Whose name is on the messages. |
+| `HOMEROOM_INTRO_POSTAL` | — | A real postal identity in the footer. Set it before sending to anyone. |
+| `HOMEROOM_INTRO_WINDOW_DAYS` | `10` | Then the ask quietly ages out. We do not chase. |
+| `HOMEROOM_INTRO_COOLDOWN_DAYS` | `180` | Same member, same person. |
+| `HOMEROOM_INTRO_GLOBAL_COOLDOWN_DAYS` | `45` | Any member, same person. |
+| `HOMEROOM_INTRO_WEEKLY_CAP` | `20` | House-wide permission asks per week. |
+| `HOMEROOM_INTRO_MAX_OPEN` | `3` | Open requests per member. |
+| `HOMEROOM_INTRO_MAX_MONTHLY` | `5` | New requests per member per month. |
+| `HOMEROOM_INTRO_CREDIT_BUDGET` | `40` | Happenstance credits per calendar month, which is 20 fresh searches. Cached repeats are free. |
+| `HOMEROOM_INTRO_SEARCH_TTL_DAYS` | `30` | How long a cached search and its people live. |
+
+### Before pointing this at real people
+
+1. **Durable storage.** `DATABASE_URL` must be set. A permission token that
+   evaporates with the container means somebody clicks "yes, introduce us" and
+   gets an error, having done the one thing asked of them.
+2. **`HOMEROOM_SECRET` must be set**, or stored addresses become unreadable on
+   restart and a recorded yes cannot be acted on.
+3. **A sender identity with SPF and DKIM aligned**, and `HOMEROOM_INTRO_POSTAL`
+   filled in.
+4. **A written policy the connector has signed off**: who may be asked, how
+   often, in whose name, and who apologises when it goes wrong. The engine
+   encodes a policy; it cannot substitute for having one.
+
+`/homeroom/health` reports the engine under `intros`, including
+`stuckAfterYes` — somebody agreed and the introduction never went out. That
+number should always be zero, and the steward page says so in red when it is
+not.
 
 ## The mentor desk
 
@@ -546,6 +674,7 @@ outranks it, so the next weekly re-check does not quietly undo their work.
 | `HOMEROOM_DB` | `/tmp/haus-homeroom.db` | SQLite file. |
 | `HOMEROOM_SECRET` | random per boot | Set in production, or CSRF tokens rotate on restart and every open form breaks. |
 | `HOMEROOM_STATIC_BASE` | `/homeroom-assets` | Where the stylesheet and client script are served from. |
+| `HOMEROOM_INTRO_*` | see The intro desk | The introduction engine, master switch off. |
 | `HOMEROOM_SEED` | — | What a cold container fills itself with. Unset: the full sample network, including ten invented accounts sharing a documented password — for reviewing the design, never for production. `real`: only the researched reference data (perks, capital map, atlas, manual, channels) and no accounts. `off`: nothing, in which case pair it with `HOMEROOM_ACCESS=closed` or a roster token, because with no accounts the first signup is made a steward. |
 
 ### The steward account

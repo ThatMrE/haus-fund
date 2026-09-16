@@ -3,8 +3,11 @@
 A specification for automated, double opt-in introductions from Homeroom into
 the broader Biopunk network, sourced through Happenstance.
 
-**Status:** proposed. Nothing here is built. This document exists to be argued
-with before any of it is.
+**Status:** built, with four deliberate departures. §20 lists them and says
+why; everything else in this document still describes the intent, and the parts
+marked deferred are still deferred. The code is `app/happenstance.js`,
+`app/introengine.js`, `app/intromail.js`, `app/views/intros.js` and
+`test/introengine.test.js`.
 
 **Scope of this document:** the whole engine, including the parts deliberately
 deferred. Phase 1 — individual searches through one connector's network — is
@@ -1223,3 +1226,103 @@ Costs        → search-network 2 · find-more-results 2 · research-person 1
 Async        → search-network returns an id; get-search-results polls until
                 complete and reports whether another page exists
 ```
+
+---
+
+## 20. What was built, and where it departs from the above
+
+Written after the build, against the live account rather than the assumed one.
+Four departures, each with the reasoning, so a later reader can disagree with
+the decision rather than guess at it.
+
+### 20.1 Members search. Stewards still send.
+
+§4 made searching a steward action because a search costs 2 credits and a
+member cannot see the balance, so a member-triggered search is a member-
+triggered invoice.
+
+That is an argument about money, and money has a cheaper answer than removing
+the feature: cache on a normalised query for 30 days, cap the month at
+`HOMEROOM_INTRO_CREDIT_BUDGET`, and refuse at zero with the number shown. The
+second member to ask about GRAS consultants in a month spends nothing.
+
+What does not move is the gate. It was never the search that spent the
+connector's credibility; it was the message. A member's click writes a row and
+nothing else, `sendPermission()` refuses any actor without an interactive
+steward session, and `introduce()` is reachable only from a recorded yes.
+
+The credit facts also changed: the balance was 0 when §4 was written and is 44
+now, so P-2 is no longer a launch blocker.
+
+### 20.2 The member sees one word, not five
+
+§7.1 gives the member a short vocabulary — `with a steward`, `asked, waiting`,
+`introduced`, `still open` — and argues it is vague enough because the member
+does not know who was approached.
+
+That reasoning does not survive the member picking the person. Once they have
+named a target, **any status that moves is a disclosure**: a label going from
+"asked, waiting" to "still open" on a Tuesday says that specific person
+declined on Tuesday. §5.1's own argument applies with more force here than it
+did to the shortlist, because there is no ambiguity left to hide in.
+
+So `memberView()` collapses everything before an introduction into `still
+open`, and it never changes. That covers waiting on a steward, waiting on the
+target, a no, a silence, and a steward's refusal. The member is told this on
+the ask form in plain words rather than left to work it out.
+
+The M-1 test survives intact and is the most important one in the suite: the
+member's page is byte-identical before and after a decline, asserted on the
+rendered body.
+
+The cost is real and worth stating: a member whose ask quietly died sees the
+same page as one whose ask is live. §18's O-3 asked whether that is dishonest
+rather than merely opaque. With a named target the answer got easier, because
+the alternative is not "a more honest member page" — it is "a target who cannot
+say no".
+
+### 20.3 There is no shortlist, so §5's four mechanisms are not needed
+
+M-1 to M-4 exist to make a steward-built shortlist safe to show a member. The
+member builds their own list here, one person at a time, so there is nothing to
+shuffle, withdraw or hold back below a minimum. M-1 — no member-facing response
+renders a candidate status — is the one that carries over, and it is stricter
+here than §5.2 asked for.
+
+The veto step, `HOMEROOM_INTRO_VETO_HOURS` and `HOMEROOM_INTRO_SHORTLIST_MIN`
+go with it. A member who is already talking to somebody does not ask for an
+introduction to them.
+
+### 20.4 No blurb model, no agent tool surface — yet
+
+§8's template path is in `intromail.js` and the model rewrite in §8.2 is not
+built. The permission message is composed from the ask and the search evidence,
+which satisfies the constraint that mattered — no claim about the target that
+did not come off their own row — and needs no API key and no new failure
+direction. §8.2 remains the design for when it is wanted.
+
+§7.3's four JSON tools are not built either. The function they would call
+exists, with its preconditions enforced inside it rather than at the call site,
+which was the part that made the tool surface safe to add later.
+
+### 20.5 What the live API actually returns
+
+§19 recorded the account. Two things checked on 2026-09-16 that change the
+code rather than the prose:
+
+- A result carries `weighted_traits_score`, `current_title`, `current_company`,
+  a `summary`, `socials`, and per-trait `evidence` with a `score`. **Evidence
+  attached to a trait that scored zero is the model saying it found nothing**,
+  so quoting it would be a false claim about a real person. `normalise()` drops
+  it.
+- **No result carries an email address.** This is the fact the engine is built
+  around rather than a limitation to work around: a steward types the address
+  from their own contacts, which makes a human the only path to a message and
+  makes §7.3's "no agent-callable tool that sends anything" structural rather
+  than a rule to be trusted.
+
+Addresses are therefore stored encrypted (AES-256-GCM under a key derived from
+`HOMEROOM_SECRET`) for the life of the request and deleted the moment they are
+spent, which is the §9 rule with the one concession §9 itself anticipated —
+except that the escape hatch is the default, because there is no address to
+re-fetch at send time.
