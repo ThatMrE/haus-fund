@@ -97,6 +97,7 @@ export async function handle(req, res) {
         luma: { configured: lumaConfigured(), calendar: calendarUrl() },
         storage: { backend: sqlLayer.backend(), durable: sqlLayer.durable() },
         mentors: await (await import('./mentordesk.js')).deskStats(),
+        intros: await (await import('./introengine.js')).stats(),
         invites: invites.health(),
         now: nowSeconds(),
       });

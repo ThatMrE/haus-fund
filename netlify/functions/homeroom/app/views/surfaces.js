@@ -1156,6 +1156,8 @@ function submissionPill(status) {
 export const STEWARD_TABS = [
   { key: 'access', href: '/homeroom/stewards/access', label: 'Front door' },
   { key: 'invites', href: '/homeroom/stewards/invites', label: 'Invites' },
+  { key: 'mentors', href: '/homeroom/stewards/mentors', label: 'Mentor desk' },
+  { key: 'intros', href: '/homeroom/stewards/intros', label: 'Introductions' },
 ];
 
 export function accessAdminPage(ctx, { counts, mode, health, pending, recent, lookup = null }) {

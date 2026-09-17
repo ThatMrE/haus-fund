@@ -1179,10 +1179,13 @@ export function libraryFormPage(ctx, { error = null, values = {} }) {
 
 /* ----------------------------------------------------------------- intros */
 
-export function introsPage(ctx, { incoming, outgoing }) {
+export function introsPage(ctx, { incoming, outgoing, outside = false }) {
   return html`<h1>Intros</h1>
   <p class="lede">A request is a promise that you have done your homework. Accepting opens a thread
     with both of you in it.</p>
+  ${outside ? html`<nav class="subnav"><a href="/homeroom/intros" class="on">In the house</a>
+    <a href="/homeroom/intros/search">Outside the house</a>
+    <a href="/homeroom/intros/mine">Your requests</a></nav>` : ''}
   ${section('Asked of you', incoming.length ? html`<ul class="rail-list wide">${incoming.map((i) => html`<li>
     <div class="mono">${memberLink(i.requester_id)} <span class="sep">/</span> ${when(i.created_at)}
       ${pill(i.status, i.status === 'accepted' ? 'ok' : i.status === 'declined' ? 'warn' : '')}</div>
@@ -1362,3 +1365,4 @@ export function errorPage(message = 'Something went wrong.') {
  */
 export * from './surfaces.js';
 export * from './mentordesk.js';
+export * from './intros.js';

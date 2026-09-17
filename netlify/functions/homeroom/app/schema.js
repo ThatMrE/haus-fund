@@ -689,6 +689,152 @@ CREATE TABLE IF NOT EXISTS hr_invites (
 
 CREATE INDEX IF NOT EXISTS idx_hr_invites_status ON hr_invites(status, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_hr_invites_email  ON hr_invites(email);
+
+/* ------------------------------------------------------- the intro engine */
+
+/*
+ * Introductions to people OUTSIDE the house, sourced through Happenstance.
+ * See docs/INTRO-ENGINE.md for the design and app/introengine.js for the
+ * rules. Two facts shape these tables:
+ *
+ *   1. Everyone in hr_hs_people is someone who never agreed to be here. Rows
+ *      are the allowlisted slice of a search result, keyed by a hash, and are
+ *      purged with the search that produced them.
+ *   2. Happenstance returns no email addresses. A steward supplies one at send
+ *      time, and it is stored encrypted for the life of the request only, so a
+ *      copy of this database is not a copy of the connector's address book.
+ */
+
+/* One Happenstance search, cached. At 2 credits a call, two members asking the
+   same question in the same month must not cost 4. */
+CREATE TABLE IF NOT EXISTS hr_hs_searches (
+  id            INTEGER PRIMARY KEY AUTOINCREMENT,
+  query_hash    TEXT NOT NULL UNIQUE,      -- sha256 of the normalised query + scope
+  query         TEXT NOT NULL,
+  scope         TEXT NOT NULL DEFAULT '',
+  search_id     TEXT NOT NULL DEFAULT '',  -- the Happenstance uuid
+  state         TEXT NOT NULL DEFAULT 'running'
+                CHECK (state IN ('running','complete','failed')),
+  credits       INTEGER NOT NULL DEFAULT 0,
+  result_count  INTEGER NOT NULL DEFAULT 0,
+  error         TEXT NOT NULL DEFAULT '',
+  requested_by  TEXT REFERENCES users(id) ON DELETE SET NULL,
+  created_at    INTEGER NOT NULL,
+  completed_at  INTEGER,
+  expires_at    INTEGER NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_hr_hs_searches_by ON hr_hs_searches(requested_by, created_at DESC);
+
+/* The allowlisted result rows. Nothing here that is not in happenstance.js's
+   normalise(); no address, ever. */
+CREATE TABLE IF NOT EXISTS hr_hs_people (
+  id            INTEGER PRIMARY KEY AUTOINCREMENT,
+  search_id     INTEGER NOT NULL REFERENCES hr_hs_searches(id) ON DELETE CASCADE,
+  person_hash   TEXT NOT NULL,
+  name          TEXT NOT NULL,
+  title         TEXT NOT NULL DEFAULT '',
+  org           TEXT NOT NULL DEFAULT '',
+  summary       TEXT NOT NULL DEFAULT '',
+  evidence      TEXT NOT NULL DEFAULT '',  -- JSON array of strings
+  score         REAL,
+  through       TEXT NOT NULL DEFAULT '',  -- the mutuals, comma-separated names
+  profile_url   TEXT NOT NULL DEFAULT '',
+  position      INTEGER NOT NULL DEFAULT 0,
+  created_at    INTEGER NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_hr_hs_people_search ON hr_hs_people(search_id, position);
+CREATE INDEX IF NOT EXISTS idx_hr_hs_people_hash ON hr_hs_people(person_hash);
+
+/* One member asking to be introduced to one person. The lifecycle lives here:
+   requested → permission_sent → agreed → introduced, or off to the side into
+   declined / no_reply / refused / withdrawn. Only introengine.js writes the
+   status column. */
+CREATE TABLE IF NOT EXISTS hr_intro_requests (
+  id            INTEGER PRIMARY KEY AUTOINCREMENT,
+  member_id     TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  person_hash   TEXT NOT NULL,
+  search_id     INTEGER REFERENCES hr_hs_searches(id) ON DELETE SET NULL,
+  name          TEXT NOT NULL,             -- copied from the result, which is purged
+  title         TEXT NOT NULL DEFAULT '',
+  org           TEXT NOT NULL DEFAULT '',
+  summary       TEXT NOT NULL DEFAULT '',
+  evidence      TEXT NOT NULL DEFAULT '',
+  through       TEXT NOT NULL DEFAULT '',
+  profile_url   TEXT NOT NULL DEFAULT '',
+  need          TEXT NOT NULL,             -- the ask, in the member's words
+  why_them      TEXT NOT NULL DEFAULT '',
+  asking_for    TEXT NOT NULL DEFAULT '',
+  status        TEXT NOT NULL DEFAULT 'requested'
+                CHECK (status IN ('requested','permission_sent','agreed','introduced',
+                                  'declined','no_reply','refused','withdrawn')),
+  token_hash    TEXT NOT NULL DEFAULT '',  -- sha256; the token itself is never stored
+  token_expires INTEGER,
+  to_enc        TEXT NOT NULL DEFAULT '',  -- the target's address, encrypted; cleared when closed
+  to_hash       TEXT NOT NULL DEFAULT '',  -- sha256 of the address, kept for the record
+  sent_how      TEXT NOT NULL DEFAULT ''
+                CHECK (sent_how IN ('','mail','manual')),
+  sent_by       TEXT REFERENCES users(id) ON DELETE SET NULL,
+  sent_at       INTEGER,
+  answered_at   INTEGER,
+  answer_note   TEXT NOT NULL DEFAULT '',  -- the target's own words, stewards only
+  steward_note  TEXT NOT NULL DEFAULT '',  -- why a steward refused, member never sees it
+  introduced_at INTEGER,
+  closed_at     INTEGER,
+  /* The member pressed withdraw. Separate from the status column because a
+     member may press it on a request that has already quietly closed, and the
+     page must look the same either way — see memberView() in introengine.js. */
+  member_closed INTEGER NOT NULL DEFAULT 0,
+  created_at    INTEGER NOT NULL,
+  updated_at    INTEGER NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_hr_intro_req_member ON hr_intro_requests(member_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_hr_intro_req_status ON hr_intro_requests(status, updated_at DESC);
+CREATE INDEX IF NOT EXISTS idx_hr_intro_req_person ON hr_intro_requests(person_hash, status);
+CREATE INDEX IF NOT EXISTS idx_hr_intro_req_token ON hr_intro_requests(token_hash);
+
+/* "Never ask me again". Checked before a result is ever shown, not after. */
+CREATE TABLE IF NOT EXISTS hr_intro_suppression (
+  person_hash   TEXT PRIMARY KEY,
+  reason        TEXT NOT NULL DEFAULT ''
+                CHECK (reason IN ('','opted-out','bounced','steward','complaint')),
+  created_at    INTEGER NOT NULL
+);
+
+/* A no, or a silence, buys a person a rest: from this member for a long while,
+   from everyone for a shorter one. member_id '' is the house-wide row. */
+CREATE TABLE IF NOT EXISTS hr_intro_cooldowns (
+  person_hash   TEXT NOT NULL,
+  member_id     TEXT NOT NULL DEFAULT '',
+  until         INTEGER NOT NULL,
+  created_at    INTEGER NOT NULL,
+  PRIMARY KEY (person_hash, member_id)
+);
+
+CREATE TABLE IF NOT EXISTS hr_intro_outcomes (
+  request_id    INTEGER PRIMARY KEY REFERENCES hr_intro_requests(id) ON DELETE CASCADE,
+  met           INTEGER NOT NULL DEFAULT 0,
+  useful        INTEGER,
+  note          TEXT NOT NULL DEFAULT '',
+  logged_at     INTEGER NOT NULL
+);
+
+/* Append-only. Answers "why did this person get an email". */
+CREATE TABLE IF NOT EXISTS hr_intro_events (
+  id            INTEGER PRIMARY KEY AUTOINCREMENT,
+  request_id    INTEGER,
+  search_id     INTEGER,
+  actor_id      TEXT REFERENCES users(id) ON DELETE SET NULL,
+  actor_kind    TEXT NOT NULL DEFAULT 'member'
+                CHECK (actor_kind IN ('member','steward','target','system','agent')),
+  event         TEXT NOT NULL,
+  detail        TEXT NOT NULL DEFAULT '',
+  created_at    INTEGER NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_hr_intro_events ON hr_intro_events(request_id, created_at);
 `;
 
 
