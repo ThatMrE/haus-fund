@@ -203,15 +203,27 @@ footer{background:#0D0D0D;border-top:1px solid rgba(255,255,255,0.06);padding:32
 </head>
 <body>
 
+<!-- Cross-site links are absolute, not root-relative.
+
+     This page is also served at the root of its own hostname (cores.haus.fund
+     / visa.haus.fund) by the cores-host edge function, which rewrites "/" back
+     to this file. A root-relative "/#nodes" therefore resolves to
+     cores.haus.fund/ and lands straight back here, on a page that has no
+     #nodes anchor -- the link reads as dead. The other paths would resolve to
+     the right document but on the tool's hostname, splitting the site across
+     two origins.
+
+     Anything served from this origin on every hostname (favicon, assets,
+     cores.js, the facility JSON) stays relative on purpose. -->
 <nav id="nav">
   <div class="nav-inner">
-    <a href="/#top"><img src="assets/logo-mark.svg" class="nav-logo" alt="Haus"></a>
+    <a href="https://haus.fund/#top"><img src="assets/logo-mark.svg" class="nav-logo" alt="Haus"></a>
     <div class="nav-links">
-      <a href="/biopunk">Program</a>
-      <a href="/#nodes">Nodes</a>
-      <a href="/skilltree">Skill Tree</a>
-      <a href="/expansion">Global ↗</a>
-      <a href="/sponsors">Sponsors</a>
+      <a href="https://haus.fund/biopunk">Program</a>
+      <a href="https://haus.fund/#nodes">Nodes</a>
+      <a href="https://haus.fund/skilltree">Skill Tree</a>
+      <a href="https://haus.fund/expansion">Global ↗</a>
+      <a href="https://haus.fund/sponsors">Sponsors</a>
     </div>
     <a href="https://airtable.com/app9STfjol4NHGEWj/pag6vvU75E9mWLH49/form" class="nav-apply">Apply</a>
   </div>
@@ -315,9 +327,9 @@ footer{background:#0D0D0D;border-top:1px solid rgba(255,255,255,0.06);padding:32
   <div class="footer-inner">
     <div class="mono" style="color:rgba(255,255,255,0.2);">HAUS HOUSE &middot; SAN FRANCISCO</div>
     <div style="display:flex;gap:32px;flex-wrap:wrap;">
-      <a href="/#program">PROGRAM</a>
-      <a href="/expansion">GLOBAL</a>
-      <a href="/sponsors">SPONSORS</a>
+      <a href="https://haus.fund/#program">PROGRAM</a>
+      <a href="https://haus.fund/expansion">GLOBAL</a>
+      <a href="https://haus.fund/sponsors">SPONSORS</a>
       <a href="mailto:elliot@haus.fund">CONTACT</a>
     </div>
     <div class="mono" style="color:rgba(255,255,255,0.15);">MUTATE // BUILD // DISRUPT</div>
