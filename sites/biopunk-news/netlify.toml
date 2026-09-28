@@ -1,0 +1,34 @@
+# biopunk-news.netlify.app — the Haus Feed, standalone.
+#
+# The same app that runs at haus.fund/news, mounted at this site's root. Set
+# this directory as the Netlify project's base directory; `build.mjs` assembles
+# the publish and functions directories from the repo so there is one copy of
+# the app, not two.
+
+[build]
+  command = "node build.mjs"
+  publish = "public"
+
+[build.environment]
+  # node:sqlite needs Node 22.5 or newer.
+  NODE_VERSION = "22"
+
+[functions]
+  directory = "functions"
+  node_bundler = "esbuild"
+
+# The feed is rendered per request.
+[[headers]]
+  for = "/*"
+  [headers.values]
+    Cache-Control = "no-store"
+
+[[headers]]
+  for = "/tokens/*"
+  [headers.values]
+    Cache-Control = "public, max-age=3600"
+
+[[headers]]
+  for = "/news-assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=3600"

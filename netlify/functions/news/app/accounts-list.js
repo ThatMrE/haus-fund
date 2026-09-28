@@ -1,11 +1,11 @@
 /**
  * The accounts the feed watches.
  *
- * The brief calls for around 300. What is here is a starter set, not that list:
- * outbound network was blocked in the sandbox this was built in, so **none of
- * these handles were verified against the live platforms**. Treat a handle that
- * returns nothing as one to correct rather than a bug — `readAccount` swallows a
- * failing account so a bad handle costs the run nothing.
+ * The brief calls for around 300. What is here is a starter set, not that list.
+ * Every handle below was checked against the live platform on 2026-09-28; the
+ * ones that did not resolve were removed rather than left to fail each morning.
+ * A handle that returns nothing is one to correct, not a bug — `readAccount`
+ * swallows a failing account so a bad handle costs the run nothing.
  *
  * To load the real list without editing code, set one of:
  *
@@ -26,12 +26,8 @@ const STARTER = [
   { platform: 'bluesky', handle: 'endpts.com' },
   { platform: 'bluesky', handle: 'nature.com' },
   { platform: 'bluesky', handle: 'science.org' },
-  { platform: 'bluesky', handle: 'biorxiv.org' },
   { platform: 'bluesky', handle: 'arstechnica.com' },
   { platform: 'bluesky', handle: 'technologyreview.com' },
-  { platform: 'mastodon', handle: 'arpah', instance: 'https://fediscience.org' },
-  { platform: 'mastodon', handle: 'synbio', instance: 'https://mstdn.science' },
-  { platform: 'mastodon', handle: 'biology', instance: 'https://fediscience.org' },
 ];
 
 function fromEnv(env) {

@@ -8,12 +8,32 @@ import { parseFeed } from '../feed-parser.js';
  * Boston on Thursday, and that is often the item a founder most wants. Sources
  * publish either iCalendar or RSS, so both are handled.
  */
+/**
+ * Checked 2026-09-28. The meetup.com per-group RSS this used to read is gone —
+ * every one of those URLs 404s — so the source is now the community's own Luma
+ * calendar, which publishes iCalendar and is where these events are actually
+ * organised. `NEWS_CALENDARS` overrides the list as JSON if you want more.
+ */
 export const CALENDARS = [
-  { city: 'Boston', url: 'https://www.meetup.com/boston-synthetic-biology/events/rss/', format: 'rss' },
-  { city: 'San Francisco', url: 'https://www.meetup.com/sf-bay-area-biotech/events/rss/', format: 'rss' },
-  { city: 'New York', url: 'https://www.meetup.com/nyc-biotech/events/rss/', format: 'rss' },
-  { city: 'Global', url: 'https://www.biohackspace.org/events.ics', format: 'ics' },
+  {
+    city: 'Biopunk',
+    url: 'https://api.lu.ma/ics/get?entity=calendar&id=cal-3QxzLUEwOpGxxNc',
+    format: 'ics',
+  },
 ];
+
+export function loadCalendars(env = process.env) {
+  const raw = env.NEWS_CALENDARS;
+  if (!raw) return CALENDARS;
+  try {
+    const list = JSON.parse(raw);
+    if (!Array.isArray(list) || list.length === 0) throw new Error('expected a non-empty array');
+    return list;
+  } catch (err) {
+    console.warn(`[calendars] ignoring NEWS_CALENDARS: ${err.message}`);
+    return CALENDARS;
+  }
+}
 
 /** How far ahead an event is worth surfacing. */
 export const HORIZON_DAYS = 21;
@@ -75,7 +95,8 @@ export default {
   selfEvident: true,
   weight: 1,
 
-  async fetch({ fetchImpl, now, calendars = CALENDARS, horizonDays = HORIZON_DAYS } = {}) {
+  async fetch({ fetchImpl, now, calendars = null, horizonDays = HORIZON_DAYS, env = process.env } = {}) {
+    calendars = calendars ?? loadCalendars(env);
     const horizon = now + horizonDays * 86400;
     const batches = await Promise.all(
       calendars.map((calendar) =>
@@ -84,7 +105,7 @@ export default {
             calendar.format === 'ics'
               ? parseIcs(body).map((event) => ({
                   title: tidy(event.summary),
-                  link: event.url || calendar.url,
+                  link: eventLink(event) || calendar.url,
                   summary: tidy(event.description ?? '', 300),
                   startsAt: event.startsAt,
                   location: event.location,
@@ -117,6 +138,18 @@ export default {
       }));
   },
 };
+
+/**
+ * The page for one event. Publishers vary: a URL property when there is one,
+ * otherwise a LOCATION that is really a link, otherwise the id in the UID.
+ */
+export function eventLink(event) {
+  if (/^https?:\/\//.test(event.url ?? '')) return event.url;
+  if (/^https?:\/\//.test(event.location ?? '')) return event.location;
+  const uid = String(event.uid ?? '');
+  if (uid.startsWith('evt-')) return `https://luma.com/event/${uid.split('@')[0]}`;
+  return null;
+}
 
 function whenWords(startsAt, now) {
   const days = Math.round((startsAt - now) / 86400);

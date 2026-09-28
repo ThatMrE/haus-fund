@@ -152,6 +152,9 @@ protocol's baton, so a multi-statement transaction really is one.
 | `X_BEARER_TOKEN` | — | without it the X half of the accounts agent is skipped |
 | `NEWS_INTAKE_TOKEN` | — | shared secret for `/api/surface` |
 | `NEWS_ADMINS` | — | comma-separated handles that become reviewers on signup |
+| `SEC_CONTACT` | — | `"Name contact@example.com"`. EDGAR refuses requests without it, so the Form D agent stands down when it is unset |
+| `NEWS_SITE_ORIGIN` | — | where the rest of haus.fund is. Empty when mounted at `/news`; set on a standalone deployment |
+| `NEWS_CALENDARS` | — | override the watched calendars, as JSON |
 
 ## Channel intake
 
@@ -186,17 +189,42 @@ app/
 └── views/          layout, components, pages
 ```
 
-## Two things to verify against live servers
+## Where it runs
 
-Outbound network was blocked in the sandbox this was built in, so:
+| Deployment | Mount | Config |
+| --- | --- | --- |
+| haus.fund/news | `/news`, inside the main site | root `netlify.toml`, `netlify/functions/news/index.mjs` |
+| biopunk-news.netlify.app | the site root | `sites/biopunk-news/` — set that as the project's base directory |
 
-- **The endpoints** in `app/agents/` and `app/sources.js` are the publishers'
-  documented ones but were never called. `npm run ingest -- --dry` prints what
-  each agent fetched and selected, including failures — one run verifies all
-  seven.
-- **The watched accounts** in `app/accounts-list.js` are a starter set of ten,
-  not the 300 the brief calls for, and none of the handles were checked. Point
-  `NEWS_ACCOUNTS_FILE` at the real list.
+Both import the same handler from `netlify/functions/news/serve.mjs`; they
+differ only in the mount. The standalone site's `build.mjs` assembles its
+publish and functions directories from this repo, so there is one copy of the
+app rather than two.
+
+## Verified against live servers, 2026-09-28
+
+Every endpoint was called for the first time on this date, and several were
+wrong. What changed:
+
+- **Fierce Biotech and Endpoints News** answer 403 to any non-browser client and
+  **BioSpace** has no feed at any documented path — all three removed. MedCity
+  News, BioPharma Dive and Nature Biotechnology added in their place.
+- **ARPA-H**'s per-section feeds 404; the site publishes one feed at its root.
+- **EDGAR** requires a contact in the User-Agent (`SEC_CONTACT`) and takes about
+  twenty seconds to answer, which the shared 8-second budget was cutting off.
+- **The calendars** pointed at meetup.com group feeds that no longer exist. The
+  source is now the community's own Luma calendar.
+- **NIH awards** were being fetched and then discarded by a global 96-hour age
+  backstop; agents whose sources publish in batches now set their own window.
+- **Three of the ten starter accounts** did not resolve and were removed.
+
+A run now returns from all seven agents. `npm run ingest -- --dry` re-checks the
+whole set without writing anything.
+
+**Still open:** the watched-account list is six verified handles, not the 300 the
+brief calls for — point `NEWS_ACCOUNTS_FILE` at the real list. And the wires
+agent contributes little: the outlets that cover seed and Series A biotech
+closely are the two that block us.
 
 ## Guidelines
 

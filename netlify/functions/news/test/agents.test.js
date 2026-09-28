@@ -98,10 +98,33 @@ test('Form D filings are filtered to the life-science filers', async () => {
     </entry>
   </feed>`;
 
-  const entries = await formd.fetch({ fetchImpl: routes({ 'sec.gov': atom }), now: NOW });
+  const entries = await formd.fetch({
+    fetchImpl: routes({ 'sec.gov': atom }),
+    now: NOW,
+    env: { SEC_CONTACT: 'Test Harness test@example.org' },
+  });
   assert.equal(entries.length, 1);
   assert.equal(entries[0].title, 'HELIX THERAPEUTICS INC filed a Form D');
   assert.equal(entries[0].topicHint, 'funding');
+});
+
+test('the Form D agent stands down rather than calling EDGAR without a contact', async () => {
+  let called = false;
+  const fetchImpl = routes({ 'sec.gov': () => { called = true; return ''; } });
+  await assert.rejects(formd.fetch({ fetchImpl, now: NOW, env: {} }), /SEC_CONTACT/);
+  assert.equal(called, false, 'EDGAR is never called without the contact it requires');
+});
+
+test('the contact is sent as the user agent EDGAR asks for', async () => {
+  let sentUa = null;
+  const fetchImpl = routes({
+    'sec.gov': (url, options) => {
+      sentUa = options.headers['user-agent'];
+      return '<feed xmlns="http://www.w3.org/2005/Atom"></feed>';
+    },
+  });
+  await formd.fetch({ fetchImpl, now: NOW, env: { SEC_CONTACT: 'Haus Fund news@haus.fund' } });
+  assert.equal(sentUa, 'Haus Fund news@haus.fund');
 });
 
 /* --------------------------------------------------------------------- NIH */
@@ -255,4 +278,48 @@ test('a self-evident agent skips the text filter that the open sources need', as
   });
   assert.equal(asSelfEvident.posted.length, 1);
   assert.equal(asOpenSource.posted.length, 0, 'the wires would have thrown this away');
+});
+
+test('a name stem only counts at a word start', async () => {
+  const atom = (name) => `<?xml version="1.0"?>
+  <feed xmlns="http://www.w3.org/2005/Atom">
+    <entry>
+      <title>D - ${name} (0001234567) (Filer)</title>
+      <link rel="alternate" href="https://www.sec.gov/filing/1"/>
+      <updated>${new Date(NOW * 1000).toISOString()}</updated>
+    </entry>
+  </feed>`;
+  const run = (name) =>
+    formd.fetch({
+      fetchImpl: routes({ 'sec.gov': atom(name) }),
+      now: NOW,
+      env: { SEC_CONTACT: 'Test test@example.org' },
+    });
+
+  // "cell" sits inside MONTICELLOAM, which is a housing fund, not a biotech.
+  assert.equal((await run('MONTICELLOAM SENIOR HOUSING DEBT FUND I LLC')).length, 0);
+  assert.equal((await run('INTERNAL REVENUE PARTNERS LLC')).length, 0, 'and "rna" inside "internal"');
+  assert.equal((await run('CELLSIUS LABS INC')).length, 1);
+  assert.equal((await run('Q-IMMUNE, INC.')).length, 1);
+});
+
+test('a fund raising its own money is not a startup raise', async () => {
+  const atom = (name) => `<?xml version="1.0"?>
+  <feed xmlns="http://www.w3.org/2005/Atom">
+    <entry>
+      <title>D - ${name} (0001234567) (Filer)</title>
+      <link rel="alternate" href="https://www.sec.gov/filing/1"/>
+      <updated>${new Date(NOW * 1000).toISOString()}</updated>
+    </entry>
+  </feed>`;
+  const run = (name) =>
+    formd.fetch({
+      fetchImpl: routes({ 'sec.gov': atom(name) }),
+      now: NOW,
+      env: { SEC_CONTACT: 'Test test@example.org' },
+    });
+
+  assert.equal((await run('BIO FUND I a Series of FOG Ventures Fund III LLC')).length, 0);
+  assert.equal((await run('LIFE SCIENCES CAPITAL PARTNERS LP')).length, 0);
+  assert.equal((await run('LAURENTIDE THERAPEUTICS INC.')).length, 1);
 });
