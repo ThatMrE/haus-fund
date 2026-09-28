@@ -194,7 +194,7 @@ app/
 | Deployment | Mount | Config |
 | --- | --- | --- |
 | haus.fund/news | `/news`, inside the main site | root `netlify.toml`, `netlify/functions/news/index.mjs` |
-| biopunk-news.netlify.app | the site root | `sites/biopunk-news/` — set that as the project's base directory |
+| biopunk-news.netlify.app | the site root | `sites/biopunk-news/` — deployed by hand, see its README |
 
 Both import the same handler from `netlify/functions/news/serve.mjs`; they
 differ only in the mount. The standalone site's `build.mjs` assembles its
