@@ -25,8 +25,10 @@ export const MAX_PER_AGENT = 5;
 /** Most stories from any single domain in one run. */
 export const MAX_PER_DOMAIN = 3;
 /**
- * A backstop on age. Each agent asks its source for a window, but a feed that
- * lies about its dates should not be able to put last month on the front page.
+ * A backstop on age, for agents that do not set their own. A feed that lies
+ * about its dates should not be able to put last month on the front page — but
+ * an agent whose source publishes in batches (NIH awards land in clumps) sets
+ * `maxAgeHours` and is trusted with it.
  */
 export const MAX_AGE_HOURS = 96;
 
@@ -47,7 +49,7 @@ export function selectCandidates(batches, { now = nowSeconds(), isDuplicate = ()
       if (!url || !entry.title) continue;
 
       const ageHours = entry.publishedAt ? (now - entry.publishedAt) / 3600 : 0;
-      if (ageHours > MAX_AGE_HOURS || ageHours < -6) continue;
+      if (ageHours > (agent.maxAgeHours ?? MAX_AGE_HOURS) || ageHours < -6) continue;
 
       const key = dedupeKey(url);
       const titleKey = normalizeTitle(entry.title);

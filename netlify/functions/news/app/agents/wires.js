@@ -14,7 +14,7 @@ export default {
   selfEvident: false,
   weight: 1,
 
-  async fetch({ fetchImpl, now, lookbackHours = 36, sources = SOURCES } = {}) {
+  async fetch({ fetchImpl, now, lookbackHours = 72, sources = SOURCES } = {}) {
     const cutoff = now - lookbackHours * 3600;
     const batches = await Promise.all(
       sources.map((source) =>

@@ -59,6 +59,9 @@ and Biopunk Live weekly).
 It shares this repo so it shares the domain and the design system: its
 stylesheet imports `tokens/*.css`, so a token change reaches the feed too.
 
+It also runs standalone at biopunk-news.netlify.app, from `sites/biopunk-news/`
+— same app, mounted at that site's root rather than under `/news`.
+
 See `netlify/functions/news/README.md` for the agents, the ranking, the points,
 and the storage setup — the feed needs `TURSO_DATABASE_URL` set before anyone is
 asked to post to it, or a cold container takes their accounts and votes with it.

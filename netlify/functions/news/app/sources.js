@@ -1,5 +1,5 @@
 /**
- * Feeds the ingest agent reads each morning.
+ * Feeds the wires agent reads each morning.
  *
  * The list is deliberately editable: add a source here and the next run picks
  * it up, creating its posting account on first use. `weight` nudges the
@@ -13,27 +13,6 @@
  */
 
 export const SOURCES = [
-  {
-    slug: 'fierce-biotech',
-    name: 'Fierce Biotech',
-    url: 'https://www.fiercebiotech.com/rss/xml',
-    site: 'fiercebiotech.com',
-    weight: 1.15,
-  },
-  {
-    slug: 'endpoints',
-    name: 'Endpoints News',
-    url: 'https://endpts.com/feed/',
-    site: 'endpts.com',
-    weight: 1.2,
-  },
-  {
-    slug: 'biospace',
-    name: 'BioSpace',
-    url: 'https://www.biospace.com/rss/news/',
-    site: 'biospace.com',
-    weight: 1.05,
-  },
   {
     slug: 'labiotech',
     name: 'Labiotech',
@@ -61,6 +40,27 @@ export const SOURCES = [
     url: 'https://www.statnews.com/feed/',
     site: 'statnews.com',
     weight: 0.95,
+  },
+  {
+    slug: 'nature-biotech',
+    name: 'Nature Biotechnology',
+    url: 'https://www.nature.com/nbt.rss',
+    site: 'nature.com',
+    weight: 1.05,
+  },
+  {
+    slug: 'medcity',
+    name: 'MedCity News',
+    url: 'https://medcitynews.com/feed/',
+    site: 'medcitynews.com',
+    weight: 1.15,
+  },
+  {
+    slug: 'biopharmadive',
+    name: 'BioPharma Dive',
+    url: 'https://www.biopharmadive.com/feeds/news/',
+    site: 'biopharmadive.com',
+    weight: 1.1,
   },
   {
     slug: 'genengnews',

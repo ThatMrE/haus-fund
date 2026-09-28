@@ -8,10 +8,9 @@ import { parseFeed } from '../feed-parser.js';
  * exist yet, so it belongs on an early-stage feed even though it is not a
  * funding round.
  */
-const FEEDS = [
-  { url: 'https://arpa-h.gov/news-and-events/rss.xml', label: 'ARPA-H news' },
-  { url: 'https://arpa-h.gov/research-and-funding/rss.xml', label: 'ARPA-H funding' },
-];
+// Verified 2026-09-28. The per-section feeds this used to list (news-and-events,
+// research-and-funding) both 404; the site publishes one feed at its root.
+const FEEDS = [{ url: 'https://arpa-h.gov/rss.xml', label: 'ARPA-H' }];
 
 export default {
   key: 'arpa-h',
@@ -19,8 +18,11 @@ export default {
   about: 'ARPA-H programs, solicitations and awards.',
   selfEvident: true,
   weight: 1.2,
+  // Low-volume by nature: ten posts span months, and a new program stays news
+  // for weeks rather than days.
+  maxAgeHours: 336,
 
-  async fetch({ fetchImpl, now, lookbackHours = 96 } = {}) {
+  async fetch({ fetchImpl, now, lookbackHours = 336 } = {}) {
     const cutoff = now - lookbackHours * 3600;
     const batches = await Promise.all(
       FEEDS.map((feed) =>
@@ -35,7 +37,9 @@ export default {
       .filter((entry) => entry.link && entry.title)
       .filter((entry) => !entry.publishedAt || entry.publishedAt >= cutoff)
       .map((entry) => ({
-        title: tidy(entry.title),
+        // The feed titles are bare program names ("COSMOS"), which say nothing
+        // on a mixed front page.
+        title: `ARPA-H: ${tidy(entry.title, 120)}`,
         link: entry.link,
         summary: tidy(entry.summary ?? '', 300),
         publishedAt: secondsFrom(entry.publishedAt) ?? now,

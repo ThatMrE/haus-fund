@@ -1,5 +1,14 @@
 import { raw, esc, u, s, BASE } from '../util.js';
 
+/**
+ * Where the rest of haus.fund lives.
+ *
+ * Empty when the feed is mounted inside that site, so the footer links stay
+ * relative. On a standalone deployment the feed owns the root and a relative
+ * `/portfolio.html` is a dead link — this points those at the real site.
+ */
+const SITE_ORIGIN = (process.env.NEWS_SITE_ORIGIN || '').replace(/\/+$/, '');
+
 export const SITE_NAME = 'Haus News';
 export const TAGLINE = 'Early-stage biotech, ranked by the people building it.';
 
@@ -109,9 +118,9 @@ function footer() {
     <a href="${u('/rss')}">RSS</a>
     <a href="${u('/api')}">API</a>
     <a href="${u('/search')}">Search</a>
-    <a href="/">haus.fund</a>
-    <a href="/portfolio.html">Portfolio</a>
-    <a href="/expansion.html">Global</a>
+    <a href="${SITE_ORIGIN || '/'}">haus.fund</a>
+    <a href="${SITE_ORIGIN}/portfolio.html">Portfolio</a>
+    <a href="${SITE_ORIGIN}/expansion.html">Global</a>
     <div class="tagline">${esc(TAGLINE)}</div>
     ${DEMO_NOTICE}
   </div>

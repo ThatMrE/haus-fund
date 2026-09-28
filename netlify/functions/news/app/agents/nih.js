@@ -17,8 +17,10 @@ export default {
   about: 'New NIH SBIR and STTR awards — the grants that go to companies, not to campus labs.',
   selfEvident: true,
   weight: 1.3,
+  // Awards are announced in batches, so the fetch window is the right filter.
+  maxAgeHours: 336,
 
-  async fetch({ fetchImpl, now, lookbackHours = 72, limit = 50 } = {}) {
+  async fetch({ fetchImpl, now, lookbackHours = 336, limit = 50 } = {}) {
     const payload = await fetchJson(API, {
       fetchImpl,
       method: 'POST',
