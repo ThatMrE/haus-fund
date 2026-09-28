@@ -118,31 +118,59 @@ pays out the vote milestones. All three are idempotent.
 
 ## Storage
 
-Two drivers behind one small async interface (`app/db/`):
+Three drivers behind one small async interface (`app/db/`), chosen by what is in
+the environment:
 
-- **`sqlite`** — `node:sqlite`, for development, the tests, and any deployment
-  that runs the app as one process against a real disk.
-- **`turso`** — libSQL over its HTTP pipeline API, spoken with `fetch`. This is
-  what lets the app have a durable shared database without a native client,
-  which is the property everything else here is built on. Same SQL dialect, so
-  the schema and every query are unchanged.
+| Driver | Selected by | What it is |
+| --- | --- | --- |
+| `neon` | `NETLIFY_DATABASE_URL` / `DATABASE_URL` | Postgres over Neon's SQL-over-HTTP endpoint |
+| `turso` | `TURSO_DATABASE_URL` | libSQL over its HTTP pipeline API |
+| `sqlite` | neither | `node:sqlite`, for development and the tests |
 
-`TURSO_DATABASE_URL` in the environment selects the hosted database. Without it
-the app falls back to a local file — and on Netlify that file is in `/tmp`, which
-a recycled container wipes. **A preview deploy without a database URL loses
-accounts, votes, comments, points and the review queue on every cold start**, and
-the morning run repopulates the stories, so the page still looks healthy. Set the
-URL before anyone is asked to post.
+All three speak `fetch` or a built-in, so the app keeps a durable shared database
+without a native client — the property everything else here is built on.
 
-Transactions on the hosted driver hold one server-side session open with the
-protocol's baton, so a multi-statement transaction really is one.
+Without a hosted URL the app falls back to a local file, and on Netlify that file
+is in `/tmp`, which a recycled container wipes. **A deploy without a database URL
+loses accounts, votes, comments, points and the review queue on every cold
+start**, while the morning run repopulates the stories so the page still looks
+healthy. Set the URL before anyone is asked to post.
+
+### Transactions
+
+SQLite and libSQL hold a session open, so they offer an interactive
+`transaction(fn)`. Neon's HTTP endpoint cannot: a request is a session. So
+anything that must be atomic on every engine is written as `batch([...])` — a
+list of statements decided up front and applied in one transaction.
+
+The one thing a list cannot otherwise carry is the id an insert just generated,
+so `{{LAST_ID}}` stands in for it: the engine's own `last_insert_rowid()` on
+SQLite, `lastval()` on Postgres.
+
+### Dialect
+
+The two engines agree on almost everything and disagree quietly, which is worse
+than disagreeing loudly. The differences that bit, and where they are handled:
+
+- **`LIKE` is case-insensitive in SQLite and case-sensitive in Postgres.** Search
+  lowercases both sides; without it, search silently stops matching once hosted.
+- **`COLLATE NOCASE`** is SQLite's alone — handle lookups use `lower()`.
+- **`MAX(a, b)`** is SQLite's two-argument form and Postgres's `GREATEST`; the
+  code uses `CASE`, which is neither and both.
+- **Auto-assigned ids** differ in syntax, so `schemaFor(dialect)` swaps that one
+  token and leaves the schema otherwise identical.
+- **The column list** lives in `pragma_table_info` or `information_schema`.
+
+`test/postgres.test.js` runs the data layer against a real Postgres to keep this
+honest, and skips when there is no server to talk to.
 
 ## Environment
 
 | Variable | Default | Notes |
 | --- | --- | --- |
-| `TURSO_DATABASE_URL` | — | libSQL URL. Set this in production |
-| `TURSO_AUTH_TOKEN` | — | token for the above |
+| `NETLIFY_DATABASE_URL` / `DATABASE_URL` | — | Postgres connection string (Neon). Set one of these in production |
+| `TURSO_DATABASE_URL` | — | libSQL URL, the alternative to the above |
+| `TURSO_AUTH_TOKEN` | — | token for the libSQL URL |
 | `BIOPUNK_DB` | `./data/haus-news.db` | local SQLite path when there is no libSQL URL |
 | `BIOPUNK_SECRET` | random per boot | set it, or CSRF tokens rotate on restart |
 | `NEWS_BASE_PATH` | `/news` | where the app is mounted |

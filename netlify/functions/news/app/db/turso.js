@@ -221,9 +221,42 @@ export function openTurso({
       await once([stmt(sql, [])]);
     },
 
-    /** Several statements in one round trip, applied in order. */
-    async batch(sqls) {
-      return once(sqls.map((s) => (typeof s === 'string' ? stmt(s, []) : stmt(s.sql, s.params ?? []))));
+    /**
+     * A list of statements, applied in order inside one transaction.
+     * `{{LAST_ID}}` stands for the id the previous insert generated — libSQL is
+     * SQLite, so the engine's own function supplies it.
+     */
+    async batch(statements) {
+      const session = new Session(opts);
+      const bound = boundStore(session);
+      await bound.exec('BEGIN');
+      try {
+        const results = [];
+        for (const statement of statements) {
+          const sql = String(statement.sql).replaceAll('{{LAST_ID}}', 'last_insert_rowid()');
+          const params = statement.params ?? [];
+          const [result] = await session.pipeline(
+            [{ type: 'execute', stmt: stmt(sql, params) }],
+            { keepAlive: true },
+          );
+          results.push({
+            rows: rowsToObjects(result),
+            changes: Number(result.affected_row_count ?? 0),
+            lastInsertRowid: Number(result.last_insert_rowid ?? 0),
+          });
+        }
+        await bound.exec('COMMIT');
+        await session.pipeline([]).catch(() => {});
+        return results;
+      } catch (err) {
+        try {
+          await bound.exec('ROLLBACK');
+          await session.pipeline([]).catch(() => {});
+        } catch {
+          /* the original error is the interesting one */
+        }
+        throw err;
+      }
     },
 
     /**

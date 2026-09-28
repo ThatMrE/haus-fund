@@ -120,7 +120,12 @@ async function seed({ reset = false } = {}) {
                          'redemptions', 'digests', 'agent_runs', 'items', 'users']) {
       await instance.exec(`DELETE FROM ${table}`);
     }
-    await instance.exec("DELETE FROM sqlite_sequence WHERE name = 'items'");
+    // Restart the id counter. Where it lives is the engine's business.
+    if (instance.kind === 'postgres') {
+      await instance.exec('ALTER TABLE items ALTER COLUMN id RESTART WITH 1');
+    } else {
+      await instance.exec("DELETE FROM sqlite_sequence WHERE name = 'items'");
+    }
   }
 
   if ((await instance.get('SELECT COUNT(*) AS n FROM users')).n > 0 && !reset) {
