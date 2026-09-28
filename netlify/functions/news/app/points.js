@@ -11,7 +11,7 @@
  * means a re-run of the awarding pass cannot pay twice for the same event, which
  * matters because that pass runs on a schedule.
  */
-import { getDb, transaction } from './db/index.js';
+import { getDb, batch } from './db/index.js';
 import { nowSeconds } from './util.js';
 
 /** What each kind of event is worth. */
@@ -60,21 +60,24 @@ export async function award({ userId, reason, itemId = null, points = null, note
   const delta = points ?? AWARDS[reason]?.points ?? 0;
   if (!delta) return 0;
 
-  return transaction(async (db) => {
-    const info = await db.run(
-      `INSERT OR IGNORE INTO points_ledger (user_id, delta, reason, item_id, note, created_at)
-       VALUES (?, ?, ?, ?, ?, ?)`,
-      userId,
-      delta,
-      reason,
-      itemId,
-      note,
-      nowSeconds(),
-    );
-    if (!info.changes) return 0;
-    await db.run('UPDATE users SET points = MAX(0, points + ?) WHERE id = ?', delta, userId);
-    return delta;
-  });
+  const [inserted] = await batch([
+    {
+      sql: `INSERT INTO points_ledger (user_id, delta, reason, item_id, note, created_at)
+            VALUES (?, ?, ?, ?, ?, ?)
+            ON CONFLICT DO NOTHING`,
+      params: [userId, delta, reason, itemId, note, nowSeconds()],
+    },
+    // Recompute rather than increment. The balance is a cache of the ledger, so
+    // deriving it is both correct when the insert was a no-op and self-healing
+    // if a balance ever drifts.
+    {
+      sql: `UPDATE users SET points =
+              (SELECT COALESCE(SUM(delta), 0) FROM points_ledger WHERE user_id = ?)
+            WHERE id = ?`,
+      params: [userId, userId],
+    },
+  ]);
+  return inserted.changes ? delta : 0;
 }
 
 /** Spend points. Refuses rather than letting a balance go negative. */
@@ -82,38 +85,48 @@ export async function redeem(userId, rewardKey, { note = null } = {}) {
   const reward = rewardByKey(rewardKey);
   if (!reward) return { ok: false, error: 'no such reward' };
 
-  return transaction(async (db) => {
-    const user = await db.get('SELECT points FROM users WHERE id = ?', userId);
-    if (!user) return { ok: false, error: 'no such user' };
-    if (user.points < reward.cost) {
-      return { ok: false, error: `That costs ${reward.cost} points; you have ${user.points}.` };
-    }
+  const user = await getDb().get('SELECT points FROM users WHERE id = ?', userId);
+  if (!user) return { ok: false, error: 'no such user' };
 
-    const now = nowSeconds();
-    await db.run(
-      `INSERT INTO points_ledger (user_id, delta, reason, item_id, note, created_at)
-       VALUES (?, ?, ?, NULL, ?, ?)`,
-      userId,
-      -reward.cost,
-      `redeem:${reward.key}`,
-      note,
-      now,
-    );
-    await db.run('UPDATE users SET points = points - ? WHERE id = ?', reward.cost, userId);
-    const info = await db.run(
-      `INSERT INTO redemptions (user_id, reward, cost, state, note, created_at)
-       VALUES (?, ?, ?, 'requested', ?, ?)`,
-      userId,
-      reward.key,
-      reward.cost,
-      note,
-      now,
-    );
-    return {
-      ok: true,
-      redemption: { id: Number(info.lastInsertRowid), reward, remaining: user.points - reward.cost },
-    };
-  });
+  const now = nowSeconds();
+  // Every write carries the affordability check, so the balance is re-tested
+  // inside the transaction rather than trusted from the read above: two
+  // redemptions racing cannot both succeed on one balance.
+  //
+  // The deduction goes last on purpose. It is the only statement that changes
+  // the balance, so while it runs last every guard still sees the balance the
+  // caller had, and either all three writes happen or none do.
+  const affordable = '(SELECT points FROM users WHERE id = ?) >= ?';
+  const [ledger, requested] = await batch([
+    {
+      sql: `INSERT INTO points_ledger (user_id, delta, reason, item_id, note, created_at)
+            SELECT ?, ?, ?, NULL, ?, ?
+            WHERE ${affordable}`,
+      params: [userId, -reward.cost, `redeem:${reward.key}`, note, now, userId, reward.cost],
+    },
+    {
+      sql: `INSERT INTO redemptions (user_id, reward, cost, state, note, created_at)
+            SELECT ?, ?, ?, 'requested', ?, ?
+            WHERE ${affordable}`,
+      params: [userId, reward.key, reward.cost, note, now, userId, reward.cost],
+    },
+    {
+      sql: `UPDATE users SET points = points - ? WHERE id = ? AND ${affordable}`,
+      params: [reward.cost, userId, userId, reward.cost],
+    },
+  ]);
+
+  if (!ledger.changes) {
+    return { ok: false, error: `That costs ${reward.cost} points; you have ${user.points}.` };
+  }
+  return {
+    ok: true,
+    redemption: {
+      id: Number(requested.lastInsertRowid),
+      reward,
+      remaining: user.points - reward.cost,
+    },
+  };
 }
 
 export async function setRedemptionState(id, state, { note = null } = {}) {

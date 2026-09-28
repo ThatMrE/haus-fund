@@ -46,6 +46,49 @@ export function wrapSqlite(db) {
     },
 
     /**
+     * A list of statements, applied in order inside one transaction.
+     *
+     * The interactive form below is the natural one here, but the hosted driver
+     * cannot hold a session open across requests, so anything that has to be
+     * atomic on both engines is written as a list. `{{LAST_ID}}` stands for the
+     * id the previous insert generated, which is the one value a list cannot
+     * otherwise carry forward.
+     */
+    async batch(statements) {
+      db.exec('BEGIN');
+      try {
+        const results = [];
+        let lastId = 0;
+        for (const statement of statements) {
+          const sql = String(statement.sql).replaceAll('{{LAST_ID}}', String(lastId));
+          const prepared = db.prepare(sql);
+          const params = statement.params ?? [];
+          const rows = /^\s*(SELECT|WITH)\b/i.test(sql) || /\bRETURNING\b/i.test(sql)
+            ? prepared.all(...params)
+            : [];
+          let changes = rows.length;
+          let insertedId = 0;
+          if (rows.length === 0) {
+            const info = prepared.run(...params);
+            changes = Number(info.changes);
+            insertedId = Number(info.lastInsertRowid);
+          }
+          if (insertedId) lastId = insertedId;
+          results.push({ rows, changes, lastInsertRowid: insertedId });
+        }
+        db.exec('COMMIT');
+        return results;
+      } catch (err) {
+        try {
+          db.exec('ROLLBACK');
+        } catch {
+          /* the original error is the interesting one */
+        }
+        throw err;
+      }
+    },
+
+    /**
      * Run `fn` against a transactional view of the store. SQLite gives us a
      * real BEGIN/COMMIT on the single connection.
      */

@@ -10,7 +10,7 @@
  * Trusted accounts — scouts and staff who have cleared review often enough —
  * skip the queue. Their posts are still reviewable after the fact.
  */
-import { getDb, transaction } from './db/index.js';
+import { getDb, batch } from './db/index.js';
 import { nowSeconds } from './util.js';
 import { award } from './points.js';
 
@@ -85,27 +85,22 @@ export async function approve(itemId, reviewerId, { note = null } = {}) {
   if (item.review_state === 'approved') return { ok: true, item, already: true };
 
   const now = nowSeconds();
-  await transaction(async (db) => {
-    await db.run(
-      `UPDATE items SET review_state = 'approved', reviewed_by = ?, reviewed_at = ?,
-              review_note = ?, created_at = ?
-       WHERE id = ?`,
-      reviewerId,
-      now,
-      note,
-      now,
-      itemId,
-    );
-    await db.run(
-      `UPDATE users SET trusted = CASE
-         WHEN (SELECT COUNT(*) FROM items
-               WHERE by = users.id AND review_state = 'approved' AND type = 'story') >= ?
-         THEN 1 ELSE trusted END
-       WHERE id = ?`,
-      TRUST_THRESHOLD,
-      item.by,
-    );
-  });
+  await batch([
+    {
+      sql: `UPDATE items SET review_state = 'approved', reviewed_by = ?, reviewed_at = ?,
+                   review_note = ?, created_at = ?
+            WHERE id = ?`,
+      params: [reviewerId, now, note, now, itemId],
+    },
+    {
+      sql: `UPDATE users SET trusted = CASE
+              WHEN (SELECT COUNT(*) FROM items
+                    WHERE by = users.id AND review_state = 'approved' AND type = 'story') >= ?
+              THEN 1 ELSE trusted END
+            WHERE id = ?`,
+      params: [TRUST_THRESHOLD, item.by],
+    },
+  ]);
 
   if (item.surfaced_by) {
     await award({ userId: item.surfaced_by, reason: 'surfaced-approved', itemId });

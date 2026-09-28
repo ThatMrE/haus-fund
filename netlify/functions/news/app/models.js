@@ -1,4 +1,4 @@
-import { getDb, transaction } from './db/index.js';
+import { getDb, batch } from './db/index.js';
 import { rankStories, composeFrontPage } from './rank.js';
 import { displayDomain, nowSeconds } from './util.js';
 
@@ -63,7 +63,7 @@ export async function createUser({
 
 export async function getUser(id) {
   if (!id) return null;
-  return getDb().get('SELECT * FROM users WHERE id = ? COLLATE NOCASE', id);
+  return getDb().get('SELECT * FROM users WHERE lower(id) = lower(?)', id);
 }
 
 export async function updateUser(id, { about, email }) {
@@ -99,7 +99,12 @@ export async function userStats(id) {
 }
 
 async function bumpKarma(userId, delta) {
-  await getDb().run('UPDATE users SET karma = MAX(0, karma + ?) WHERE id = ?', delta, userId);
+  await getDb().run(
+    'UPDATE users SET karma = CASE WHEN karma + ? < 0 THEN 0 ELSE karma + ? END WHERE id = ?',
+    delta,
+    delta,
+    userId,
+  );
 }
 
 /* ------------------------------------------------------------------ items */
@@ -118,31 +123,36 @@ export async function createStory({
   reviewState = 'approved',
 }) {
   const now = nowSeconds();
-  return transaction(async (db) => {
-    const info = await db.run(
-      `INSERT INTO items
-         (type, by, created_at, title, url, domain, text, topic, kind, source,
-          agent, surfaced_by, channel, review_state, points)
-       VALUES ('story', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)`,
-      by,
-      now,
-      title,
-      url,
-      url ? displayDomain(url) : null,
-      text,
-      topic,
-      kind,
-      source,
-      agent,
-      surfacedBy ?? (source === 'human' ? by : null),
-      channel,
-      reviewState,
-    );
-    const id = Number(info.lastInsertRowid);
-    await db.run('UPDATE items SET story_id = ? WHERE id = ?', id, id);
-    await db.run('INSERT INTO votes (user_id, item_id, created_at) VALUES (?, ?, ?)', by, id, now);
-    return id;
-  });
+  const [inserted] = await batch([
+    {
+      sql: `INSERT INTO items
+              (type, by, created_at, title, url, domain, text, topic, kind, source,
+               agent, surfaced_by, channel, review_state, points)
+            VALUES ('story', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)`,
+      params: [
+        by,
+        now,
+        title,
+        url,
+        url ? displayDomain(url) : null,
+        text,
+        topic,
+        kind,
+        source,
+        agent,
+        surfacedBy ?? (source === 'human' ? by : null),
+        channel,
+        reviewState,
+      ],
+    },
+    // A story is its own thread root, which is only knowable once the id exists.
+    { sql: 'UPDATE items SET story_id = {{LAST_ID}} WHERE id = {{LAST_ID}}' },
+    {
+      sql: 'INSERT INTO votes (user_id, item_id, created_at) VALUES (?, {{LAST_ID}}, ?)',
+      params: [by, now],
+    },
+  ]);
+  return Number(inserted.lastInsertRowid);
 }
 
 export async function createComment({ by, parentId, text }) {
@@ -151,22 +161,22 @@ export async function createComment({ by, parentId, text }) {
   const storyId = parent.type === 'story' ? parent.id : parent.story_id;
   const depth = Math.min(parent.depth + (parent.type === 'story' ? 0 : 1), MAX_DEPTH);
   const now = nowSeconds();
-  return transaction(async (db) => {
-    const info = await db.run(
-      `INSERT INTO items (type, by, created_at, text, parent_id, story_id, depth, kind, points)
-       VALUES ('comment', ?, ?, ?, ?, ?, ?, 'comment', 1)`,
-      by,
-      now,
-      text,
-      parent.id,
-      storyId,
-      depth,
-    );
-    const id = Number(info.lastInsertRowid);
-    await db.run('UPDATE items SET comment_count = comment_count + 1 WHERE id = ?', storyId);
-    await db.run('INSERT INTO votes (user_id, item_id, created_at) VALUES (?, ?, ?)', by, id, now);
-    return id;
-  });
+  const [inserted] = await batch([
+    {
+      sql: `INSERT INTO items (type, by, created_at, text, parent_id, story_id, depth, kind, points)
+            VALUES ('comment', ?, ?, ?, ?, ?, ?, 'comment', 1)`,
+      params: [by, now, text, parent.id, storyId, depth],
+    },
+    {
+      sql: 'UPDATE items SET comment_count = comment_count + 1 WHERE id = ?',
+      params: [storyId],
+    },
+    {
+      sql: 'INSERT INTO votes (user_id, item_id, created_at) VALUES (?, {{LAST_ID}}, ?)',
+      params: [by, now],
+    },
+  ]);
+  return Number(inserted.lastInsertRowid);
 }
 
 export async function getItem(id) {
@@ -197,15 +207,15 @@ export async function editItem(id, { title, text, url, topic }) {
 export async function deleteItem(id) {
   const item = await getItem(id);
   if (!item) return false;
-  await transaction(async (db) => {
-    await db.run('UPDATE items SET deleted = 1 WHERE id = ?', id);
-    if (item.type === 'comment' && item.story_id) {
-      await db.run(
-        'UPDATE items SET comment_count = MAX(0, comment_count - 1) WHERE id = ?',
-        item.story_id,
-      );
-    }
-  });
+  await batch([
+    { sql: 'UPDATE items SET deleted = 1 WHERE id = ?', params: [id] },
+    ...(item.type === 'comment' && item.story_id
+      ? [{
+          sql: 'UPDATE items SET comment_count = CASE WHEN comment_count - 1 < 0 THEN 0 ELSE comment_count - 1 END WHERE id = ?',
+          params: [item.story_id],
+        }]
+      : []),
+  ]);
   return true;
 }
 
@@ -246,18 +256,16 @@ export async function vote(userId, itemId) {
     return { ok: false, error: 'you cannot upvote your own post', points: item.points };
   }
   if (await hasVoted(userId, itemId)) return { ok: true, points: item.points, voted: true };
-  const points = await transaction(async (db) => {
-    await db.run(
-      'INSERT INTO votes (user_id, item_id, created_at) VALUES (?, ?, ?)',
-      userId,
-      itemId,
-      nowSeconds(),
-    );
-    await db.run('UPDATE items SET points = points + 1 WHERE id = ?', itemId);
-    await db.run('UPDATE users SET karma = karma + 1 WHERE id = ?', item.by);
-    return (await db.get('SELECT points FROM items WHERE id = ?', itemId)).points;
-  });
-  return { ok: true, points, voted: true };
+  const results = await batch([
+    {
+      sql: 'INSERT INTO votes (user_id, item_id, created_at) VALUES (?, ?, ?)',
+      params: [userId, itemId, nowSeconds()],
+    },
+    { sql: 'UPDATE items SET points = points + 1 WHERE id = ?', params: [itemId] },
+    { sql: 'UPDATE users SET karma = karma + 1 WHERE id = ?', params: [item.by] },
+    { sql: 'SELECT points FROM items WHERE id = ?', params: [itemId] },
+  ]);
+  return { ok: true, points: results.at(-1).rows[0].points, voted: true };
 }
 
 /** Remove an upvote. The submitter's own seed vote cannot be removed. */
@@ -268,13 +276,16 @@ export async function unvote(userId, itemId) {
     return { ok: false, error: 'you cannot unvote your own post', points: item.points };
   }
   if (!(await hasVoted(userId, itemId))) return { ok: true, points: item.points, voted: false };
-  const points = await transaction(async (db) => {
-    await db.run('DELETE FROM votes WHERE user_id = ? AND item_id = ?', userId, itemId);
-    await db.run('UPDATE items SET points = MAX(0, points - 1) WHERE id = ?', itemId);
-    return (await db.get('SELECT points FROM items WHERE id = ?', itemId)).points;
-  });
+  const results = await batch([
+    { sql: 'DELETE FROM votes WHERE user_id = ? AND item_id = ?', params: [userId, itemId] },
+    {
+      sql: 'UPDATE items SET points = CASE WHEN points - 1 < 0 THEN 0 ELSE points - 1 END WHERE id = ?',
+      params: [itemId],
+    },
+    { sql: 'SELECT points FROM items WHERE id = ?', params: [itemId] },
+  ]);
   await bumpKarma(item.by, -1);
-  return { ok: true, points, voted: false };
+  return { ok: true, points: results.at(-1).rows[0].points, voted: false };
 }
 
 /* ------------------------------------------------------------------ flags */
@@ -301,25 +312,27 @@ export async function toggleFlag(userId, itemId) {
   const item = await getItem(itemId);
   if (!item || item.deleted) return { ok: false, error: 'no such item' };
   const flagged = await hasFlagged(userId, itemId);
-  await transaction(async (db) => {
-    if (flagged) {
-      await db.run('DELETE FROM flags WHERE user_id = ? AND item_id = ?', userId, itemId);
-      await db.run('UPDATE items SET flag_count = MAX(0, flag_count - 1) WHERE id = ?', itemId);
-    } else {
-      await db.run(
-        'INSERT INTO flags (user_id, item_id, created_at) VALUES (?, ?, ?)',
-        userId,
-        itemId,
-        nowSeconds(),
-      );
-      await db.run('UPDATE items SET flag_count = flag_count + 1 WHERE id = ?', itemId);
-    }
-    await db.run(
-      'UPDATE items SET dead = CASE WHEN flag_count >= ? THEN 1 ELSE 0 END WHERE id = ?',
-      FLAG_THRESHOLD,
-      itemId,
-    );
-  });
+  await batch([
+    ...(flagged
+      ? [
+          { sql: 'DELETE FROM flags WHERE user_id = ? AND item_id = ?', params: [userId, itemId] },
+          {
+            sql: 'UPDATE items SET flag_count = CASE WHEN flag_count - 1 < 0 THEN 0 ELSE flag_count - 1 END WHERE id = ?',
+            params: [itemId],
+          },
+        ]
+      : [
+          {
+            sql: 'INSERT INTO flags (user_id, item_id, created_at) VALUES (?, ?, ?)',
+            params: [userId, itemId, nowSeconds()],
+          },
+          { sql: 'UPDATE items SET flag_count = flag_count + 1 WHERE id = ?', params: [itemId] },
+        ]),
+    {
+      sql: 'UPDATE items SET dead = CASE WHEN flag_count >= ? THEN 1 ELSE 0 END WHERE id = ?',
+      params: [FLAG_THRESHOLD, itemId],
+    },
+  ]);
   return { ok: true, flagged: !flagged };
 }
 
@@ -459,7 +472,7 @@ export async function byAgent(agent, { limit = PAGE_SIZE, offset = 0 } = {}) {
 export async function surfacedBy(userId, { limit = PAGE_SIZE, offset = 0 } = {}) {
   const items = await getDb().all(
     `SELECT ${STORY_COLUMNS} FROM items
-     WHERE type = 'story' AND surfaced_by = ? COLLATE NOCASE AND deleted = 0 AND ${PUBLIC}
+     WHERE type = 'story' AND lower(surfaced_by) = lower(?) AND deleted = 0 AND ${PUBLIC}
      ORDER BY created_at DESC LIMIT ? OFFSET ?`,
     userId,
     limit,
@@ -467,7 +480,7 @@ export async function surfacedBy(userId, { limit = PAGE_SIZE, offset = 0 } = {})
   );
   const { total } = await getDb().get(
     `SELECT COUNT(*) AS total FROM items
-     WHERE type = 'story' AND surfaced_by = ? COLLATE NOCASE AND deleted = 0 AND ${PUBLIC}`,
+     WHERE type = 'story' AND lower(surfaced_by) = lower(?) AND deleted = 0 AND ${PUBLIC}`,
     userId,
   );
   return { items, total };
@@ -518,14 +531,14 @@ export async function topInWindow({ from, to, limit = 10 }) {
 export async function userSubmissions(userId, { limit = PAGE_SIZE, offset = 0 } = {}) {
   const items = await getDb().all(
     `SELECT ${STORY_COLUMNS} FROM items
-     WHERE type = 'story' AND by = ? COLLATE NOCASE AND deleted = 0
+     WHERE type = 'story' AND lower(by) = lower(?) AND deleted = 0
      ORDER BY created_at DESC LIMIT ? OFFSET ?`,
     userId,
     limit,
     offset,
   );
   const { total } = await getDb().get(
-    "SELECT COUNT(*) AS total FROM items WHERE type = 'story' AND by = ? COLLATE NOCASE AND deleted = 0",
+    "SELECT COUNT(*) AS total FROM items WHERE type = 'story' AND lower(by) = lower(?) AND deleted = 0",
     userId,
   );
   return { items, total };
@@ -534,14 +547,14 @@ export async function userSubmissions(userId, { limit = PAGE_SIZE, offset = 0 } 
 export async function userComments(userId, { limit = PAGE_SIZE, offset = 0 } = {}) {
   const items = await getDb().all(
     `SELECT ${STORY_COLUMNS} FROM items
-     WHERE type = 'comment' AND by = ? COLLATE NOCASE AND deleted = 0
+     WHERE type = 'comment' AND lower(by) = lower(?) AND deleted = 0
      ORDER BY created_at DESC LIMIT ? OFFSET ?`,
     userId,
     limit,
     offset,
   );
   const { total } = await getDb().get(
-    "SELECT COUNT(*) AS total FROM items WHERE type = 'comment' AND by = ? COLLATE NOCASE AND deleted = 0",
+    "SELECT COUNT(*) AS total FROM items WHERE type = 'comment' AND lower(by) = lower(?) AND deleted = 0",
     userId,
   );
   return { items, total };
@@ -562,9 +575,13 @@ export async function recentComments({ limit = PAGE_SIZE, offset = 0 } = {}) {
 }
 
 export async function search(query, { limit = PAGE_SIZE, offset = 0 } = {}) {
-  const needle = `%${String(query).trim().replace(/[%_\\]/g, (c) => `\\${c}`)}%`;
+  const needle = `%${String(query).trim().toLowerCase().replace(/[%_\\]/g, (c) => `\\${c}`)}%`;
+  // lower() on both sides, because LIKE is case-insensitive in SQLite and
+  // case-sensitive in Postgres — without this, search quietly stops matching
+  // on the hosted database.
   const where = `deleted = 0 AND dead = 0 AND ${PUBLIC} AND (
-      title LIKE ? ESCAPE '\\' OR text LIKE ? ESCAPE '\\' OR domain LIKE ? ESCAPE '\\'
+      lower(title) LIKE ? ESCAPE '\\' OR lower(text) LIKE ? ESCAPE '\\'
+      OR lower(domain) LIKE ? ESCAPE '\\'
     )`;
   const items = await getDb().all(
     `SELECT ${STORY_COLUMNS} FROM items WHERE ${where}
