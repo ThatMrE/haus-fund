@@ -557,6 +557,10 @@ whole point of writing it down.
 
 ## 7. The surfaces
 
+> Wireframes: [Figma — Homeroom intro engine](https://www.figma.com/design/MN5KC0wP7FRGAmeaTNPl51).
+> The page **Workflow — as built** shows what shipped (§20); the first page
+> still draws the routes below, which describe the original shortlist design.
+
 ### 7.1 Member surfaces
 
 | Route | What it is |
@@ -1326,3 +1330,33 @@ Addresses are therefore stored encrypted (AES-256-GCM under a key derived from
 spent, which is the §9 rule with the one concession §9 itself anticipated —
 except that the escape hatch is the default, because there is no address to
 re-fetch at send time.
+
+### 20.6 The wireframe, and two things it turned up
+
+The Figma file linked in §7 has a page, **Workflow — as built**, drawn from
+the code rather than from this document. It is one swimlane of who does what —
+member, steward, target, and the guardrails underneath — followed by the seven
+screens those lanes touch (M1–M3, S1–S2, T1–T2), each with the reasoning
+beside it. The earlier shortlist flow is kept, marked superseded.
+
+Drawing it surfaced two places where the copy promises more than the state
+machine guarantees. Neither is fixed here; both are design questions first.
+
+- **A yes reads as "introduced" before anything is introduced.**
+  `memberView()` maps `agreed` to `introduced`, so the member sees the green
+  word the moment the target says yes, while the introduction itself still
+  waits on a steward pressing Send. If that stalls, the member is told they
+  were introduced and has nothing in their inbox. The steward page's
+  stuck-after-yes alarm is the only thing that catches it. The in-app
+  notification already has it right — "an introduction is on its way" — so
+  the fix is for the requests page to say the same for `agreed` and keep
+  "introduced" for `introduced`. That is safe to show: it only ever moves on
+  a yes.
+- **The target is told "Sent" when nothing has been sent.** The yes page says
+  the introduction "is going out now", but it is queued for a steward, not
+  sent. Same root, same alarm. Softer copy ("We will introduce you shortly")
+  would be honest without changing the flow.
+
+One visual proposal, not yet in the code: on the target's page, "Never ask me
+about this again" is drawn with the danger style, because it is the one answer
+that cannot be undone from any UI.
