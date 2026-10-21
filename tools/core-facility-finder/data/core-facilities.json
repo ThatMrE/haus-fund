@@ -1,7 +1,7 @@
 {
  "schema": 1,
  "generated_by": "scripts/build_dataset.py",
- "count": 1099,
+ "count": 1098,
  "techniques": [
   "analytics",
   "animal models",
@@ -482,26 +482,6 @@
     "Transmission Electron Microscopy"
    ],
    "notes": "Core provides expertise in optical microscopy, electron microscopy, and image analysis for neuroscience research. The platform is open to all researchers. Offers access to advanced technologies, including electron microscopy, confocal microscopy, two-photon imaging, and super-resolution microscopy.",
-   "source": "core-marketplace"
-  },
-  {
-   "id": "7151b1",
-   "facility": "Facility Name",
-   "institution": "Institution Name",
-   "city": "City",
-   "region": "State",
-   "region_label": "region",
-   "country": "",
-   "continent": "Unknown",
-   "group": null,
-   "access": "unknown",
-   "url": "https://Website",
-   "rrid": "Facility RRID",
-   "techniques": [],
-   "services_raw": [
-    "Services"
-   ],
-   "notes": "Description",
    "source": "core-marketplace"
   },
   {
@@ -8500,7 +8480,7 @@
    "continent": "North America",
    "group": null,
    "access": "unknown",
-   "url": "https://www.bidmc.org/research/core-facilities/genomics-proteomics-corehttps://www.bidmc.org/research/core-facilities/genomics-proteomics-core",
+   "url": "https://www.bidmc.org/research/core-facilities/genomics-proteomics-core",
    "rrid": "RRID:SCR_025689",
    "techniques": [
     "bioinformatics",
@@ -26368,7 +26348,7 @@
    "continent": "North America",
    "group": null,
    "access": "unknown",
-   "url": "https://www,cpl.med.miami.edu",
+   "url": "https://www.cpl.med.miami.edu",
    "rrid": "RRID:SCR_017822",
    "techniques": [
     "clinical assays"

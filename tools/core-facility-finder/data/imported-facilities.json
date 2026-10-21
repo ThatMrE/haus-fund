@@ -3,7 +3,7 @@
  "generated_by": "scripts/import_marketplace.py",
  "source": "Core Marketplace tab, Labs workbook (RRIDs from SciCrunch)",
  "source_rows": 832,
- "count": 832,
+ "count": 831,
  "facilities": [
   {
    "facility": "AU-FACS Core Facility",
@@ -379,7 +379,7 @@
    "city": "Boston",
    "region": "MA",
    "country": "United States",
-   "url": "https://www.bidmc.org/research/core-facilities/genomics-proteomics-corehttps://www.bidmc.org/research/core-facilities/genomics-proteomics-core",
+   "url": "https://www.bidmc.org/research/core-facilities/genomics-proteomics-core",
    "rrid": "RRID:SCR_025689",
    "techniques": [
     "bioinformatics",
@@ -3884,20 +3884,6 @@
     "Proteomics"
    ],
    "notes": "The Sanford-Burnham Proteomics Facility provides state-of-the-art mass spectrometry-based proteomics services with methods tailored to the needs of scientific investigators for routine mass spectrometric analysis of peptides and proteins, identification of novel proteins, characterization of post-translational..."
-  },
-  {
-   "facility": "Facility Name",
-   "institution": "Institution Name",
-   "city": "City",
-   "region": "State",
-   "country": "",
-   "url": "https://Website",
-   "rrid": "Facility RRID",
-   "techniques": [],
-   "services_raw": [
-    "Services"
-   ],
-   "notes": "Description"
   },
   {
    "facility": "Advanced Microscopy Applications Unit (ADMiRA)",
@@ -15578,7 +15564,7 @@
    "city": "Miami",
    "region": "FL",
    "country": "United States",
-   "url": "https://www,cpl.med.miami.edu",
+   "url": "https://www.cpl.med.miami.edu",
    "rrid": "RRID:SCR_017822",
    "techniques": [
     "clinical assays"

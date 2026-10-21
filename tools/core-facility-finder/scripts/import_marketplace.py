@@ -175,6 +175,20 @@ def resolve_country(stated: str, url: str) -> tuple[str, str]:
     return COUNTRY_ALIASES.get(low, v), "sheet"
 
 
+def is_header_row(r: dict) -> bool:
+    """True for a header line repeated inside the data.
+
+    The export is several sheets concatenated, so the column header recurs
+    partway down the file. Such a row is not empty and not blank-URLed, so the
+    `not name or not url` filter below waves it through: the Website cell says
+    "Website", clean_url makes it "https://Website", and a phantom facility
+    called "Facility Name" ships with a dead link. Match on the cells naming
+    themselves rather than on a row number, which shifts with every re-export.
+    """
+    return ((r.get("Facility Name") or "").strip().lower() == "facility name"
+            and (r.get("Website") or "").strip().lower() == "website")
+
+
 def clean_url(u: str) -> str:
     u = (u or "").strip()
     if u and not u.lower().startswith(("http://", "https://")):
@@ -187,9 +201,12 @@ def build():
         raise SystemExit(f"missing {SRC} — export the Core Marketplace tab to it")
     rows = list(csv.DictReader(SRC.open(encoding="utf-8")))
     records, stats = [], {"tld_country": 0, "tld_corrected": 0,
-                          "no_country": 0, "no_techniques": 0}
+                          "no_country": 0, "no_techniques": 0, "header_rows": 0}
 
     for r in rows:
+        if is_header_row(r):
+            stats["header_rows"] += 1
+            continue
         name = (r.get("Facility Name") or "").strip()
         inst = (r.get("Institution Name") or "").strip() or name
         url = clean_url(r.get("Website"))
@@ -240,6 +257,7 @@ def build():
           f" (of which {stats['tld_corrected']} overrode a wrong value)")
     print(f"  still no country:                  {stats['no_country']}")
     print(f"  no technique matched:              {stats['no_techniques']}")
+    print(f"  stray header rows skipped:         {stats['header_rows']}")
 
 
 if __name__ == "__main__":

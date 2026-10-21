@@ -145,7 +145,6 @@ function footer(ctx) {
   <div class="wrap">
     <a href="/homeroom/search">Search</a>
     <a href="/homeroom/settings">Settings</a>
-    <a href="/homeroom/saved">Saved</a>
     <a href="/homeroom/jobs">Jobs</a>
     <a href="/homeroom/intros">Intros</a>
     <a href="/homeroom/publish">Publish to news</a>
