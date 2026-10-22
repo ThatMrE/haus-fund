@@ -176,13 +176,14 @@ export function introAskPage(ctx, { person, error = null, values = {} }) {
 /**
  * A member's own requests.
  *
- * Every row is a `memberView()`, so the four stages below are the complete
+ * Every row is a `memberView()`, so the stages below are the complete
  * vocabulary. "Still open" is what a member sees when the target said no, when
  * the target said nothing, and when a steward declined to forward it, and it
  * is honest: the ask is still open and a steward is still on it.
  */
 const STAGES = {
   introduced: ['introduced', 'ok'],
+  'on its way': ['said yes — introduction on its way', 'ok'],
   'still open': ['still open', ''],
   withdrawn: ['withdrawn', ''],
 };
@@ -191,8 +192,8 @@ export function introRequestsPage(ctx, { requests, outcomes = {} }) {
   return html`<div class="pagehead">
     <div>
       <h1>Your introduction requests</h1>
-      <p class="lede">Outside the house. A request reads as still open until an introduction
-        happens, whatever is going on behind it. We never report back on the person you named —
+      <p class="lede">Outside the house. A request reads as still open until the person says
+        yes, whatever is going on behind it. We never report back on the person you named —
         that is what lets them answer honestly, and it is the reason any of them answer.</p>
     </div>
     <a class="btn ghost" href="/homeroom/intros/search">Search the network</a>
@@ -280,7 +281,9 @@ export function introPermissionPage({ request, member, token, connector }) {
 
 export function introAnsweredPage({ decision }) {
   const copy = {
-    yes: ['Sent', 'The introduction is going out now with both of you on it. Nothing else is needed from you.'],
+    // A steward still has to press Send, so this promises the introduction,
+    // not that it has already gone.
+    yes: ['Thank you', 'We will introduce you shortly, with both of you on the same email. Nothing else is needed from you.'],
     no: ['Noted', 'We have closed it. They are told the ask is still open, not that you said no, and we will not ask you about this one again.'],
     never: ['Done', 'You are off the list. Nobody at Haus will be shown your name for an introduction again.'],
   }[decision] || ['Done', 'Nothing else is needed from you.'];

@@ -557,6 +557,10 @@ whole point of writing it down.
 
 ## 7. The surfaces
 
+> Wireframes: [Figma — Homeroom intro engine](https://www.figma.com/design/MN5KC0wP7FRGAmeaTNPl51).
+> The page **Workflow — as built** shows what shipped (§20); the first page
+> still draws the routes below, which describe the original shortlist design.
+
 ### 7.1 Member surfaces
 
 | Route | What it is |
@@ -1326,3 +1330,34 @@ Addresses are therefore stored encrypted (AES-256-GCM under a key derived from
 spent, which is the §9 rule with the one concession §9 itself anticipated —
 except that the escape hatch is the default, because there is no address to
 re-fetch at send time.
+
+### 20.6 The wireframe, and two things it turned up
+
+The Figma file linked in §7 has a page, **Workflow — as built**, drawn from
+the code rather than from this document. It is one swimlane of who does what —
+member, steward, target, and the guardrails underneath — followed by the seven
+screens those lanes touch (M1–M3, S1–S2, T1–T2), each with the reasoning
+beside it. The earlier shortlist flow is kept, marked superseded.
+
+Drawing it surfaced two places where the copy promised more than the state
+machine guaranteed. Both are now fixed.
+
+- **A yes read as "introduced" before anything was introduced.**
+  `memberView()` mapped `agreed` to `introduced`, so the member saw the green
+  word the moment the target said yes, while the introduction itself still
+  waited on a steward pressing Send. If that stalled, the member was told they
+  had been introduced with nothing in their inbox. `agreed` now has its own
+  stage, `on its way`, rendered as "said yes — introduction on its way", which
+  matches the in-app notification. "Introduced", and the outcome form, wait
+  for `introduced`. Showing the yes is safe: it only ever moves on a yes, so
+  §20.2's argument does not apply to it.
+- **The target was told "Sent" when nothing had been sent.** The yes page now
+  reads "We will introduce you shortly", because the introduction is queued
+  for a steward, not sent.
+
+The stuck-after-yes alarm on the steward page is still what catches a yes
+that never goes out; the copy no longer hides it from the member meanwhile.
+
+One visual proposal, not yet in the code: on the target's page, "Never ask me
+about this again" is drawn with the danger style, because it is the one answer
+that cannot be undone from any UI.
