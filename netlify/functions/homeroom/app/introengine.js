@@ -667,12 +667,16 @@ export async function expireStale(now = nowSeconds()) {
  * say yes to avoid the awkwardness, and an extracted yes is worse than no
  * introduction at all.
  *
- * So there are exactly three things a member is ever told:
+ * So there are exactly four things a member is ever told:
  *
- *   still open   from the moment they ask until an introduction happens. It
+ *   still open   from the moment they ask until the person says yes. It
  *                covers waiting on a steward, waiting on the target, a no, a
  *                silence, and a steward who decided not to forward it.
- *   introduced   a yes, and the mail has gone.
+ *   on its way   the person said yes and a steward has not sent the mail yet.
+ *                Safe to show, because it only ever moves on a yes — and
+ *                "introduced" here would be a promise with nothing in their
+ *                inbox if the send stalls.
+ *   introduced   the mail has gone.
  *   withdrawn    the member pulled out.
  *
  * "Still open" is honest about the ask rather than vague about the person: the
@@ -687,9 +691,10 @@ export async function expireStale(now = nowSeconds()) {
  * months later in an endpoint nobody re-checked.
  */
 export function memberView(request) {
-  const stage = ['agreed', 'introduced'].includes(request.status) ? 'introduced'
-    : (request.member_closed || request.status === 'withdrawn') ? 'withdrawn'
-      : 'still open';
+  const stage = request.status === 'introduced' ? 'introduced'
+    : request.status === 'agreed' ? 'on its way'
+      : (request.member_closed || request.status === 'withdrawn') ? 'withdrawn'
+        : 'still open';
   return {
     id: request.id,
     name: request.name,

@@ -1339,23 +1339,24 @@ member, steward, target, and the guardrails underneath — followed by the seven
 screens those lanes touch (M1–M3, S1–S2, T1–T2), each with the reasoning
 beside it. The earlier shortlist flow is kept, marked superseded.
 
-Drawing it surfaced two places where the copy promises more than the state
-machine guarantees. Neither is fixed here; both are design questions first.
+Drawing it surfaced two places where the copy promised more than the state
+machine guaranteed. Both are now fixed.
 
-- **A yes reads as "introduced" before anything is introduced.**
-  `memberView()` maps `agreed` to `introduced`, so the member sees the green
-  word the moment the target says yes, while the introduction itself still
-  waits on a steward pressing Send. If that stalls, the member is told they
-  were introduced and has nothing in their inbox. The steward page's
-  stuck-after-yes alarm is the only thing that catches it. The in-app
-  notification already has it right — "an introduction is on its way" — so
-  the fix is for the requests page to say the same for `agreed` and keep
-  "introduced" for `introduced`. That is safe to show: it only ever moves on
-  a yes.
-- **The target is told "Sent" when nothing has been sent.** The yes page says
-  the introduction "is going out now", but it is queued for a steward, not
-  sent. Same root, same alarm. Softer copy ("We will introduce you shortly")
-  would be honest without changing the flow.
+- **A yes read as "introduced" before anything was introduced.**
+  `memberView()` mapped `agreed` to `introduced`, so the member saw the green
+  word the moment the target said yes, while the introduction itself still
+  waited on a steward pressing Send. If that stalled, the member was told they
+  had been introduced with nothing in their inbox. `agreed` now has its own
+  stage, `on its way`, rendered as "said yes — introduction on its way", which
+  matches the in-app notification. "Introduced", and the outcome form, wait
+  for `introduced`. Showing the yes is safe: it only ever moves on a yes, so
+  §20.2's argument does not apply to it.
+- **The target was told "Sent" when nothing had been sent.** The yes page now
+  reads "We will introduce you shortly", because the introduction is queued
+  for a steward, not sent.
+
+The stuck-after-yes alarm on the steward page is still what catches a yes
+that never goes out; the copy no longer hides it from the member meanwhile.
 
 One visual proposal, not yet in the code: on the target's page, "Never ask me
 about this again" is drawn with the danger style, because it is the one answer

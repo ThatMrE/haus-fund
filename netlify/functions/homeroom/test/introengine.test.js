@@ -642,6 +642,32 @@ test('the target page needs no account and every answer is a POST', async () => 
   const answered = await anon(`/homeroom/i/${sent.token}/yes`, form({}));
   assert.equal(answered.status, 200);
   assert.equal((await intro.getRequest(requestId)).status, 'agreed');
+  // A steward still has to press Send, so the page must not claim it went.
+  const thanks = await answered.text();
+  assert.match(thanks, /introduce you shortly/);
+  assert.ok(!/going out now|<h1>Sent<\/h1>/.test(thanks), 'a yes is not a sent introduction');
+});
+
+test('a yes reads as on its way until the introduction is actually sent', async () => {
+  const people = await searchAndPeople();
+  const who = await member();
+  const requestId = await requestFor(who.id, people[0]);
+  const sent = await intro.sendPermission({ requestId, actor: steward, address: 'yes@example.org' });
+  await intro.answer({ token: sent.token, decision: 'yes' });
+
+  const [agreed] = await intro.requestsFor(who.id);
+  assert.equal(agreed.stage, 'on its way');
+  assert.equal(agreed.introduced, false, 'no outcome form before the mail has gone');
+  let body = await (await who.call('/homeroom/intros/mine')).text();
+  assert.match(body, /introduction on its way/);
+  assert.ok(!body.includes('/outcome'), 'nothing to log yet');
+
+  const done = await intro.introduce({ requestId, actor: steward });
+  assert.ok(done.ok);
+  const [introduced] = await intro.requestsFor(who.id);
+  assert.equal(introduced.stage, 'introduced');
+  body = await (await who.call('/homeroom/intros/mine')).text();
+  assert.ok(body.includes(`/homeroom/intros/mine/${requestId}/outcome`));
 });
 
 test('an expired or unknown token is a dead end, not an error page', async () => {
