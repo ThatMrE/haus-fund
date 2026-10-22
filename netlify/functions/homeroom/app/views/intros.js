@@ -271,7 +271,7 @@ export function introPermissionPage({ request, member, token, connector }) {
     </form>
 
     <form method="post" action="/homeroom/i/${token}/never" class="stack">
-      <button class="btn ghost" type="submit">Never ask me about this again</button>
+      <button class="btn danger" type="submit">Never ask me about this again</button>
     </form>
 
     <p class="mono dim tiny">No is a normal answer and costs you nothing. We will not chase, we do

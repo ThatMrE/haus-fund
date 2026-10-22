@@ -1358,6 +1358,7 @@ machine guaranteed. Both are now fixed.
 The stuck-after-yes alarm on the steward page is still what catches a yes
 that never goes out; the copy no longer hides it from the member meanwhile.
 
-One visual proposal, not yet in the code: on the target's page, "Never ask me
-about this again" is drawn with the danger style, because it is the one answer
-that cannot be undone from any UI.
+On the target's page, "Never ask me about this again" uses the danger style
+(`.btn.danger`: outlined in the error red, not filled), because it is the one
+answer that cannot be undone from any UI. Outlined rather than filled so it
+reads as serious without becoming the button the page leans towards.
