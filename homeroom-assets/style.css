@@ -260,6 +260,10 @@ fieldset.checks, .checks { border: 1px solid var(--border-1); border-radius: var
 .btn:active { transform: translateY(1px); }
 .btn.ghost { background: transparent; color: var(--ink-1); border-color: var(--border-2); }
 .btn.ghost:hover { background: var(--canvas-2); color: var(--ink-1); border-color: var(--forest-2); }
+/* For the one answer that cannot be undone. Outlined, not filled: it should
+   read as serious, not as the button the page wants you to press. */
+.btn.danger { background: transparent; color: #A3352C; border-color: #A3352C; }
+.btn.danger:hover { background: #F9E9E7; color: #7A2820; border-color: #7A2820; }
 .btn.small { padding: 7px 14px; font-size: 12px; }
 .btn.wide { width: 100%; }
 .btn-nav { font-family: var(--font-mono); font-size: 11px; text-transform: uppercase;
