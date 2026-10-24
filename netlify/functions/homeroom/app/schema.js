@@ -908,6 +908,11 @@ export const ADDED_COLUMNS = [
   ['hr_mentors', 'airtable_id', "TEXT NOT NULL DEFAULT ''"],
   ['hr_mentors', 'confirmed_at', 'INTEGER'],
   ['hr_mentors', 'paused_until', 'INTEGER'],
+  // Intro engine: a note an agent leaves for the steward on a waiting request.
+  // Stewards only; memberView() and agentView() are allowlists, and only the
+  // second carries it.
+  ['hr_intro_requests', 'agent_note', "TEXT NOT NULL DEFAULT ''"],
+  ['hr_intro_requests', 'staged_at', 'INTEGER'],
   ['hr_mentors', 'synced_at', 'INTEGER'],
   // Phase 3: keeping the roster honest. `confirmed_at` is when they last said
   // yes to being here at all; the two nudge columns are how a silence becomes
