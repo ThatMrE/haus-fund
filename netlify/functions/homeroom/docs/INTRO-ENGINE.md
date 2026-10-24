@@ -659,6 +659,9 @@ any actor whose session is not an interactive steward session, and the API
 routes for `permission` and `introduce` return 405 with that sentence as the
 error body.
 
+> Built against the request model that shipped, not the shortlist model above —
+> see §20.7 for the four routes and how each maps onto the tool it replaces.
+
 The `/homeroom/api/intros/*` routes are additionally IP-rate-limited through the
 existing helper in `http.js` and are refused entirely when
 `HOMEROOM_INTRO_TOKEN` is unset — an unset token means the surface does not
@@ -1305,9 +1308,10 @@ which satisfies the constraint that mattered — no claim about the target that
 did not come off their own row — and needs no API key and no new failure
 direction. §8.2 remains the design for when it is wanted.
 
-§7.3's four JSON tools are not built either. The function they would call
-exists, with its preconditions enforced inside it rather than at the call site,
-which was the part that made the tool surface safe to add later.
+§7.3's four JSON tools were not built in the first pass. The function they
+would call exists, with its preconditions enforced inside it rather than at the
+call site, which was the part that made the tool surface safe to add later. It
+has since been added — see §20.7.
 
 ### 20.5 What the live API actually returns
 
@@ -1362,3 +1366,56 @@ On the target's page, "Never ask me about this again" uses the danger style
 (`.btn.danger`: outlined in the error red, not filled), because it is the one
 answer that cannot be undone from any UI. Outlined rather than filled so it
 reads as serious without becoming the button the page leans towards.
+
+### 20.7 The agent tool surface, mapped onto what shipped
+
+§7.3's four tools assume asks, candidates and stored blurb versions. None of
+those exist (§20.3, §20.4), so each tool is built as the closest thing that
+does, and named for what it does rather than what §7.3 called it. An agent
+reading a tool called `draft_blurb` would reasonably expect a stored, editable
+blurb; there isn't one.
+
+| §7.3 tool | Route | What it does |
+| --- | --- | --- |
+| `homeroom_list_asks` | `GET /homeroom/api/intros/requests` | The steward queue, recently closed, and `stats()`. |
+| `homeroom_source_candidates` | `POST /homeroom/api/intros/search` then `GET /homeroom/api/intros/search/:id` | Runs or reuses a cached search, then polls it. Same 30-day cache and monthly credit budget as a member's search; suppressed people are dropped before the rows exist. |
+| `homeroom_draft_blurb` | `GET /homeroom/api/intros/requests/:id/draft` | The exact permission text a steward would send, built the way the compose screen builds it. The link reads `/homeroom/i/PREVIEW`; a token only exists once a steward sends. Stores nothing. |
+| `homeroom_stage_introduction` | `POST /homeroom/api/intros/requests/:id/stage` | Writes `agent_note` and `staged_at` on a request still in `requested`. Changes no status, sends nothing. The steward sees the note above the address field in the queue. |
+
+`POST …/requests/:id/permission` and `POST …/requests/:id/introduce` exist only
+to return 405 with the sentence from §7.3, so a caller gets the reason rather
+than a 404 that reads like a typo. The real guarantee is underneath them:
+`sendPermission()` and `introduce()` refuse any actor that is not a steward,
+and the agent has no actor at all.
+
+The rest of §7.3 holds as written:
+
+- **Bearer token only.** `Authorization: Bearer $HOMEROOM_INTRO_TOKEN`, compared
+  in constant time over SHA-256 digests. A session cookie never authenticates
+  these routes — the dispatcher skips the session check for them entirely — so
+  a signed-in steward's browser cannot be made to call them by another page.
+- **Off means absent.** With `HOMEROOM_INTRO_ENABLED` off or the token unset,
+  every route answers 404.
+- **Rate-limited** at 60 requests a minute per IP, on top of the app-wide
+  limits.
+
+The agent's view of a request is an allowlist, `agentView()`, for the same
+reason `memberView()` is one. It never carries the address in either form, the
+answer token, the target's own words (`answer_note`) or a steward's refusal
+note. An agent working for a steward does not need them, and its transcript is
+one more place they would end up. The agent note itself is stewards only:
+`memberView()` does not carry it, and the test asserts the member's rendered
+page does not either.
+
+A note can be replaced while the request waits on a steward, and is frozen once
+it moves on, so the audit trail records what the steward was looking at when
+they decided. Every stage is logged with `actor_kind = 'agent'`, which the
+event table's CHECK constraint already allowed.
+
+```sh
+curl -s -H "Authorization: Bearer $HOMEROOM_INTRO_TOKEN" https://haus.fund/homeroom/api/intros/requests
+
+curl -s -X POST -H "Authorization: Bearer $HOMEROOM_INTRO_TOKEN" -H 'content-type: application/json' \
+  -d '{"note":"Strong fit: led the exact GRAS path. Alec Brewer is the warmer mutual."}' \
+  https://haus.fund/homeroom/api/intros/requests/42/stage
+```

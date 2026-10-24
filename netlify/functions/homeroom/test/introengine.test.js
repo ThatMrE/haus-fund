@@ -66,6 +66,8 @@ after(() => {
 const SEARCH_ID = '5a2a7a05-67af-4a92-8b75-fb383a7d2687';
 let searchState = 'COMPLETED';
 let outage = false;
+/* Every message that reached the mail provider. The agent surface must never move it. */
+let mailCalls = 0;
 
 const PAYLOAD = () => ({
   id: SEARCH_ID,
@@ -121,7 +123,7 @@ globalThis.fetch = async (input, init) => {
     return realFetch(input, init);
   }
   if (outage) throw new Error('network');
-  if (url.includes('api.resend.com')) return new Response('{}', { status: 200 });
+  if (url.includes('api.resend.com')) { mailCalls += 1; return new Response('{}', { status: 200 }); }
   if (url.endsWith('/v1/usage')) {
     return new Response(JSON.stringify({ balance_credits: 44, has_credits: true }), { status: 200 });
   }
@@ -137,6 +139,7 @@ globalThis.fetch = async (input, init) => {
 beforeEach(() => {
   searchState = 'COMPLETED';
   outage = false;
+  delete process.env.HOMEROOM_INTRO_TOKEN;
   resetRateLimits();
   const db = getDb();
   for (const table of ['hr_intro_events', 'hr_intro_outcomes', 'hr_intro_cooldowns',
@@ -767,4 +770,188 @@ test('the person hash is stable and reveals nothing', async () => {
   assert.equal(hs.personHash('person-one'), hs.personHash('person-one'));
   assert.notEqual(hs.personHash('person-one'), hs.personHash('person-two'));
   assert.ok(!hs.personHash('person-one').includes('person'));
+});
+
+/* ===================================================== the agent surface */
+
+/*
+ * §7.3: a token-authenticated JSON surface an agent can drive. The assertions
+ * that matter are the negative ones — a steward's cookie does not open it, it
+ * never carries an address or a target's words, and no call on it moves a
+ * request past `requested` or reaches the mail provider.
+ */
+
+const AGENT_TOKEN = 'agent-test-token';
+
+function api(path, { method = 'GET', body, token = AGENT_TOKEN, headers = {} } = {}) {
+  const h = { ...headers };
+  if (token) h.authorization = `Bearer ${token}`;
+  if (body !== undefined) h['content-type'] = 'application/json';
+  return fetch(base + path, { method, headers: h, body: body === undefined ? undefined : JSON.stringify(body) });
+}
+
+test('the agent surface does not exist until a token is set, and only the token opens it', async () => {
+  const people = await searchAndPeople();
+  const requestId = await requestFor(await user('agent-auth'), people[0]);
+  const paths = [
+    ['GET', '/homeroom/api/intros/requests'],
+    ['POST', '/homeroom/api/intros/search'],
+    ['GET', `/homeroom/api/intros/requests/${requestId}/draft`],
+    ['POST', `/homeroom/api/intros/requests/${requestId}/stage`],
+  ];
+
+  for (const [method, path] of paths) {
+    const res = await api(path, { method, body: method === 'POST' ? {} : undefined });
+    assert.equal(res.status, 404, `${path} must not exist with no token configured`);
+  }
+
+  process.env.HOMEROOM_INTRO_TOKEN = AGENT_TOKEN;
+  assert.equal((await api('/homeroom/api/intros/requests', { token: '' })).status, 401);
+  assert.equal((await api('/homeroom/api/intros/requests', { token: 'wrong' })).status, 401);
+
+  // A signed-in steward's browser is not an agent. The cookie alone must not
+  // drive this surface, or any page could make a steward's browser call it.
+  const stewardSession = await member({ admin: true });
+  const viaCookie = await stewardSession.call('/homeroom/api/intros/requests');
+  assert.equal(viaCookie.status, 401);
+
+  assert.equal((await api('/homeroom/api/intros/requests')).status, 200);
+});
+
+test('the agent reads the queue without an address, a token or anybody\'s private words', async () => {
+  process.env.HOMEROOM_INTRO_TOKEN = AGENT_TOKEN;
+  const people = await searchAndPeople();
+  const id = await user('agent-reader');
+
+  const waiting = await requestFor(id, people[0]);
+  const asked = await requestFor(id, people[1]);
+  const sent = await intro.sendPermission({ requestId: asked, actor: steward, address: 'private@example.org' });
+  const declined = await requestFor(id, people[2]);
+  const sentC = await intro.sendPermission({ requestId: declined, actor: steward, address: 'other@example.org' });
+  await intro.answer({ token: sentC.token, decision: 'no', note: 'Too stretched this quarter.' });
+
+  const res = await api('/homeroom/api/intros/requests');
+  assert.equal(res.status, 200);
+  const body = await res.json();
+  assert.deepEqual(body.requests.map((r) => r.id).sort(), [waiting, asked].sort());
+  assert.ok(body.recentlyClosed.some((r) => r.id === declined && r.status === 'declined'));
+  assert.equal(body.stats.agentApi, true);
+
+  const raw = JSON.stringify(body);
+  for (const leak of ['private@example.org', 'other@example.org', sent.token, 'Too stretched',
+    'to_enc', 'to_hash', 'token_hash', 'answer_note', 'steward_note']) {
+    assert.ok(!raw.includes(leak), `the agent view must not carry ${leak}`);
+  }
+});
+
+test('the agent can search, and the search is cached, budgeted and logged as the agent', async () => {
+  process.env.HOMEROOM_INTRO_TOKEN = AGENT_TOKEN;
+  await intro.suppress(hs.personHash('person-three'));
+
+  const first = await api('/homeroom/api/intros/search', { method: 'POST', body: { query: 'GRAS self-affirmation consultants', force: true } });
+  assert.equal(first.status, 200);
+  const found = await first.json();
+  assert.equal(found.search.state, 'complete');
+  assert.deepEqual(found.people.map((p) => p.name), ['Branden Wolner', 'Sandra Perryman'],
+    'someone who said never is not in the list an agent sees either');
+  assert.ok(!JSON.stringify(found).includes('person_hash'));
+
+  const again = await (await api('/homeroom/api/intros/search', { method: 'POST', body: { query: 'GRAS self-affirmation consultants' } })).json();
+  assert.equal(again.cached, true);
+  assert.equal(again.search.id, found.search.id);
+
+  const polled = await (await api(`/homeroom/api/intros/search/${found.search.id}`)).json();
+  assert.equal(polled.people.length, 2);
+
+  const started = getDb().prepare("SELECT actor_kind FROM hr_intro_events WHERE event = 'search-started' ORDER BY id DESC LIMIT 1").get();
+  assert.equal(started.actor_kind, 'agent');
+
+  const short = await api('/homeroom/api/intros/search', { method: 'POST', body: { query: 'gras' } });
+  assert.equal(short.status, 422);
+  const empty = await api('/homeroom/api/intros/search', { method: 'POST', headers: { 'content-type': 'application/json' } });
+  assert.equal(empty.status, 422, 'an empty body is a short query, not a crash');
+  const garbled = await fetch(base + '/homeroom/api/intros/search', {
+    method: 'POST', body: '{not json',
+    headers: { authorization: `Bearer ${AGENT_TOKEN}`, 'content-type': 'application/json' },
+  });
+  assert.equal(garbled.status, 400);
+  assert.equal((await garbled.json()).ok, false);
+});
+
+test('the draft is the exact permission text, with no link until a steward sends', async () => {
+  process.env.HOMEROOM_INTRO_TOKEN = AGENT_TOKEN;
+  const people = await searchAndPeople();
+  const requestId = await requestFor(await user('agent-draft'), people[0]);
+
+  const res = await api(`/homeroom/api/intros/requests/${requestId}/draft`);
+  assert.equal(res.status, 200);
+  const draft = await res.json();
+  assert.equal(draft.subject, 'Quick one — worth an intro?');
+  assert.match(draft.text, /six weeks from a GRAS self-affirmation filing/);
+  assert.match(draft.text, /\/homeroom\/i\/PREVIEW/);
+  assert.match(draft.text, /never ask me again/i);
+
+  await intro.sendPermission({ requestId, actor: steward, address: 'them@example.org' });
+  assert.equal((await api(`/homeroom/api/intros/requests/${requestId}/draft`)).status, 409);
+  assert.equal((await api('/homeroom/api/intros/requests/99999/draft')).status, 404);
+});
+
+test('staging leaves a note for the steward and sends nothing', async () => {
+  process.env.HOMEROOM_INTRO_TOKEN = AGENT_TOKEN;
+  const people = await searchAndPeople();
+  const who = await member();
+  const requestId = await requestFor(who.id, people[0]);
+  const before = mailCalls;
+
+  const note = 'Strong fit: led the exact GRAS path. Alec Brewer is the warmer mutual.';
+  const res = await api(`/homeroom/api/intros/requests/${requestId}/stage`, { method: 'POST', body: { note } });
+  assert.equal(res.status, 200);
+  const staged = await res.json();
+  assert.equal(staged.request.status, 'requested', 'staging changes no status');
+  assert.equal(staged.request.agent_note, note);
+  assert.equal(mailCalls, before, 'staging reaches no mail provider');
+
+  // The steward sees it where they decide. The member never does.
+  const admin = await member({ admin: true });
+  const queuePage = await (await admin.call('/homeroom/stewards/intros')).text();
+  assert.ok(queuePage.includes('Alec Brewer is the warmer mutual'));
+  const mine = await (await who.call('/homeroom/intros/mine')).text();
+  assert.ok(!mine.includes('warmer mutual'), 'an agent note is stewards only');
+  assert.ok(!JSON.stringify(await intro.requestsFor(who.id)).includes('warmer mutual'));
+
+  const trail = await intro.eventsFor(requestId);
+  assert.ok(trail.some((e) => e.event === 'staged' && e.actor_kind === 'agent'));
+
+  assert.equal((await api(`/homeroom/api/intros/requests/${requestId}/stage`, { method: 'POST', body: { note: 'ok' } })).status, 422);
+  await intro.refuse({ requestId, actor: steward, note: 'Not now.' });
+  const late = await api(`/homeroom/api/intros/requests/${requestId}/stage`, { method: 'POST', body: { note } });
+  assert.equal(late.status, 409, 'a note is frozen once the request has moved on');
+});
+
+test('there is no agent path that sends a permission ask or an introduction', async () => {
+  process.env.HOMEROOM_INTRO_TOKEN = AGENT_TOKEN;
+  const people = await searchAndPeople();
+  const id = await user('agent-sender');
+  const waiting = await requestFor(id, people[0]);
+  const yes = await requestFor(id, people[1]);
+  const sent = await intro.sendPermission({ requestId: yes, actor: steward, address: 'yes@example.org' });
+  await intro.answer({ token: sent.token, decision: 'yes' });
+  const before = mailCalls;
+
+  for (const [requestId, action] of [[waiting, 'permission'], [yes, 'introduce']]) {
+    const res = await api(`/homeroom/api/intros/requests/${requestId}/${action}`, {
+      method: 'POST', body: { to: 'them@example.org' },
+    });
+    assert.equal(res.status, 405);
+    assert.match((await res.json()).error, /cannot take responsibility/);
+  }
+  assert.equal((await intro.getRequest(waiting)).status, 'requested');
+  assert.equal((await intro.getRequest(yes)).status, 'agreed');
+  assert.equal(mailCalls, before);
+
+  // And the engine itself refuses an actor that is not a steward, so a future
+  // route that forgets this cannot send either.
+  const asAgent = await intro.introduce({ requestId: yes, actor: null });
+  assert.equal(asAgent.ok, false);
+  assert.equal(asAgent.reason, 'not-steward');
 });

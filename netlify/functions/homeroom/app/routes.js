@@ -55,6 +55,9 @@ const LIMITS = {
   // A network search costs the house real credits, so this one is a budget
   // rather than an anti-abuse measure. Cached repeats do not reach it.
   introSearch: { limit: 10, windowMs: 60 * 60_000 },
+  // The agent surface, per IP. A skill polling a running search should never
+  // get near it; a script hammering the token should.
+  introApi: { limit: 60, windowMs: 60_000 },
 };
 
 /* ------------------------------------------------------------- plumbing */
@@ -1487,6 +1490,116 @@ async function introAuditHandler(ctx, { id }) {
   }), { title: 'Introduction trail' });
 }
 
+/* ------------------------------------------------------ the agent surface */
+
+/**
+ * /homeroom/api/intros/* — the §7.3 tool surface, for a Claude skill or an MCP
+ * server. Bearer-token only: a session cookie never authenticates here, so a
+ * signed-in steward's browser cannot be made to call it by another page.
+ *
+ * Off, unset or wrong, it answers the same way the rest of the API does — in
+ * JSON — and "off" and "unset" are both a 404, because a surface that is not
+ * switched on should not be discoverable.
+ */
+function introApi(fn) {
+  return async (ctx, params) => {
+    if (!intro.enabled() || !intro.agentToken()) {
+      return sendJson(ctx.res, { ok: false, error: 'not found' }, { status: 404 });
+    }
+    if (!rateLimit(`introapi:${ctx.ip}`, LIMITS.introApi)) {
+      return sendJson(ctx.res, { ok: false, error: 'slow down' }, { status: 429 });
+    }
+    if (!intro.agentAuthorized(ctx.req.headers.authorization)) {
+      return sendJson(ctx.res, { ok: false, error: 'unauthorized' },
+        { status: 401, headers: { 'www-authenticate': 'Bearer' } });
+    }
+    let fields = {};
+    if (ctx.req.method === 'POST') {
+      try {
+        ({ fields } = await readBody(ctx.req));
+      } catch (err) {
+        if (err?.status === 413) throw err;
+        return sendJson(ctx.res, { ok: false, error: 'That body is not valid JSON.' }, { status: 400 });
+      }
+    }
+    await fn(ctx, fields || {}, params);
+  };
+}
+
+const AGENT_CANNOT_SEND = 'An agent cannot send this. Gate 4 is a person taking responsibility for '
+  + 'spending the connector\'s credibility, and a token in an environment variable cannot take '
+  + 'responsibility. Stage the request and a steward will send it from /homeroom/stewards/intros.';
+
+/** homeroom_list_asks — the queue, and the numbers a steward sees. */
+async function introApiRequests(ctx) {
+  const queue = await intro.queue();
+  const closed = await intro.recentlyClosed({ limit: 20 });
+  sendJson(ctx.res, {
+    ok: true,
+    requests: queue.map(intro.agentView),
+    recentlyClosed: closed.map(intro.agentView),
+    stats: await intro.stats(),
+  });
+}
+
+/** homeroom_source_candidates, part one — run or reuse a search. Spends credits. */
+async function introApiSearch(ctx, fields) {
+  const result = await intro.runSearch({
+    query: trimmed(fields.query, 300), actorId: null, actorKind: 'agent', force: fields.force === true,
+  });
+  if (!result.ok) return sendJson(ctx.res, { ok: false, error: result.error }, { status: 422 });
+  await introApiSearchResult(ctx, {}, { id: result.search.id }, { cached: result.cached });
+}
+
+/** Part two — poll. Suppressed people were dropped before the rows existed. */
+async function introApiSearchResult(ctx, fields, { id }, extra = {}) {
+  const collected = await intro.collect(id);
+  if (!collected.ok) {
+    const status = collected.error === 'No such search.' ? 404 : 502;
+    return sendJson(ctx.res, { ok: false, error: collected.error }, { status });
+  }
+  const { search, people } = collected;
+  sendJson(ctx.res, {
+    ok: true,
+    ...extra,
+    search: { id: search.id, query: search.query, state: collected.running ? 'running' : search.state,
+      credits: search.credits, created_at: search.created_at, expires_at: search.expires_at },
+    people: people.map((p) => ({
+      id: p.id, name: p.name, title: p.title, org: p.org, summary: p.summary,
+      evidence: p.evidence, through: p.through, profile_url: p.profile_url,
+    })),
+  });
+}
+
+/**
+ * homeroom_draft_blurb — the exact permission text a steward would send.
+ *
+ * Built from the request, the member and the search evidence, the same way the
+ * steward's compose screen builds it, so what the agent reviews is what goes
+ * out. The link is a placeholder: a token only exists once a steward sends.
+ */
+async function introApiDraft(ctx, fields, { id }) {
+  const request = await intro.getRequest(id);
+  if (!request) return sendJson(ctx.res, { ok: false, error: 'No such request.' }, { status: 404 });
+  if (request.status !== 'requested') {
+    return sendJson(ctx.res, { ok: false,
+      error: `That request is already ${request.status.replace('_', ' ')}.` }, { status: 409 });
+  }
+  const member = await bf.getMember(request.member_id) || { user_id: request.member_id };
+  const draft = intromail.permissionMessage({ request, member, token: 'PREVIEW', to: '' });
+  sendJson(ctx.res, { ok: true, requestId: request.id, subject: draft.subject, text: draft.text });
+}
+
+/** homeroom_stage_introduction — leave a note for the steward. Sends nothing. */
+async function introApiStage(ctx, fields, { id }) {
+  const staged = await intro.stage({ requestId: id, note: fields.note });
+  if (!staged.ok) {
+    const status = staged.reason === 'unknown' ? 404 : staged.reason === 'wrong-state' ? 409 : 422;
+    return sendJson(ctx.res, { ok: false, error: staged.message }, { status });
+  }
+  sendJson(ctx.res, { ok: true, request: staged.request });
+}
+
 /* ------------------------------------------------------- the front door */
 
 function stewardsOnly(ctx) {
@@ -2322,6 +2435,17 @@ const ROUTES = [
       : { error: result.message });
   })],
   ['GET', '/homeroom/stewards/intros/:id/audit', introAuditHandler],
+
+  ['GET', '/homeroom/api/intros/requests', introApi(introApiRequests)],
+  ['POST', '/homeroom/api/intros/search', introApi(introApiSearch)],
+  ['GET', '/homeroom/api/intros/search/:id', introApi(introApiSearchResult)],
+  ['GET', '/homeroom/api/intros/requests/:id/draft', introApi(introApiDraft)],
+  ['POST', '/homeroom/api/intros/requests/:id/stage', introApi(introApiStage)],
+  // Here so a caller gets the reason rather than a 404 that reads like a typo.
+  ['POST', '/homeroom/api/intros/requests/:id/permission', introApi(async (ctx) => sendJson(ctx.res,
+    { ok: false, error: AGENT_CANNOT_SEND }, { status: 405, headers: { allow: 'GET' } }))],
+  ['POST', '/homeroom/api/intros/requests/:id/introduce', introApi(async (ctx) => sendJson(ctx.res,
+    { ok: false, error: AGENT_CANNOT_SEND }, { status: 405, headers: { allow: 'GET' } }))],
   ['GET', '/homeroom/stewards/access', async (ctx) => await accessAdminHandler(ctx)],
   ['POST', '/homeroom/stewards/access/lookup', accessLookupHandler],
   ['POST', '/homeroom/stewards/access/:hash/decide', action(async (ctx, fields, p) => {
@@ -2390,6 +2514,10 @@ const COMPILED = ROUTES.map(([method, pattern, handler]) => {
   const segments = pattern.split('/').filter(Boolean);
   return {
     method, segments, handler,
+    // The intro agent surface authenticates with its own bearer token, inside
+    // introApi(). It must not fall through to the session check below, or a
+    // steward's cookie would be enough to drive it.
+    isAgent: pattern.startsWith('/homeroom/api/intros/'),
     isApi: pattern.startsWith('/homeroom/api/'),
     // /homeroom/m/* is the mentor's side of the desk. Mentors have no Homeroom
     // account — roster.js admits residents and alumni, and a mentor is neither
@@ -2425,7 +2553,9 @@ export async function homeroomRoute(method, pathname) {
   if (!found) return null;
   const { route, params } = found;
   return async (ctx) => {
-    if (route.isApi) {
+    if (route.isAgent) {
+      // Token-authenticated inside the handler. Nothing session-shaped here.
+    } else if (route.isApi) {
       // The API answers in JSON even when it is turning you away.
       if (!ctx.user) return sendJson(ctx.res, { ok: false, error: 'members only' }, { status: 401 });
       await bf.ensureMember(ctx.user.id);

@@ -46,7 +46,7 @@
  * steward-only.
  */
 
-import { randomBytes, createHash, createCipheriv, createDecipheriv, scryptSync } from 'node:crypto';
+import { randomBytes, createHash, createCipheriv, createDecipheriv, scryptSync, timingSafeEqual } from 'node:crypto';
 import * as sql from './db.js';
 import * as hs from './happenstance.js';
 import { nowSeconds } from './util.js';
@@ -651,6 +651,94 @@ export async function expireStale(now = nowSeconds()) {
   return stale.length;
 }
 
+/* ---------------------------------------------------------------- the agent */
+
+/*
+ * A JSON surface so a Claude skill or an MCP server can do the legwork: read
+ * the queue, run a search, read the exact permission text, and leave a note
+ * for the steward. See docs/INTRO-ENGINE.md §7.3 and §20.7.
+ *
+ * There is deliberately no agent-callable path that sends anything. Gate 4 is a
+ * person taking responsibility for spending the connector's credibility, and a
+ * token in an environment variable cannot take responsibility. That is not
+ * enforced by leaving the send routes off the API — it is enforced by
+ * `sendPermission` and `introduce` refusing any actor that is not a steward,
+ * and the agent has no actor at all.
+ */
+
+/** The bearer token. Unset means the surface does not exist, not that it is open. */
+export const agentToken = () => process.env.HOMEROOM_INTRO_TOKEN || '';
+
+/** Constant-time, and over digests so the comparison never sees two lengths. */
+export function agentAuthorized(header) {
+  const expected = agentToken();
+  if (!expected) return false;
+  const match = /^Bearer\s+(.+)$/i.exec(String(header || '').trim());
+  if (!match) return false;
+  const a = createHash('sha256').update(match[1]).digest();
+  const b = createHash('sha256').update(expected).digest();
+  return timingSafeEqual(a, b);
+}
+
+/**
+ * What an agent may read about a request.
+ *
+ * An allowlist, for the same reason memberView() is one. Never the address in
+ * either form, never the token, and never the target's own words or a
+ * steward's refusal note — an agent acting for a steward does not need either,
+ * and its transcript is one more place they would end up.
+ */
+export function agentView(request) {
+  return {
+    id: request.id,
+    status: request.status,
+    member_id: request.member_id,
+    name: request.name,
+    title: request.title,
+    org: request.org,
+    summary: request.summary,
+    evidence: request.evidence,
+    through: request.through,
+    profile_url: request.profile_url,
+    need: request.need,
+    why_them: request.why_them,
+    asking_for: request.asking_for,
+    agent_note: request.agent_note || '',
+    staged_at: request.staged_at ?? null,
+    created_at: request.created_at,
+    sent_at: request.sent_at ?? null,
+    token_expires: request.token_expires ?? null,
+    answered_at: request.answered_at ?? null,
+    introduced_at: request.introduced_at ?? null,
+  };
+}
+
+/**
+ * The agent's one write: a note on a request that is waiting on a steward.
+ *
+ * It changes no status and sends nothing. The steward still types the address,
+ * still reads the exact message, and still presses Send. A note can be
+ * replaced while the request waits, and is frozen once it has moved on, so the
+ * audit trail says what the steward was looking at when they decided.
+ */
+export async function stage({ requestId, note }) {
+  const text = String(note || '').trim().slice(0, 1000);
+  if (text.length < 20) {
+    return { ok: false, reason: 'too-short', message: 'Say what the steward should know — 20 characters minimum.' };
+  }
+  const now = nowSeconds();
+  const updated = await sql.run(`UPDATE hr_intro_requests SET agent_note = ?, staged_at = ?, updated_at = ?
+       WHERE id = ? AND status = 'requested'`, text, now, now, Number(requestId));
+  if (!updated.changes) {
+    const request = await getRequest(requestId);
+    if (!request) return { ok: false, reason: 'unknown', message: 'No such request.' };
+    return { ok: false, reason: 'wrong-state',
+      message: `That request is already ${request.status.replace('_', ' ')}. Only a request waiting on a steward can be staged.` };
+  }
+  await logEvent({ requestId: Number(requestId), actorKind: 'agent', event: 'staged', detail: text.slice(0, 200) });
+  return { ok: true, request: agentView(await getRequest(requestId)) };
+}
+
 /* -------------------------------------------------------------- reading */
 
 /**
@@ -765,6 +853,7 @@ export async function stats(now = nowSeconds()) {
   return {
     enabled: enabled(),
     configured: hs.configured(),
+    agentApi: !!agentToken(),
     waitingOnSteward: await one("SELECT COUNT(*) FROM hr_intro_requests WHERE status = 'requested'"),
     waitingOnTarget: await one("SELECT COUNT(*) FROM hr_intro_requests WHERE status = 'permission_sent'"),
     // The alarm: somebody said yes and the introduction never went out.

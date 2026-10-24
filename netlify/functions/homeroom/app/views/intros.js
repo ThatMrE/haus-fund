@@ -381,6 +381,9 @@ function renderQueue(ctx, rows, kind) {
     ${r.profile_url ? html`<div class="mono tiny"><a href="${r.profile_url}" rel="nofollow noopener"
       target="_blank">Profile</a></div>` : ''}
 
+    ${kind === 'requested' && r.agent_note ? html`<div class="notice"><span class="mono tiny">Agent note
+      <span class="sep">/</span> ${relTime(r.staged_at)}</span><br />${r.agent_note}</div>` : ''}
+
     ${kind === 'requested' ? html`<form method="post" action="/homeroom/stewards/intros/${r.id}/compose" class="inline">
         ${csrfField(ctx)}
         <input type="email" name="to" maxlength="200" required placeholder="their email address" />
