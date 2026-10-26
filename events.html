@@ -1,0 +1,443 @@
+<!-- @dsCard group="Website" viewport="1440x900" name="Haus — Events" subtitle="Upcoming public events · rendered from Supabase web_upcoming_events" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Events — Haus</title>
+<link rel="canonical" href="https://haus.fund/events">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Haus">
+<meta property="og:url" content="https://haus.fund/events">
+<meta property="og:image" content="https://haus.fund/assets/og-haus.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Haus logo">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://haus.fund/assets/og-haus.jpg">
+<meta name="description" content="Upcoming Haus and Biopunk events in San Francisco: founder dinners, demo days, hackathons, and showcases. RSVP on Luma.">
+<meta property="og:title" content="Events — Haus">
+<meta property="og:description" content="Upcoming Haus and Biopunk events in San Francisco. RSVP on Luma.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700;800;900&family=Barlow+Condensed:wght@600;700;800;900&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600&family=DM+Mono:wght@400;500&display=swap">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html{scroll-behavior:smooth;}
+body{font-family:'DM Sans',sans-serif;background:#F8F7F3;color:#0D0D0D;line-height:1.6;}
+a{color:inherit;text-decoration:none;}
+img{display:block;}
+
+/* ── Nav ── */
+nav{position:fixed;top:0;left:0;right:0;z-index:200;transition:background 200ms,border-color 200ms;border-bottom:1px solid transparent;}
+nav.scrolled{background:#F8F7F3;border-bottom-color:#E5E1D9;}
+.nav-inner{max-width:1440px;margin:0 auto;padding:0 56px;height:72px;display:flex;align-items:center;justify-content:space-between;}
+.nav-logo{height:28px;object-fit:contain;filter:invert(1) brightness(100);transition:filter 200ms;}
+nav.scrolled .nav-logo{filter:none;}
+.nav-links{display:flex;align-items:center;gap:32px;}
+.nav-links a{font-size:14px;font-weight:500;color:rgba(255,255,255,0.65);transition:color 150ms;letter-spacing:0.01em;}
+.nav-links a:hover{color:white;}
+nav.scrolled .nav-links a{color:#3A3A3A;}
+nav.scrolled .nav-links a:hover{color:#1C3B2D;}
+.nav-apply{background:rgba(255,255,255,0.12);color:white;padding:8px 18px;border-radius:6px;font-size:13px;font-weight:600;border:1.5px solid rgba(255,255,255,0.3);transition:all 200ms;letter-spacing:0.01em;}
+.nav-apply:hover{background:rgba(255,255,255,0.2);border-color:rgba(255,255,255,0.5);}
+nav.scrolled .nav-apply{background:#1C3B2D;border-color:#1C3B2D;color:white;}
+nav.scrolled .nav-apply:hover{background:#2A5C46;}
+
+/* ── Sections ── */
+.wrap{max-width:1440px;margin:0 auto;padding:100px 80px;}
+.wrap-sm{max-width:1440px;margin:0 auto;padding:80px 80px;}
+
+/* ── Type ── */
+.over{font-size:12px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:#727272;margin-bottom:12px;}
+.over-w{color:rgba(255,255,255,0.45);}
+.h2{font-family:'Barlow',sans-serif;font-size:56px;font-weight:700;line-height:1.08;letter-spacing:-0.01em;color:#0D0D0D;margin-bottom:16px;}
+.h2-w{color:white;}
+.lead{font-size:20px;line-height:1.5;color:#727272;max-width:720px;margin-bottom:44px;}
+.h3{font-family:'Barlow',sans-serif;font-size:26px;font-weight:700;color:#0D0D0D;line-height:1.2;margin-bottom:8px;}
+.body{font-size:18px;line-height:1.65;color:#3A3A3A;}
+.sm{font-size:15px;line-height:1.55;color:#727272;}
+.xs{font-size:12px;color:#B0ADA6;}
+.mono{font-family:'DM Mono',monospace;}
+
+/* ── Cards ── */
+.card{background:#fff;border:1px solid #E5E1D9;border-radius:10px;padding:28px 32px;}
+.card-t{border-top:3px solid #1C3B2D;}
+
+/* ── Buttons ── */
+.btn-f{display:inline-flex;align-items:center;gap:8px;background:#1C3B2D;color:white;padding:14px 28px;border-radius:6px;font-size:15px;font-weight:600;transition:background 150ms;cursor:pointer;border:none;}
+.btn-f:hover{background:#2A5C46;}
+.btn-ol{display:inline-flex;align-items:center;gap:8px;background:transparent;color:rgba(255,255,255,0.75);padding:14px 28px;border-radius:6px;font-size:15px;font-weight:500;border:1.5px solid rgba(255,255,255,0.3);transition:all 150ms;cursor:pointer;}
+.btn-ol:hover{border-color:rgba(255,255,255,0.7);color:white;}
+
+/* ── Grids ── */
+.g2{display:grid;grid-template-columns:repeat(2,1fr);gap:24px;}
+.g3{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;}
+.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:20px;}
+
+/* ── Tags ── */
+.tag{display:inline-flex;align-items:center;padding:3px 9px;border-radius:4px;font-size:11px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;background:#F0EDE6;color:#727272;}
+.tag-f{background:#BDDDD3;color:#1C3B2D;}
+.tag-br{background:#F2E8D5;color:#6B4E2A;}
+
+/* ── DNA Ticker ── */
+@keyframes tick{0%{transform:translateX(0);}100%{transform:translateX(-50%);}}
+.ticker{overflow:hidden;background:#0D0D0D;height:44px;display:flex;align-items:center;}
+.ticker-inner{display:flex;white-space:nowrap;animation:tick 36s linear infinite;}
+.ti{font-family:'DM Mono',monospace;font-size:11px;letter-spacing:0.06em;padding:0 20px;color:rgba(255,255,255,0.25);}
+.ti-b{font-weight:600;letter-spacing:0.12em;color:rgba(255,255,255,0.65);}
+
+/* ── Stat blocks ── */
+.statrow{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:#E5E1D9;border:1px solid #E5E1D9;border-radius:12px;overflow:hidden;}
+.statcell{background:#fff;padding:34px 26px;}
+.statcell.dk{background:#1C3B2D;}
+.stat-n{font-family:'Barlow Condensed',sans-serif;font-size:60px;font-weight:900;color:#0D0D0D;line-height:1;letter-spacing:0.01em;}
+.statcell.dk .stat-n{color:#fff;}
+.stat-n .u{color:#B8924A;}
+.stat-l{font-size:12px;font-weight:700;letter-spacing:0.10em;text-transform:uppercase;color:#727272;margin-top:12px;line-height:1.4;}
+.statcell.dk .stat-l{color:rgba(255,255,255,0.6);}
+
+/* dark stat band (who you reach) */
+.statrow-w{display:grid;grid-template-columns:repeat(3,1fr);border-top:1px solid rgba(255,255,255,0.14);}
+.statw{padding:36px 28px;border-left:1px solid rgba(255,255,255,0.14);}
+.statw:first-child{border-left:none;}
+.statw-n{font-family:'Barlow Condensed',sans-serif;font-size:56px;font-weight:900;color:white;line-height:1;}
+.statw-n .u{color:#B8924A;}
+.statw-t{font-family:'Barlow',sans-serif;font-size:15px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:#BDDDD3;margin:8px 0 8px;}
+.statw-l{font-size:14px;color:rgba(255,255,255,0.55);line-height:1.5;}
+
+/* ── Houses ── */
+.node{border:1px solid #E5E1D9;border-radius:10px;overflow:hidden;background:#fff;}
+.node-hd{padding:20px 24px;display:flex;justify-content:space-between;align-items:flex-start;}
+.node-wm{font-family:'Barlow',sans-serif;font-size:22px;line-height:1;}
+.node-wm .pre{font-weight:900;} .node-wm .sfx{font-weight:400;}
+.node-bd{padding:16px 24px 22px;border-top:1px solid rgba(0,0,0,0.06);}
+.node-addr{font-family:'DM Mono',monospace;font-size:11px;color:#727272;letter-spacing:0.06em;text-transform:uppercase;}
+
+/* ── Timeline ── */
+.tl{display:grid;grid-template-columns:repeat(5,1fr);gap:0;border-top:2px solid #1C3B2D;}
+.tlc{padding:24px 20px 8px;border-left:1px solid #E5E1D9;}
+.tlc:first-child{border-left:none;}
+.tl-wk{font-family:'DM Mono',monospace;font-size:11px;color:#B8924A;letter-spacing:0.08em;font-weight:500;}
+.tl-t{font-family:'Barlow',sans-serif;font-size:17px;font-weight:800;color:#0D0D0D;text-transform:uppercase;letter-spacing:0.02em;margin:6px 0 8px;}
+.tl-d{font-size:14px;color:#727272;line-height:1.5;}
+
+/* ── Moments ── */
+.moment{background:#fff;border:1px solid #E5E1D9;border-radius:10px;padding:22px 24px;border-top:3px solid #1C3B2D;}
+.moment .mn{font-family:'Barlow',sans-serif;font-size:18px;font-weight:800;letter-spacing:0.02em;text-transform:uppercase;color:#0D0D0D;}
+.moment .mm{font-family:'DM Mono',monospace;font-size:12px;color:#B8924A;letter-spacing:0.04em;margin:4px 0 10px;}
+.moment .md{font-size:14px;color:#727272;line-height:1.5;}
+
+/* ── Tier table ── */
+.ladder{width:100%;border-collapse:collapse;background:#fff;border:1px solid #E5E1D9;border-radius:12px;overflow:hidden;}
+.ladder th{background:#1C3B2D;color:rgba(255,255,255,0.7);font-family:'DM Mono',monospace;font-size:11px;font-weight:500;letter-spacing:0.10em;text-transform:uppercase;text-align:left;padding:16px 22px;}
+.ladder td{padding:20px 22px;border-top:1px solid #E5E1D9;vertical-align:top;}
+.ladder .inv{font-family:'Barlow Condensed',sans-serif;font-size:30px;font-weight:900;color:#1C3B2D;white-space:nowrap;}
+.ladder .tier-nm{font-family:'Barlow',sans-serif;font-size:16px;font-weight:800;letter-spacing:0.03em;text-transform:uppercase;color:#0D0D0D;}
+.ladder .slots{font-family:'DM Mono',monospace;font-size:13px;color:#727272;white-space:nowrap;}
+.ladder .inc{font-size:15px;color:#3A3A3A;line-height:1.5;}
+.ladder tr.top td{background:#FBF4E7;}
+.ladder tr.top .inv{color:#8A6A1F;}
+
+/* ── Category grid ── */
+.catset{margin-bottom:44px;}
+.catset:last-child{margin-bottom:0;}
+.cathead{display:flex;align-items:baseline;gap:14px;margin-bottom:6px;}
+.cathead .num{font-family:'DM Mono',monospace;font-size:13px;color:#B8924A;}
+.cathead h3{font-family:'Barlow',sans-serif;font-size:30px;font-weight:800;color:#0D0D0D;letter-spacing:-0.01em;}
+.catsub{font-size:16px;color:#727272;margin-bottom:22px;max-width:820px;}
+.cat-g{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;}
+.catcard{background:#fff;border:1px solid #E5E1D9;border-radius:8px;padding:16px 18px;}
+.catcard .cn{font-family:'Barlow',sans-serif;font-size:13px;font-weight:800;letter-spacing:0.08em;text-transform:uppercase;color:#1C3B2D;margin-bottom:5px;}
+.catcard .catnote{font-family:'DM Mono',monospace;font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:#B0ADA6;margin-top:16px;}
+
+/* ── Process ── */
+.step{background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.10);border-radius:10px;padding:28px 26px;}
+.step .sn{font-family:'Barlow Condensed',sans-serif;font-size:40px;font-weight:900;color:#B8924A;line-height:1;}
+.step .st{font-family:'Barlow',sans-serif;font-size:20px;font-weight:700;color:white;margin:8px 0 8px;}
+.step .sd{font-size:14px;color:rgba(255,255,255,0.6);line-height:1.55;}
+
+/* ── Imagery ── */
+.band{position:relative;width:100%;height:clamp(240px,38vw,460px);overflow:hidden;}
+.band img{width:100%;height:100%;object-fit:cover;display:block;}
+.grad-wm::after{content:"";position:absolute;inset:0;background:linear-gradient(transparent,rgba(15,36,25,.62));pointer-events:none;}
+.grad-wm .wm{position:absolute;left:clamp(16px,4vw,40px);bottom:clamp(14px,3vw,28px);height:clamp(22px,3.4vw,34px);width:auto;opacity:.92;z-index:2;}
+.grain::before{content:"";position:absolute;inset:0;z-index:1;pointer-events:none;opacity:.07;mix-blend-mode:overlay;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");background-size:180px 180px;}
+
+/* ── Rule of where you show up ── */
+.chips{display:flex;flex-wrap:wrap;gap:10px;margin-top:24px;}
+.chip{background:#fff;border:1px solid #E5E1D9;border-radius:20px;padding:8px 16px;font-size:14px;font-weight:600;color:#1C3B2D;}
+
+/* ════ RESPONSIVE ════ */
+@media (max-width:1024px){
+  .nav-inner{padding:0 32px;} .nav-links{gap:22px;}
+  .wrap{padding:80px 40px;} .wrap-sm{padding:64px 40px;}
+  .h2{font-size:44px;}
+  .g4{grid-template-columns:repeat(2,1fr);} .g3{grid-template-columns:1fr;}
+  .statrow{grid-template-columns:repeat(2,1fr);}
+  .statrow-w{grid-template-columns:1fr;} .statw{border-left:none;border-top:1px solid rgba(255,255,255,0.14);} .statw:first-child{border-top:none;}
+  .tl{grid-template-columns:1fr;} .tlc{border-left:none;border-top:1px solid #E5E1D9;} .tlc:first-child{border-top:none;}
+  .cat-g{grid-template-columns:repeat(2,1fr);}
+  .hero-h1{font-size:64px !important;}
+  .ladder .inc{font-size:14px;}
+}
+@media (max-width:680px){
+  .nav-inner{padding:0 18px;height:60px;} .nav-links{display:none;} .nav-logo{height:24px;} .nav-apply{padding:7px 14px;font-size:12px;}
+  .wrap{padding:56px 20px !important;} .wrap-sm{padding:48px 20px !important;}
+  .h2{font-size:32px;} .lead{font-size:17px;} .h3{font-size:22px;}
+  #top{min-height:auto !important;padding:104px 20px 64px !important;}
+  .hero-coords{display:none !important;}
+  #top img[alt="Haus"]{height:52px !important;margin-bottom:24px !important;}
+  .hero-h1{font-size:44px !important;margin-bottom:22px !important;}
+  .hero-ctas{flex-direction:column !important;gap:12px !important;width:100%;} .hero-ctas a{justify-content:center;width:100%;}
+  .g2,.g3,.g4{grid-template-columns:1fr !important;}
+  .statrow{grid-template-columns:1fr;}
+  .cat-g{grid-template-columns:1fr;}
+  /* ladder → stacked cards */
+  .ladder,.ladder tbody,.ladder tr,.ladder td{display:block;width:100%;}
+  .ladder thead{display:none;}
+  .ladder tr{border-top:1px solid #E5E1D9;padding:8px 0;}
+  .ladder td{border-top:none;padding:6px 22px;}
+  .ladder .inv{font-size:34px;}
+  .cta-h{font-size:48px !important;}
+  .apply-ctas{flex-direction:column !important;gap:12px !important;} .apply-ctas a{justify-content:center;width:100%;}
+  .site-footer{padding:28px 20px !important;}
+  .footer-inner{flex-direction:column !important;gap:16px;text-align:center;} .footer-inner > div{flex-wrap:wrap;justify-content:center;gap:18px;}
+  html,body{overflow-x:hidden;}
+}
+
+/* ── Houses dropdown ── */
+.nav-drop{position:relative;}
+.nav-drop-t{background:none;border:none;cursor:pointer;font-family:inherit;display:inline-flex;align-items:center;gap:5px;padding:0;font-size:14px;font-weight:500;color:rgba(255,255,255,0.65);transition:color 150ms;letter-spacing:0.01em;}
+.nav-drop-t:hover{color:white;}
+nav.scrolled .nav-drop-t{color:#3A3A3A;}
+nav.scrolled .nav-drop-t:hover{color:#1C3B2D;}
+.nav-drop-menu{position:absolute;top:calc(100% + 10px);left:-16px;min-width:210px;background:#FFFFFF;border:1px solid #E5E1D9;border-radius:9px;padding:8px;box-shadow:0 12px 34px rgba(13,13,13,0.14);display:none;}
+.nav-drop-menu::before{content:"";position:absolute;top:-12px;left:0;right:0;height:12px;}
+.nav-drop:hover .nav-drop-menu,.nav-drop:focus-within .nav-drop-menu,.nav-drop.open .nav-drop-menu{display:block;}
+.nav-drop-menu a{display:block;padding:9px 12px;border-radius:6px;font-size:14px;font-weight:500;color:#3A3A3A;transition:background 130ms,color 130ms;}
+.nav-drop-menu a:hover{background:#F0EDE6;color:#1C3B2D;}
+nav.scrolled .nav-drop-menu a{color:#3A3A3A;}
+
+/* ══ Mobile navigation + cross-OS fixes ══ */
+/* Footer link row must wrap — it holds 11 links and overflowed on tablets */
+.footer-inner{flex-wrap:wrap;row-gap:14px;}
+.footer-inner > div{flex-wrap:wrap;row-gap:6px;}
+@media(max-width:900px){.footer-inner{justify-content:center;text-align:center;}
+  .footer-inner > div{justify-content:center;}}
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%;}
+body{-webkit-font-smoothing:antialiased;}
+/* Respect the notch / rounded corners on iOS */
+.nav-inner{padding-left:max(18px,env(safe-area-inset-left));padding-right:max(18px,env(safe-area-inset-right));}
+@media(min-width:681px){.nav-inner{padding-left:max(56px,env(safe-area-inset-left));padding-right:max(56px,env(safe-area-inset-right));}}
+/* Taller viewport units where supported (iOS address-bar shrink) */
+@supports (height:100dvh){#top{min-height:100dvh;}}
+@media(max-width:680px){@supports (height:100dvh){#top{min-height:auto;}}}
+
+.nav-burger{display:none;background:none;border:none;cursor:pointer;padding:8px;margin-left:4px;
+  width:44px;height:44px;align-items:center;justify-content:center;flex:0 0 auto;-webkit-tap-highlight-color:transparent;}
+.nav-burger span{display:block;position:relative;width:22px;height:2px;background:#fff;border-radius:2px;transition:background 200ms;}
+.nav-burger span::before,.nav-burger span::after{content:"";position:absolute;left:0;width:22px;height:2px;background:#fff;border-radius:2px;transition:transform 200ms,background 200ms;}
+.nav-burger span::before{top:-7px;}
+.nav-burger span::after{top:7px;}
+nav.scrolled .nav-burger span,nav.scrolled .nav-burger span::before,nav.scrolled .nav-burger span::after{background:#0D0D0D;}
+.nav-burger[aria-expanded="true"] span{background:transparent;}
+.nav-burger[aria-expanded="true"] span::before{transform:translateY(7px) rotate(45deg);background:#0D0D0D;}
+.nav-burger[aria-expanded="true"] span::after{transform:translateY(-7px) rotate(-45deg);background:#0D0D0D;}
+
+.nav-mobile{display:none;}
+@media(max-width:900px){
+  /* 900 not 680: between 681-780 the full nav needs ~746px and pushed Apply off-screen */
+  .nav-burger{display:inline-flex;}
+  .nav-links{display:none !important;}
+  /* With the links hidden, space-between stranded Apply mid-nav */
+  .nav-apply{margin-left:auto;}
+  .nav-mobile{position:absolute;top:100%;left:0;right:0;background:#F8F7F3;border-bottom:1px solid #E5E1D9;
+    box-shadow:0 14px 34px rgba(13,13,13,0.16);padding:6px 0 14px;
+    max-height:calc(100vh - 60px);overflow-y:auto;-webkit-overflow-scrolling:touch;}
+  @supports (max-height:100dvh){.nav-mobile{max-height:calc(100dvh - 60px);}}
+  .nav-mobile.open{display:block;}
+  .nav-mobile a{display:block;padding:15px max(20px,env(safe-area-inset-left));font-size:16px;font-weight:500;
+    color:#0D0D0D !important;border-bottom:1px solid #E8E4DC;-webkit-tap-highlight-color:rgba(28,59,45,0.08);}
+  .nav-mobile a:last-child{border-bottom:none;}
+  .nav-mobile a:active{background:#F0EDE6;}
+  .nav-mobile .nm-grp{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;
+    color:#8A8A8A;padding:16px max(20px,env(safe-area-inset-left)) 6px;}
+  .nav-mobile .nm-sub{padding-left:max(34px,calc(env(safe-area-inset-left) + 14px)) !important;}
+  .nav-mobile .nm-apply{margin:14px max(20px,env(safe-area-inset-left)) 4px;background:#1C3B2D;color:#fff !important;
+    text-align:center;border-radius:6px;border-bottom:none;font-weight:600;padding:15px 20px;}
+  /* Tap targets: 44px minimum (Apple HIG / Android a11y) */
+  .footer-inner a,footer a{display:inline-flex;align-items:center;min-height:44px;padding:10px 6px;}
+  .nav-inner > a:first-child{display:inline-flex;align-items:center;min-height:44px;}
+  .nav-apply{display:inline-flex;align-items:center;min-height:44px;padding:11px 16px;}
+  /* Micro-labels: 10px is too small on a phone */
+  .chip-l,.nav-mobile .nm-grp{font-size:11px;}
+  /* Standalone inline links need a real tap area */
+  a.mono.xs{display:inline-flex;align-items:center;min-height:44px;}
+}
+
+/* ── Events (filled by netlify/edge-functions/events-render.js) ── */
+.ev-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:24px;}
+.ev-card{background:#FFFFFF;border:1px solid #E6E3DB;border-radius:8px;overflow:hidden;display:flex;flex-direction:column;}
+.ev-img{aspect-ratio:16/9;background:#1C3B2D;overflow:hidden;}
+.ev-img img{width:100%;height:100%;object-fit:cover;}
+.ev-body{display:flex;gap:20px;padding:24px;}
+.ev-date{flex:0 0 56px;text-align:center;border-right:1px solid #E6E3DB;padding-right:16px;}
+.ev-day{display:block;font-family:'Barlow Condensed',sans-serif;font-size:40px;font-weight:800;line-height:1;color:#1C3B2D;}
+.ev-mon{display:block;font-size:12px;letter-spacing:0.12em;color:#727272;margin-top:4px;}
+.ev-main{min-width:0;}
+.ev-when{letter-spacing:0.04em;margin-bottom:6px;color:#727272;}
+.ev-name{font-family:'Barlow',sans-serif;font-size:22px;font-weight:700;line-height:1.2;color:#0D0D0D;margin-bottom:8px;}
+.ev-blurb{font-size:15px;color:#3A3A3A;margin-bottom:12px;}
+.ev-spon{display:flex;flex-wrap:wrap;align-items:center;gap:12px;margin-bottom:12px;font-size:13px;color:#3A3A3A;}
+.ev-spon img{height:22px;width:auto;}
+.ev-rsvp{display:inline-flex;align-items:center;font-size:14px;font-weight:600;color:#1C3B2D;border-bottom:1.5px solid #B8924A;padding-bottom:2px;}
+.ev-rsvp:hover{color:#B8924A;}
+.ev-empty{font-size:16px;color:#3A3A3A;}
+.ev-empty a{color:#1C3B2D;border-bottom:1.5px solid #B8924A;}
+section#top.ev-hero{min-height:0 !important;}
+@media(max-width:680px){.ev-grid{grid-template-columns:1fr;}.ev-body{padding:20px;}.ev-h1{font-size:56px !important;}#top{padding:120px 20px 48px !important;}}
+</style>
+</head>
+<body>
+
+<!-- ── NAV ── -->
+<nav id="nav">
+  <div class="nav-inner">
+    <a href="/#top"><img src="assets/logo-mark.svg" class="nav-logo" alt="Haus"></a>
+    <div class="nav-links">
+      <a href="/biopunk">Program</a>
+      <a href="/#nodes">Nodes</a>
+      <a href="/events" style="color:white;">Events</a>
+      <div class="nav-drop">
+        <button class="nav-drop-t" aria-expanded="false" aria-haspopup="true">Houses <span aria-hidden="true">&#9662;</span></button>
+        <div class="nav-drop-menu">
+          <a href="/punkhaus">PunkHaus</a>
+          <a href="/femhaus">FemHaus</a>
+          <a href="/alumhaus">AlumHaus</a>
+          <a href="/safehaus">SafeHaus</a>
+          <a href="/cellhaus">CellHaus</a>
+          <a href="/pharmhaus">PharmHaus</a>
+        </div>
+      </div>
+      <div class="nav-drop">
+        <button class="nav-drop-t" aria-expanded="false" aria-haspopup="true">About <span aria-hidden="true">&#9662;</span></button>
+        <div class="nav-drop-menu">
+          <a href="/team">Team</a>
+          <a href="/portfolio">Portfolio</a>
+          <a href="/careers">Careers</a>
+          <a href="/showcase">2050 Showcase</a>
+          <a href="/skilltree">Skill Tree</a>
+        </div>
+      </div>
+      <a href="/sponsors">Sponsors</a>
+    </div>
+    <a href="https://luma.com/biopunk" class="nav-apply">Follow on Luma</a>
+    <button class="nav-burger" aria-expanded="false" aria-controls="navMobile" aria-label="Menu"><span></span></button>
+  </div>
+  <div class="nav-mobile" id="navMobile"></div>
+</nav>
+
+<!-- ── HERO ── -->
+<section id="top" class="ev-hero" style="background:#1C3B2D;padding:160px 80px 72px;position:relative;overflow:hidden;">
+  <div style="max-width:1440px;margin:0 auto;">
+    <div class="over over-w">Haus &#47;&#47;&#47; Events</div>
+    <h1 class="ev-h1" style="font-family:'Barlow Condensed',sans-serif;font-size:96px;font-weight:900;color:white;letter-spacing:0.02em;line-height:0.95;text-transform:uppercase;margin-bottom:24px;">Upcoming</h1>
+    <p style="font-size:18px;color:rgba(255,255,255,0.7);max-width:620px;">Founder dinners, demo days, hackathons, and showcases across the Haus network in San Francisco. Seats are curated: RSVP on Luma and we confirm by email.</p>
+  </div>
+</section>
+
+<!-- ── EVENTS ── -->
+<!-- Filled at the edge from Supabase (netlify/edge-functions/events-render.js). The text between the markers is the fallback. -->
+<section id="events" style="background:#F8F7F3;">
+  <div class="wrap">
+    <div class="ev-grid">
+<!--EVENTS:LIST--><p class="ev-empty">See upcoming dates on <a href="https://luma.com/biopunk" rel="noopener">luma.com/biopunk</a>.</p><!--/EVENTS:LIST-->
+    </div>
+  </div>
+</section>
+
+<!-- ── FOOTER ── -->
+<footer style="background:#0D0D0D;border-top:1px solid rgba(255,255,255,0.06);padding:32px 80px;" class="site-footer">
+  <div class="footer-inner" style="max-width:1440px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;">
+    <div class="mono xs" style="color:rgba(255,255,255,0.2);letter-spacing:0.08em;text-transform:uppercase;">HAUS &#183; SAN FRANCISCO</div>
+    <div style="display:flex;gap:32px;">
+      <a href="/#program" class="mono xs" style="color:rgba(255,255,255,0.25);letter-spacing:0.06em;text-transform:uppercase;">PROGRAM</a>
+      <a href="/expansion" class="mono xs" style="color:rgba(255,255,255,0.25);letter-spacing:0.06em;text-transform:uppercase;">GLOBAL</a>
+      <a href="/events" class="mono xs" style="color:rgba(255,255,255,0.25);letter-spacing:0.06em;text-transform:uppercase;">EVENTS</a>
+      <a href="/sponsors" class="mono xs" style="color:rgba(255,255,255,0.25);letter-spacing:0.06em;text-transform:uppercase;">SPONSORS</a>
+      <a href="/team" class="mono xs" style="color:rgba(255,255,255,0.25);letter-spacing:0.06em;text-transform:uppercase;">TEAM</a>
+      <a href="/portfolio" class="mono xs" style="color:rgba(255,255,255,0.25);letter-spacing:0.06em;text-transform:uppercase;">PORTFOLIO</a>
+      <a href="/careers" class="mono xs" style="color:rgba(255,255,255,0.25);letter-spacing:0.06em;text-transform:uppercase;">CAREERS</a>
+      <a href="/punkhaus" class="mono xs" style="color:rgba(255,255,255,0.25);letter-spacing:0.06em;text-transform:uppercase;">PUNKHAUS</a>
+      <a href="/femhaus" class="mono xs" style="color:rgba(255,255,255,0.25);letter-spacing:0.06em;text-transform:uppercase;">FEMHAUS</a>
+      <a href="/alumhaus">ALUMHAUS</a>
+      <a href="/safehaus" class="mono xs" style="color:rgba(255,255,255,0.25);letter-spacing:0.06em;text-transform:uppercase;">SAFEHAUS</a>
+      <a href="/cellhaus" class="mono xs" style="color:rgba(255,255,255,0.25);letter-spacing:0.06em;text-transform:uppercase;">CELLHAUS</a>
+      <a href="/pharmhaus" class="mono xs" style="color:rgba(255,255,255,0.25);letter-spacing:0.06em;text-transform:uppercase;">PHARMHAUS</a>
+      <a href="mailto:elliot@haus.fund" class="mono xs" style="color:rgba(255,255,255,0.25);letter-spacing:0.06em;text-transform:uppercase;">CONTACT</a>
+    </div>
+    <div class="mono xs" style="color:rgba(255,255,255,0.15);letter-spacing:0.08em;text-transform:uppercase;">MUTATE // BUILD // DISRUPT</div>
+  </div>
+</footer>
+
+<script>
+(function(){
+  var nav = document.getElementById('nav');
+  var hero = document.getElementById('top');
+  window.addEventListener('scroll', function() {
+    nav.classList.toggle('scrolled', window.scrollY > (hero.offsetHeight - 80));
+  }, {passive:true});
+
+  var drops=document.querySelectorAll('.nav-drop');
+  function closeDrops(){drops.forEach(function(d){d.classList.remove('open');var b=d.querySelector('.nav-drop-t');if(b)b.setAttribute('aria-expanded','false');});}
+  drops.forEach(function(d){
+    var t=d.querySelector('.nav-drop-t'); if(!t) return;
+    t.addEventListener('click',function(e){e.stopPropagation();
+      var willOpen=!d.classList.contains('open'); closeDrops();
+      if(willOpen){d.classList.add('open');t.setAttribute('aria-expanded','true');}});
+  });
+  document.addEventListener('click',closeDrops);
+  document.addEventListener('keydown',function(e){if(e.key==='Escape')closeDrops();});
+})();
+
+  /* Build the mobile menu from whatever links this page's nav already has. */
+  (function(){
+    var nav=document.getElementById('nav'); if(!nav) return;
+    var links=nav.querySelector('.nav-links'),
+        panel=nav.querySelector('.nav-mobile'),
+        burger=nav.querySelector('.nav-burger');
+    if(!links||!panel||!burger||panel.children.length) return;
+    Array.prototype.forEach.call(links.children,function(el){
+      if(el.classList&&el.classList.contains('nav-drop')){
+        var bt=el.querySelector('.nav-drop-t');
+        var g=document.createElement('div'); g.className='nm-grp';
+        /* Label the group from its own trigger, minus the \u25BE caret. Hard-coding
+           'Houses' mislabelled the About group once a second dropdown existed. */
+        g.textContent=bt?bt.textContent.replace(/[\s\u25BE]+$/,''):'Houses';
+        panel.appendChild(g);
+        Array.prototype.forEach.call(el.querySelectorAll('.nav-drop-menu a'),function(a){
+          var c=a.cloneNode(true); c.removeAttribute('style'); c.className='nm-sub'; panel.appendChild(c);
+        });
+      } else if(el.tagName==='A'){
+        var c=el.cloneNode(true); c.removeAttribute('style'); panel.appendChild(c);
+      }
+    });
+    var ap=nav.querySelector('.nav-apply');
+    if(ap){var c=ap.cloneNode(true); c.removeAttribute('style'); c.className='nm-apply'; panel.appendChild(c);}
+    function set(open){
+      panel.classList.toggle('open',open);
+      burger.setAttribute('aria-expanded',open?'true':'false');
+    }
+    burger.addEventListener('click',function(e){e.stopPropagation();set(!panel.classList.contains('open'));});
+    panel.addEventListener('click',function(e){if(e.target.closest('a'))set(false);});
+    document.addEventListener('click',function(e){if(!nav.contains(e.target))set(false);});
+    document.addEventListener('keydown',function(e){if(e.key==='Escape')set(false);});
+    window.addEventListener('resize',function(){if(window.innerWidth>680)set(false);});
+  })();
+
+(function(){})();
+</script>
+
+</body>
+</html>

@@ -24,6 +24,24 @@
   path = "/"
   function = "cores-host"
 
+# ── Events: haus.fund/events and the homepage strip ──
+# Fills the <!--EVENTS:…--> markers from Supabase web_upcoming_events, which
+# airtable-sync keeps in step with Airtable (only events with Publish ticked).
+# Fails open: if Supabase is unreachable the static fallback text is served.
+# Declared after cores-host so subdomain rewrites happen first; it does nothing
+# on pages without markers.
+[[edge_functions]]
+  path = "/"
+  function = "events-render"
+
+[[edge_functions]]
+  path = "/events"
+  function = "events-render"
+
+[[edge_functions]]
+  path = "/events.html"
+  function = "events-render"
+
 # ── News: haus.fund/news ──
 # A server-rendered app, not a static page: the function claims /news and
 # /news/* (declared in its own config block) and news-ingest runs the morning
