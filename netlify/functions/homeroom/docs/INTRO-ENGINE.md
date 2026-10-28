@@ -1419,3 +1419,83 @@ curl -s -X POST -H "Authorization: Bearer $HOMEROOM_INTRO_TOKEN" -H 'content-typ
   -d '{"note":"Strong fit: led the exact GRAS path. Alec Brewer is the warmer mutual."}' \
   https://haus.fund/homeroom/api/intros/requests/42/stage
 ```
+
+### 20.8 A second source: the connector's own LinkedIn network
+
+Happenstance is one way to find a person. The connector's LinkedIn connections
+export is another, and for Haus it is the better first stop: free, instant, and
+made of people who have actually met the connector.
+
+Everything downstream of "a member picks a person" is unchanged. The new source
+plugs into the top of the Member lane in the flowchart; the request, the
+steward gate, the target's three buttons, the introduction and the member's
+four words are the same code.
+
+#### What the export contains
+
+Checked against the real file (10,756 connections, added 2012–2023):
+
+- **98% of rows have no email address.** LinkedIn exports one only when the
+  connection opted in; 168 rows carry one, 96 of them Gmail.
+- **No profile URL, no LinkedIn ID.** Identity is name, company and position.
+- **Position and company are present for 98%.** Roughly 1,800 positions say
+  founder, 1,000 CEO, 500 partner, 300 scientist, 200 professor.
+- **Titles are stale.** 4,300 of the connections were made in 2017–18.
+- 110 rows have no name, 31 name pairs repeat, and 8,491 company strings have
+  no normalisation.
+
+The missing addresses are the same shape as Happenstance, which returns none:
+a steward supplies one at send time. Here the steward is usually the connector
+and the network is theirs, which is the case §5 was arguing about.
+
+#### The plan
+
+1. **Import, steward only.** `/homeroom/stewards/intros/network` takes the CSV,
+   uploaded or pasted. It writes `hr_li_connections`, keyed by `person_hash` =
+   SHA-256 of the normalised name and company — there is no stable ID, and
+   this one survives a re-import. The 168 addresses are stored encrypted under
+   the same key as request addresses. Rows without a name are skipped,
+   duplicates collapse, and a company's legal suffix ("Inc.", "LLC") is
+   stripped. A re-import is an upsert; people missing from the newest batch
+   drop out of search but keep their history.
+2. **Suppression at the door.** Anyone who answered "never" is not written at
+   import, and is excluded again at query time in case they answered after.
+3. **Tags without a model.** Keyword rules on the position set tracks —
+   regulatory, manufacturing, investor, academic, founder, legal, science,
+   engineering, operator — so "regulatory" finds a "Director of QA". Word
+   boundaries matter: "director" contains "cto". On the real export about half
+   the network gets at least one track; the raw position stays searchable for
+   the rest.
+4. **Search the network first.** The member's search box searches the
+   connector's network on GET, for free. Happenstance becomes a second,
+   explicit step — "search the wider network, 2 credits" — instead of the
+   default. Every word must match; if nobody matches all of them, people who
+   match some are shown, ranked, with a line saying so. Common words are
+   dropped, so a Happenstance-style sentence does not match everyone. A member
+   sees name, position, company, tracks and the year they connected, with a
+   note that the title is from then. Never an address. The one new disclosure
+   is "the connector knows this person", which is the point.
+5. **Ask.** `createRequest()` unchanged, with `through` set to the connector
+   and no evidence line. Because there is no evidence, "why them" carries the
+   weight: 60 characters minimum for this source, not 20. Requests record
+   their `source`.
+6. **Steward gate.** Unchanged, except that for a connection with an address
+   on file the compose field is prefilled, decrypted server-side on the
+   steward page only. The steward still reads the exact message and presses
+   Send.
+7. **Target, introduction, member view.** Unchanged.
+8. **Cross-source "never".** A "never" is keyed by `person_hash`, which differs
+   between sources. Suppressing by address hash as well closes that gap.
+   Separate change.
+9. **Guardrails.** Unchanged. With 10,000 searchable people the house-wide
+   weekly cap of 20 is the real throttle, which is the right one.
+10. **Agent surface.** `POST /api/intros/search` gains a `source`. Separate
+    change.
+
+Steps 1–6 are built (`app/network.js`, `test/network.test.js`); 8 and 10
+follow. Against the real export on Postgres: 10,644 people imported in about a
+second, a re-import in half that, a search in under 15ms, and a 1MB upload
+against a 5MB limit set for that one route. Not decided:
+whether to refresh a stale title through Happenstance's research-person just
+before a steward sends (credits on the twenty a week that matter, not the ten
+thousand), and whether members should see the full list or browse by track.

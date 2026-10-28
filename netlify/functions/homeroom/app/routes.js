@@ -26,6 +26,7 @@ import * as mentorsync from './mentorsync.js';
 import * as mentorlife from './mentorlife.js';
 import * as intro from './introengine.js';
 import * as intromail from './intromail.js';
+import * as network from './network.js';
 import * as hsapi from './happenstance.js';
 import { homeroomLayout } from './views/layout.js';
 import * as views from './views/pages.js';
@@ -1280,9 +1281,16 @@ async function introSearchHandler(ctx, { error = null, flash = null } = {}) {
     }
   }
 
+  // The connector's own network is searched first, on GET, for free. A
+  // Happenstance search is the explicit second step (§20.8).
+  const net = await network.stats();
+  const shown = query || search?.query || '';
+  const linkedin = net.available && shown ? await network.search(shown) : null;
+
   await render(ctx, views.networkSearchPage(ctx, {
-    query: query || search?.query || '',
+    query: shown,
     search, people, running, error, flash,
+    network: { ...net, results: linkedin, connector: intromail.connectorName() },
     configured: intro.searchable(),
     budget: await intro.creditsThisMonth(),
     load: await intro.memberLoad(ctx.user.id),
@@ -1332,6 +1340,52 @@ async function introAskCreate(ctx, fields, params) {
     whyThem: values.why_them, askingFor: values.asking_for,
   });
   if (!created.ok) return await introAskForm(ctx, params, created.message, values);
+  seeOther(ctx, '/homeroom/intros/mine?flash=Sent+to+a+steward.');
+}
+
+/*
+ * Asking for someone from the connector's network. Same request, same gate;
+ * the differences are where the person comes from and that "why them" has to
+ * do the work an evidence line does for a Happenstance result.
+ */
+const NETWORK_WHY_MIN = 60;
+
+async function introNetworkAskForm(ctx, { id }, error = null, values = {}) {
+  if (introOff(ctx)) return;
+  const row = await network.getConnection(id);
+  if (!row) return notFound(ctx);
+  const person = network.asPerson(row, intromail.connectorName());
+  const verdict = await intro.canRequest({ personHash: person.person_hash, memberId: ctx.user.id });
+  await render(ctx, views.introAskPage(ctx, {
+    person, values, error: error || (verdict.ok ? null : verdict.message),
+    action: `/homeroom/intros/network/${row.id}`,
+    whyMin: NETWORK_WHY_MIN,
+    network: { connector: intromail.connectorName(), connectedYear: String(row.connected_on).slice(0, 4) },
+  }), { title: `Introduction to ${person.name}` });
+}
+
+async function introNetworkAskCreate(ctx, fields, params) {
+  if (introOff(ctx)) return;
+  const row = await network.getConnection(params.id);
+  if (!row) return notFound(ctx);
+  const values = {
+    need: trimmed(fields.need, 2000),
+    why_them: trimmed(fields.why_them, 1000),
+    asking_for: trimmed(fields.asking_for, 80),
+  };
+  if (values.need.length < 40) {
+    return await introNetworkAskForm(ctx, params,
+      'Say more about what you need — 40 characters is not enough for anyone to answer.', values);
+  }
+  if (values.why_them.length < NETWORK_WHY_MIN) {
+    return await introNetworkAskForm(ctx, params,
+      `Say why this person, in at least ${NETWORK_WHY_MIN} characters. There is no search evidence here, so this is what the steward and the person read.`, values);
+  }
+  const created = await intro.createRequest({
+    person: network.asPerson(row, intromail.connectorName()), memberId: ctx.user.id,
+    need: values.need, whyThem: values.why_them, askingFor: values.asking_for,
+  });
+  if (!created.ok) return await introNetworkAskForm(ctx, params, created.message, values);
   seeOther(ctx, '/homeroom/intros/mine?flash=Sent+to+a+steward.');
 }
 
@@ -1388,8 +1442,15 @@ async function introStewardHandler(ctx, { error = null, flash = null, preview = 
   if (introOff(ctx)) return;
   if (!stewardsOnly(ctx)) return;
   const balance = intro.searchable() ? await hsapi.credits() : { ok: false, balance: null };
+  // An address the export carried, decrypted onto the steward's compose field
+  // and nowhere else. The steward still reads the message and presses Send.
+  const queue = await intro.queue();
+  for (const row of queue) {
+    if (row.status === 'requested' && row.source === 'linkedin') row.prefill = await network.addressFor(row.person_hash);
+  }
   await render(ctx, views.introStewardPage(ctx, {
-    queue: await intro.queue(),
+    queue,
+    network: await network.stats(),
     closed: await intro.recentlyClosed(),
     stats: await intro.stats(),
     balance: balance.ok ? balance.balance : null,
@@ -1478,6 +1539,33 @@ async function introduceSend(ctx, fields, { id }) {
       ? `Introduced ${member.name || request.member_id} to ${request.name}.`
       : `Marked introduced, but the mail provider did not take it (${delivery.reason}). Send it by hand.`,
   });
+}
+
+/* The connector's LinkedIn export. Steward only, and the one large upload in the app. */
+const NETWORK_UPLOAD_MAX = 5 * 1024 * 1024;
+
+async function introNetworkPage(ctx, { error = null, result = null } = {}) {
+  if (introOff(ctx)) return;
+  if (!stewardsOnly(ctx)) return;
+  await render(ctx, views.introNetworkPage(ctx, {
+    stats: await network.stats(), connector: intromail.connectorName(), error, result,
+  }), { title: 'LinkedIn network' });
+}
+
+async function introNetworkImport(ctx) {
+  if (introOff(ctx)) return;
+  let fields;
+  try {
+    ({ fields } = await readBody(ctx.req, { max: NETWORK_UPLOAD_MAX }));
+  } catch (err) {
+    if (err?.status !== 413) throw err;
+    return oops(ctx, 'That file is over 5MB. A LinkedIn connections export is usually under 2MB.', 413);
+  }
+  if (!csrfOk(ctx, fields)) return;
+  if (!stewardsOnly(ctx)) return;
+  const result = await network.importExport(String(fields.csv || ''), { actor: ctx.user });
+  if (!result.ok) return await introNetworkPage(ctx, { error: result.error });
+  await introNetworkPage(ctx, { result });
 }
 
 async function introAuditHandler(ctx, { id }) {
@@ -2373,6 +2461,8 @@ const ROUTES = [
   })],
   ['GET', '/homeroom/intros/ask/:id', async (ctx, p) => await introAskForm(ctx, p)],
   ['POST', '/homeroom/intros/ask/:id', action(introAskCreate)],
+  ['GET', '/homeroom/intros/network/:id', async (ctx, p) => await introNetworkAskForm(ctx, p)],
+  ['POST', '/homeroom/intros/network/:id', action(introNetworkAskCreate)],
 
   ['GET', '/homeroom/intros/new', async (ctx) => {
     const target = await bf.getMember(ctx.query.get('to'));
@@ -2435,6 +2525,8 @@ const ROUTES = [
       : { error: result.message });
   })],
   ['GET', '/homeroom/stewards/intros/:id/audit', introAuditHandler],
+  ['GET', '/homeroom/stewards/intros/network', async (ctx) => await introNetworkPage(ctx)],
+  ['POST', '/homeroom/stewards/intros/network', introNetworkImport],
 
   ['GET', '/homeroom/api/intros/requests', introApi(introApiRequests)],
   ['POST', '/homeroom/api/intros/search', introApi(introApiSearch)],
