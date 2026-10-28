@@ -315,3 +315,47 @@ test('a decline on a network request reads exactly like one still waiting', asyn
   const views = await intro.requestsFor(who.id);
   assert.deepEqual([...new Set(views.map((v) => v.stage))], ['still open']);
 });
+
+/* ================================================================== demo */
+
+test('demo mode shows the steward the target link only when no mail provider is set', async () => {
+  await imported();
+  const who = await member();
+  const created = await intro.createRequest({
+    person: network.asPerson(await network.getConnection(await idOf('Cara Lind')), 'Elliot'), memberId: who.id,
+    need: 'A real need, long enough to pass the minimum the form enforces on members.',
+    whyThem: 'A real reason that is long enough to pass the network source minimum length.',
+  });
+  const admin = await member({ admin: true });
+  const send = async () => {
+    const csrf = await csrfFor(admin.call, '/homeroom/stewards/intros');
+    return await (await admin.call(`/homeroom/stewards/intros/${created.id}/permission`,
+      form({ csrf, to: 'cara@example.org' }))).text();
+  };
+
+  // Off: no link on the page.
+  getDb().prepare("UPDATE hr_intro_requests SET status = 'requested', token_hash = '' WHERE id = ?").run(created.id);
+  const plain = await send();
+  assert.ok(!/href="\/homeroom\/i\/[a-f0-9]{64}"/.test(plain));
+
+  // On, no mail provider: the steward can open the link and answer as the target.
+  process.env.HOMEROOM_INTRO_DEMO = '1';
+  try {
+    getDb().prepare("UPDATE hr_intro_requests SET status = 'requested', token_hash = '' WHERE id = ?").run(created.id);
+    const page = await send();
+    const link = /href="(\/homeroom\/i\/[a-f0-9]{64})"/.exec(page)?.[1];
+    assert.ok(link, 'the demo link is shown');
+    assert.equal((await fetch(base + link)).status, 200, 'and it is the real, working link');
+
+    // On, with a mail provider: the link goes to the inbox, never the screen.
+    process.env.HOMEROOM_RESEND_KEY = 'test';
+    process.env.HOMEROOM_INTRO_MAIL_FROM = 'intros@example.org';
+    getDb().prepare("UPDATE hr_intro_requests SET status = 'requested', token_hash = '' WHERE id = ?").run(created.id);
+    const mailed = await send();
+    assert.ok(!/href="\/homeroom\/i\/[a-f0-9]{64}"/.test(mailed));
+  } finally {
+    delete process.env.HOMEROOM_INTRO_DEMO;
+    delete process.env.HOMEROOM_RESEND_KEY;
+    delete process.env.HOMEROOM_INTRO_MAIL_FROM;
+  }
+});

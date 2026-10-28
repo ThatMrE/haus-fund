@@ -74,6 +74,16 @@ export const weeklyCap = () => num(process.env.HOMEROOM_INTRO_WEEKLY_CAP, 20);
 export const creditBudget = () => num(process.env.HOMEROOM_INTRO_CREDIT_BUDGET, 40);
 export const searchTtlDays = () => num(process.env.HOMEROOM_INTRO_SEARCH_TTL_DAYS, 30);
 
+/**
+ * Demo mode: with no mail provider, show the steward the link the target would
+ * have been sent, so one person can play every part of the double opt-in.
+ *
+ * It does nothing once a mail provider is configured — the link then goes
+ * where it belongs, to the target's inbox — so leaving it set on a real site
+ * cannot quietly hand a steward the power to answer for somebody else.
+ */
+export const demoMode = () => process.env.HOMEROOM_INTRO_DEMO === '1';
+
 /* ------------------------------------------------------------------ audit */
 
 export async function logEvent({ requestId = null, searchId = null, actorId = null,
@@ -856,6 +866,7 @@ export async function stats(now = nowSeconds()) {
     enabled: enabled(),
     configured: hs.configured(),
     agentApi: !!agentToken(),
+    demo: demoMode(),
     waitingOnSteward: await one("SELECT COUNT(*) FROM hr_intro_requests WHERE status = 'requested'"),
     waitingOnTarget: await one("SELECT COUNT(*) FROM hr_intro_requests WHERE status = 'permission_sent'"),
     // The alarm: somebody said yes and the introduction never went out.

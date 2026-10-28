@@ -365,7 +365,7 @@ export function introTokenGonePage({ reason }) {
  * in somebody's inbox is not meaningfully consenting on the connector's
  * behalf, and the gate becomes decorative.
  */
-export function introStewardPage(ctx, { queue, closed, stats, balance, error = null, flash = null, preview = null, network = null }) {
+export function introStewardPage(ctx, { queue, closed, stats, balance, error = null, flash = null, preview = null, network = null, demoLink = null }) {
   return html`<div class="pagehead">
     <div>
       <h1>Introductions</h1>
@@ -382,7 +382,8 @@ export function introStewardPage(ctx, { queue, closed, stats, balance, error = n
     <a href="/homeroom/stewards/intros/network">${network?.available ? 'Re-import' : 'Import it'}</a></p>
 
   ${error ? html`<div class="notice bad">${error}</div>` : ''}
-  ${flash ? html`<div class="notice">${flash}</div>` : ''}
+  ${flash ? html`<div class="notice">${flash}
+    ${demoLink ? html`<br /><a href="${demoLink}" target="_blank" rel="noopener">${demoLink}</a>` : ''}</div>` : ''}
 
   ${!stats.configured ? html`<div class="notice bad">No Happenstance key is set, so members cannot
     search. Existing requests still work.</div>` : ''}
