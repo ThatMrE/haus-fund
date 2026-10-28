@@ -54,12 +54,17 @@ export function redirect(res, location, { status = 303, headers = {} } = {}) {
 }
 
 /** Read and parse a request body (form-encoded or JSON). Caps at 64 KB. */
-export async function readBody(req) {
+/**
+ * `max` is for the one route that legitimately takes a large body — the
+ * steward's network import. Everything else keeps the 64KB default, because
+ * a form that accepts megabytes is a form that can be used to burn memory.
+ */
+export async function readBody(req, { max = MAX_BODY } = {}) {
   const chunks = [];
   let size = 0;
   for await (const chunk of req) {
     size += chunk.length;
-    if (size > MAX_BODY) {
+    if (size > max) {
       const err = new Error('payload too large');
       err.status = 413;
       throw err;

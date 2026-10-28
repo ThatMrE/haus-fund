@@ -51,8 +51,9 @@ export const INTRO_TABS = [
  */
 export function networkSearchPage(ctx, {
   query = '', search = null, people = [], running = false, error = null, flash = null,
-  configured = true, budget = null, load = null,
+  configured = true, budget = null, load = null, network = null,
 }) {
+  const hasNetwork = !!network?.available;
   return html`<div class="pagehead">
     <div>
       <h1>Outside the house</h1>
@@ -67,10 +68,10 @@ export function networkSearchPage(ctx, {
   ${error ? html`<div class="notice bad">${error}</div>` : ''}
   ${flash ? html`<div class="notice">${flash}</div>` : ''}
 
-  ${!configured ? html`<div class="notice bad">Network search is not switched on yet. A steward
+  ${!configured && !hasNetwork ? html`<div class="notice bad">Network search is not switched on yet. A steward
     needs to set <code>HOMEROOM_HAPPENSTANCE_KEY</code>.</div>` : ''}
 
-  <form class="stack" method="post" action="/homeroom/intros/search">
+  ${hasNetwork ? connectorSearch(ctx, { query, network, configured, budget }) : html`<form class="stack" method="post" action="/homeroom/intros/search">
     ${csrfField(ctx)}
     <label>Who are you looking for?
       <span class="dim">Describe the person by what they have done, not by a job title.</span>
@@ -82,13 +83,16 @@ export function networkSearchPage(ctx, {
       ${budget ? html`<span class="mono dim tiny">${budget.spent} of ${budget.budget} search credits
         used this month. Repeat searches are free.</span>` : ''}
     </div>
-  </form>
+  </form>`}
+
+  ${hasNetwork && network.results ? connectorResults(network) : ''}
 
   ${running ? html`<div class="notice">Searching. This takes up to a minute.
     <a href="/homeroom/intros/search?s=${search?.id}&amp;q=${encodeURIComponent(query)}">Refresh</a>
     to see the results.</div>` : ''}
 
   ${search && search.state === 'complete' ? html`<div class="mono dim">
+    ${hasNetwork ? html`<b>The wider network</b> <span class="sep">/</span> ` : ''}
     ${people.length} ${people.length === 1 ? 'person' : 'people'} in the network
     ${search.created_at ? html`<span class="sep">/</span> searched ${relTime(search.created_at)}` : ''}
   </div>` : ''}
@@ -100,6 +104,54 @@ export function networkSearchPage(ctx, {
     : search && search.state === 'complete'
       ? empty('Nobody in the network matched that. Try describing the problem rather than the role.')
       : ''}`;
+}
+
+/*
+ * The connector's own network comes first: it is free, instant, and made of
+ * people the connector has actually met. The search is a GET because it costs
+ * nothing and changes nothing. Happenstance is the explicit second step, with
+ * the price on the button, so a member never spends credits by accident.
+ */
+function connectorSearch(ctx, { query, network, configured, budget }) {
+  return html`<form class="stack" method="get" action="/homeroom/intros/search">
+    <label>Who are you looking for?
+      <span class="dim">A role, a skill, a company or a name. Searching ${network.connector}’s network is free.</span>
+      <input type="text" name="q" maxlength="300" required minlength="2" value="${query}"
+        placeholder="regulatory affairs, fermentation scale-up, seed investor" />
+    </label>
+    <div class="row">
+      <button class="btn solid" type="submit">Search ${network.connector}’s network</button>
+      <span class="mono dim tiny">${network.people.toLocaleString('en-US')} people</span>
+    </div>
+  </form>
+
+  ${query && configured ? html`<form class="inline" method="post" action="/homeroom/intros/search">
+    ${csrfField(ctx)}
+    <input type="hidden" name="q" value="${query}" />
+    <button class="btn ghost" type="submit">Also search the wider network — 2 credits</button>
+    ${budget ? html`<span class="mono dim tiny">${budget.spent} of ${budget.budget} used this month.
+      Needs a full sentence: describe what they have done.</span>` : ''}
+  </form>` : ''}`;
+}
+
+function connectorResults(network) {
+  const { results, connector } = network;
+  return html`<div class="mono dim"><b>${connector}’s network</b> <span class="sep">/</span>
+    ${results.total > results.people.length ? `${results.people.length} of ${results.total}` : results.people.length}
+    ${results.total === 1 ? 'person' : 'people'}</div>
+  ${results.loose && results.people.length ? html`<p class="mono dim tiny">Nobody matched every word, so these
+    match some of them, best first.</p>` : ''}
+  ${results.people.length ? html`<ul class="rail-list wide">${results.people.map((p) => html`<li class="slot">
+    <div class="mono">
+      <b>${p.name}</b>
+      ${p.position ? html`<span class="sep">/</span> ${p.position}` : ''}
+      ${p.company ? html`<span class="sep">/</span> ${p.company}` : ''}
+    </div>
+    ${p.tracks.length ? html`<div class="row tight">${p.tracks.map((t) => pill(t))}</div>` : ''}
+    <div class="mono dim tiny">Connected to ${connector}${p.connectedYear ? ` since ${p.connectedYear}` : ''}.
+      Their title is from then and may have changed.</div>
+    <div class="row tight"><a class="btn solid" href="/homeroom/intros/network/${p.id}">Introduce me</a></div>
+  </li>`)}</ul>` : empty(`Nobody in ${connector}’s network matched that. Try a single word — a role, a skill or a company.`)}`;
 }
 
 function personCard(ctx, person) {
@@ -129,7 +181,7 @@ function personCard(ctx, person) {
  * an ask, it is a chore handed to the connector. The copy says plainly what
  * happens next, including the part members get wrong: the click sends nothing.
  */
-export function introAskPage(ctx, { person, error = null, values = {} }) {
+export function introAskPage(ctx, { person, error = null, values = {}, action = null, whyMin = 20, network = null }) {
   return html`<div class="pagehead">
     <div>
       <h1>Ask for an introduction to ${person.name}</h1>
@@ -148,18 +200,23 @@ export function introAskPage(ctx, { person, error = null, values = {} }) {
     you that ${person.name} said no, and we will not tell you when — a no that the person asking can
     see is a no that costs something to give, and then it stops being a real answer.</div>
 
+  ${network ? html`<p class="mono dim tiny">In ${network.connector}’s LinkedIn network${network.connectedYear
+    ? ` since ${network.connectedYear}` : ''}. The title above is from then and may have changed — say
+    what you know about them now if it matters.</p>` : ''}
+
   ${person.evidence.length ? section('Why the search picked them', html`<ul class="tight small">
     ${person.evidence.map((e) => html`<li class="dim">${e}</li>`)}</ul>`) : ''}
 
-  <form class="stack" method="post" action="/homeroom/intros/ask/${person.id}">
+  <form class="stack" method="post" action="${action || `/homeroom/intros/ask/${person.id}`}">
     ${csrfField(ctx)}
     <label>What do you need? <span class="dim">Specific. This is what they read first.</span>
       <textarea name="need" rows="4" required minlength="40"
         placeholder="We are 6 weeks from a GRAS self-affirmation filing and cannot tell whether our expert panel needs a toxicologist on it."
         >${values.need || ''}</textarea>
     </label>
-    <label>Why them? <span class="dim">What in their background made you pick them.</span>
-      <textarea name="why_them" rows="2" required minlength="20">${values.why_them || ''}</textarea>
+    <label>Why them? <span class="dim">What in their background made you pick them${whyMin > 20
+      ? ` — at least ${whyMin} characters, because there is no search evidence to lean on` : ''}.</span>
+      <textarea name="why_them" rows="${whyMin > 20 ? 3 : 2}" required minlength="${whyMin}">${values.why_them || ''}</textarea>
     </label>
     <label>What are you asking for?
       <select name="asking_for">
@@ -308,7 +365,7 @@ export function introTokenGonePage({ reason }) {
  * in somebody's inbox is not meaningfully consenting on the connector's
  * behalf, and the gate becomes decorative.
  */
-export function introStewardPage(ctx, { queue, closed, stats, balance, error = null, flash = null, preview = null }) {
+export function introStewardPage(ctx, { queue, closed, stats, balance, error = null, flash = null, preview = null, network = null }) {
   return html`<div class="pagehead">
     <div>
       <h1>Introductions</h1>
@@ -318,6 +375,11 @@ export function introStewardPage(ctx, { queue, closed, stats, balance, error = n
   </div>
 
   ${stewardSubnav(STEWARD_TABS, 'intros')}
+
+  <p class="mono dim tiny">${network?.available
+    ? html`LinkedIn network: ${network.people.toLocaleString('en-US')} people, ${network.withEmail} with an address on file.`
+    : 'No LinkedIn network imported yet.'}
+    <a href="/homeroom/stewards/intros/network">${network?.available ? 'Re-import' : 'Import it'}</a></p>
 
   ${error ? html`<div class="notice bad">${error}</div>` : ''}
   ${flash ? html`<div class="notice">${flash}</div>` : ''}
@@ -386,7 +448,9 @@ function renderQueue(ctx, rows, kind) {
 
     ${kind === 'requested' ? html`<form method="post" action="/homeroom/stewards/intros/${r.id}/compose" class="inline">
         ${csrfField(ctx)}
-        <input type="email" name="to" maxlength="200" required placeholder="their email address" />
+        <input type="email" name="to" maxlength="200" required placeholder="their email address"
+          value="${r.prefill || ''}" />
+        ${r.prefill ? html`<span class="mono dim tiny">From the LinkedIn export — check it is still current.</span>` : ''}
         <button class="btn solid" type="submit">Read the message before it goes</button>
       </form>
       <form method="post" action="/homeroom/stewards/intros/${r.id}/refuse" class="inline">
@@ -444,5 +508,67 @@ export function introAuditPage(ctx, { request, events }) {
       <span class="sep">/</span> ${stamp(e.created_at)}</div>
     ${e.detail ? html`<div class="dim small">${e.detail}</div>` : ''}
   </li>`)}</ul>` : empty('Nothing recorded.'))}`;
+}
+
+/**
+ * The connector's LinkedIn export, loaded by a steward.
+ *
+ * A file input fills the textarea in the browser and the form posts it as an
+ * ordinary field, so there is no multipart parser on the server. Without
+ * JavaScript, pasting the file into the textarea does the same thing.
+ */
+export function introNetworkPage(ctx, { stats, connector, error = null, result = null }) {
+  return html`<div class="pagehead">
+    <div>
+      <h1>LinkedIn network</h1>
+      <p class="lede">${connector}’s connections, as a place members can find people. Searching it is
+        free. Nobody in it has agreed to anything, so every ask still goes through the queue.</p>
+    </div>
+    <a class="btn ghost" href="/homeroom/stewards/intros">Back to the queue</a>
+  </div>
+
+  ${stewardSubnav(STEWARD_TABS, 'intros')}
+
+  ${error ? html`<div class="notice bad">${error}</div>` : ''}
+  ${result ? html`<div class="notice"><b>Imported ${result.imported.toLocaleString('en-US')} people.</b>
+    ${result.withEmail} with an address on file. Skipped ${result.noName} with no name and
+    ${result.suppressed} who have asked never to be contacted; collapsed ${result.duplicate} duplicates.
+    ${result.dropped ? html`${result.dropped} from an earlier import are not in this file and no longer show in search.` : ''}</div>` : ''}
+
+  <div class="statstrip">
+    <span><b>${stats.people.toLocaleString('en-US')}</b> searchable</span>
+    <span><b>${stats.withEmail}</b> with an address</span>
+    <span><b>${stats.importedAt ? relTime(stats.importedAt) : '—'}</b> last import</span>
+  </div>
+
+  ${section('Import', html`<ol class="tight small">
+      <li>On LinkedIn: Settings, Data privacy, Get a copy of your data, Connections.</li>
+      <li>Unzip what arrives and choose <code>Connections.csv</code> below.</li>
+    </ol>
+    <p class="mono dim tiny">Importing again updates everyone in place. Addresses are stored encrypted
+      and only ever shown here, on a steward’s compose field — never to a member.</p>
+    <form class="stack" method="post" action="/homeroom/stewards/intros/network">
+      ${csrfField(ctx)}
+      <input type="file" accept=".csv,text/csv" id="network-file" />
+      <label>Or paste the file
+        <textarea name="csv" id="network-csv" rows="6" required
+          placeholder="First Name,Last Name,Email Address,Company,Position,Connected On"></textarea>
+      </label>
+      <div class="row"><button class="btn solid" type="submit">Import</button></div>
+    </form>
+    ${raw(`<script>
+(function () {
+  var file = document.getElementById('network-file');
+  var box = document.getElementById('network-csv');
+  if (!file || !box) return;
+  file.addEventListener('change', function () {
+    var f = file.files && file.files[0];
+    if (!f) return;
+    var reader = new FileReader();
+    reader.onload = function () { box.value = String(reader.result || ''); };
+    reader.readAsText(f);
+  });
+})();
+</script>`)}`)}`;
 }
 

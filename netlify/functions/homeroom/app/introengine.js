@@ -403,10 +403,11 @@ export async function createRequest({ person, memberId, need, whyThem = '', aski
   if (!verdict.ok) return { ok: false, ...verdict };
 
   const info = await sql.run(`INSERT INTO hr_intro_requests
-       (member_id, person_hash, search_id, name, title, org, summary, evidence, through, profile_url,
+       (member_id, person_hash, search_id, source, name, title, org, summary, evidence, through, profile_url,
         need, why_them, asking_for, status, created_at, updated_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'requested', ?, ?)`,
-  memberId, person.person_hash, person.search_id || null, person.name, person.title || '',
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'requested', ?, ?)`,
+  memberId, person.person_hash, person.search_id || null, person.source || 'happenstance',
+  person.name, person.title || '',
   person.org || '', person.summary || '', JSON.stringify(person.evidence || []),
   (person.through || []).join(', '), person.profile_url || '',
   need, whyThem, askingFor, now, now);
@@ -692,6 +693,7 @@ export function agentView(request) {
   return {
     id: request.id,
     status: request.status,
+    source: request.source || 'happenstance',
     member_id: request.member_id,
     name: request.name,
     title: request.title,

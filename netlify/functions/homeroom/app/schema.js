@@ -835,6 +835,31 @@ CREATE TABLE IF NOT EXISTS hr_intro_events (
 );
 
 CREATE INDEX IF NOT EXISTS idx_hr_intro_events ON hr_intro_events(request_id, created_at);
+
+/* The connector's LinkedIn connections export — a second place a member can
+   find someone, next to Happenstance. See docs/INTRO-ENGINE.md §20.8.
+
+   Every row is somebody who never agreed to be here, exactly like
+   hr_hs_people. There is no LinkedIn ID in the export, so person_hash is a
+   hash of the normalised name and company: stable across re-imports, and the
+   same key the suppression list and cooldowns use. The few addresses the
+   export carries are encrypted under the same key as a request's address. */
+CREATE TABLE IF NOT EXISTS hr_li_connections (
+  id            INTEGER PRIMARY KEY AUTOINCREMENT,
+  person_hash   TEXT NOT NULL UNIQUE,
+  name          TEXT NOT NULL,
+  company       TEXT NOT NULL DEFAULT '',
+  position      TEXT NOT NULL DEFAULT '',
+  tracks        TEXT NOT NULL DEFAULT '',  -- comma-separated, from keyword rules
+  haystack      TEXT NOT NULL DEFAULT '',  -- lowercased name, company, position, tracks
+  connected_on  TEXT NOT NULL DEFAULT '',  -- YYYY-MM-DD
+  email_enc     TEXT NOT NULL DEFAULT '',  -- encrypted; stewards only, never rendered to a member
+  batch         INTEGER NOT NULL,          -- the import that last saw this person
+  imported_at   INTEGER NOT NULL,
+  updated_at    INTEGER NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_hr_li_connections_batch ON hr_li_connections(batch);
 `;
 
 
@@ -913,6 +938,9 @@ export const ADDED_COLUMNS = [
   // second carries it.
   ['hr_intro_requests', 'agent_note', "TEXT NOT NULL DEFAULT ''"],
   ['hr_intro_requests', 'staged_at', 'INTEGER'],
+  // Where the member found the person: a Happenstance search, or the
+  // connector's own LinkedIn network (§20.8). Existing rows were all the former.
+  ['hr_intro_requests', 'source', "TEXT NOT NULL DEFAULT 'happenstance'"],
   ['hr_mentors', 'synced_at', 'INTEGER'],
   // Phase 3: keeping the roster honest. `confirmed_at` is when they last said
   // yes to being here at all; the two nudge columns are how a silence becomes
