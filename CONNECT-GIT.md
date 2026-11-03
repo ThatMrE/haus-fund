@@ -74,11 +74,32 @@ produces similar-looking failures and needs no config change at all.
 
 ## Subdomains
 
-`cores.haus.fund` serves the Core Facility Finder. It is a **domain alias of
-this same Netlify project**, not a separate site — both hostnames resolve to the
-same publish directory, and `netlify/edge-functions/cores-host.js` rewrites `/`
-to `/cores.html` when the Host is `cores.haus.fund`. Every other path is left
-alone, so the shared assets, fonts and data files work on both hostnames.
+Each tool in this repo has its own hostname. All of them are **domain aliases
+of the one Netlify project that deploys this repo**, not separate sites: every
+hostname resolves to the same publish directory, and
+`netlify/edge-functions/cores-host.js` rewrites `/` to the tool's page when the
+Host matches. Every other path is left alone, so the shared assets, fonts and
+data files work on every hostname.
+
+| Hostname | Serves | Kind |
+|---|---|---|
+| `cores.haus.fund` | `/cores.html` — Core Facility Finder | static page |
+| `visa.haus.fund` | `/visa.html` — Visa Desk | static page |
+| `skilltree.haus.fund` | `/skilltree.html` — Biopunk Skill Tree | static page |
+| `news.haus.fund` | `/news` — the Haus Feed | server-rendered app |
+| `homeroom.haus.fund` | `/homeroom` — Homeroom, members only | server-rendered app |
+
+The host map is `HOSTS` in `cores-host.js`. `node --test
+netlify/edge-functions/*.test.js` checks it.
+
+For the two apps only `/` is rewritten. The app renders its own links with its
+path prefix, so the next request is `news.haus.fund/news/...`, and the function
+that owns `/news/*` answers it on any hostname. The apex stays the canonical
+address.
+
+`/lp` is deliberately **not** in the map. The LP section sits behind the
+`lp-auth` edge function, declared for `/lp` and `/lp/*`; a rewrite from `/`
+would reach the files without passing through that check.
 
 `_redirects` cannot branch on the Host header, only on path — that is why the
 host check is an edge function rather than a redirect rule.
@@ -88,26 +109,36 @@ Note that `fightclub.haus.fund` uses the other pattern: its own Netlify project
 the page already lives in this repo and shares its design system; a separate
 project is right when the thing is genuinely independent.
 
-### Pointing a new subdomain
+### Pointing a subdomain
 
-Two steps, both outside this repo:
+Two steps, both outside this repo. Repeat them for each hostname in the table.
 
-1. **Netlify** → [Domain management](https://app.netlify.com/projects/haus-fund/configuration/domain)
-   → *Add a domain alias* → `cores.haus.fund`. Netlify then tells you which
-   record it wants.
-2. **DNS** — wherever haus.fund's zone is hosted:
-   - *If the zone is on Netlify DNS*, adding the alias creates the record for
-     you. Nothing else to do.
-   - *If the zone is at an external registrar*, add a `CNAME` for `cores`
-     pointing at `haus-fund.netlify.app`. Do not point it at an IP; Netlify's
-     load balancer addresses change.
+1. **Netlify** → the project that deploys this repo → *Domain management* →
+   *Add a domain alias* → the hostname.
+2. **DNS** — the `haus.fund` zone is on **Cloudflare** (nameservers
+   `huxley.ns.cloudflare.com` and `kallie.ns.cloudflare.com`). Add a `CNAME`
+   for the subdomain label (`cores`, `visa`, `skilltree`, `news`, `homeroom`)
+   pointing at the project's `*.netlify.app` hostname, **DNS only** (grey
+   cloud, not proxied), so Netlify can issue the certificate. Do not point it
+   at an IP; Netlify's load balancer addresses change.
 
 TLS is provisioned automatically once the record resolves, usually within a few
 minutes. Until then the subdomain serves a certificate warning, which is
 expected and clears on its own.
 
-To add another tool subdomain later, add a line to `HOSTS` in
-`netlify/edge-functions/cores-host.js` and repeat the two steps above.
+Check with `curl -sI https://cores.haus.fund/ | head -1` — a 200, and the
+page title from `cores.html`, means the alias, the record and the rewrite all
+agree.
+
+### The project must deploy *this* repo
+
+The aliases follow the Netlify project, and the project follows whichever
+repository it is linked to under *Build settings*. If haus.fund serves pages
+this repo does not contain, or every page in this repo answers 404 on the apex,
+the project has been linked to a different repository. The deploy log names
+the repo and commit for each deploy: a commit URL outside `ThatMrE/haus-fund`
+is the sign. Relink the project, or attach the aliases to the project that does
+deploy this repo.
 
 ## Checking a deploy
 

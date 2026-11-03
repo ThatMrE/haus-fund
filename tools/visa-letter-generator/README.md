@@ -194,9 +194,10 @@ Push to `main`. Netlify builds and publishes automatically; there is no build
 step for this tool.
 
 **One-time infrastructure step:** `visa.haus.fund` must be added as a domain
-alias on the Netlify project, alongside `cores.haus.fund`. Until it is, the
-tool is reachable at `haus.fund/visa.html` but the subdomain will not resolve.
-The rewrite itself is already wired in `netlify/edge-functions/cores-host.js`.
+alias on the Netlify project that deploys this repo, with a CNAME in the
+haus.fund zone. The steps are in `CONNECT-GIT.md`, "Subdomains". Until then
+the tool is reachable at `/visa.html` on that project but the subdomain
+will not resolve.
 
 ## Scope
 
