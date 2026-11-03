@@ -1438,7 +1438,7 @@ async function introTokenAnswer(ctx, { token }, decision) {
 
 /* --- the steward's side ------------------------------------------------- */
 
-async function introStewardHandler(ctx, { error = null, flash = null, preview = null } = {}) {
+async function introStewardHandler(ctx, { error = null, flash = null, preview = null, demoLink = null } = {}) {
   if (introOff(ctx)) return;
   if (!stewardsOnly(ctx)) return;
   const balance = intro.searchable() ? await hsapi.credits() : { ok: false, balance: null };
@@ -1451,6 +1451,7 @@ async function introStewardHandler(ctx, { error = null, flash = null, preview = 
   await render(ctx, views.introStewardPage(ctx, {
     queue,
     network: await network.stats(),
+    demoLink,
     closed: await intro.recentlyClosed(),
     stats: await intro.stats(),
     balance: balance.ok ? balance.balance : null,
@@ -1495,10 +1496,14 @@ async function introPermissionSend(ctx, fields, { id }) {
     request: sent.request, member, token: sent.token, to: sent.to,
   });
   const delivery = await intromail.deliver(message);
+  const demoLink = intro.demoMode() && !intromail.mailerConfigured() ? `/homeroom/i/${sent.token}` : null;
   await introStewardHandler(ctx, {
     flash: delivery.sent
       ? `Asked ${sent.request.name}. They have 10 days, and we will not chase.`
-      : `Recorded, but the mail provider did not take it (${delivery.reason}). The link is in the function log.`,
+      : demoLink
+        ? `Demo mode: no mail provider, so nothing was sent. Open the link below to answer as ${sent.request.name}.`
+        : `Recorded, but the mail provider did not take it (${delivery.reason}). The link is in the function log.`,
+    demoLink,
   });
 }
 
