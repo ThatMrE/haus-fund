@@ -11,6 +11,14 @@ git push
 
 That's the whole workflow. No zip uploads, no CLI deploy.
 
+> **Warning (2026-11-03): this repo is not what haus.fund serves right now.**
+> The current production deploy of the `haus-fund` Netlify project (deploy
+> `6ac6ef7695eb710008595e7f`, 2026-10-08) came from a Lovable/TanStack app in
+> `elia-boop/vista-hero-template`. It arrived through the Netlify API, not a git
+> build from this repo. Two sources publish to one project, and the last deploy
+> wins. Pick one source, disconnect the other, and route all changes through
+> pull requests. See `CONTRIBUTING.md`.
+
 ## The setup
 
 | | |

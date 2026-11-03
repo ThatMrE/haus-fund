@@ -39,6 +39,8 @@ https://www.haus.fund https://haus.fund 301!
 /tools/visa-letter-generator/README.md /404.html 404!
 /tools/biopunk-skill-tree/README.md /404.html 404!
 /netlify/functions/news/README.md /404.html 404!
+/sites/biopunk-news/README.md /404.html 404!
+/CONTRIBUTING.md /404.html 404!
 
 # The news app's source and tests live under netlify/ and are covered by the
 # rule below. Its stylesheet and client script are served from /news-assets.
@@ -52,6 +54,11 @@ https://www.haus.fund https://haus.fund 301!
 # schema and its RLS policies. No secrets are in them — the keys are Netlify
 # environment variables — but there is no reason to serve them either.
 /supabase/* /404.html 404!
+
+# CI and repo tooling. Not part of the site.
+# scripts/check-site.mjs enforces the .md list above: a new .md with no line here fails CI.
+/scripts/* /404.html 404!
+/.github/* /404.html 404!
 
 # No catch-all. Unknown paths fall through to 404.html with a real 404 status.
 # A "/* /index.html 200" rule here would turn every typo into a soft 404: the

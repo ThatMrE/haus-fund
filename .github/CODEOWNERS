@@ -1,0 +1,15 @@
+# Reviewers GitHub requests automatically for each area.
+# Branch protection on main should set "Require review from Code Owners".
+# Add each regular contributor's GitHub login next to the areas they own.
+
+*                         @ThatMrE
+
+# Deploy and security config: changes here change what goes live.
+netlify.toml              @ThatMrE
+_redirects                @ThatMrE
+netlify/edge-functions/   @ThatMrE
+.github/                  @ThatMrE
+
+# Design system: one change reaches every page and the /news feed.
+tokens/                   @ThatMrE
+design-system.html        @ThatMrE
