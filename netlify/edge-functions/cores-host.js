@@ -1,8 +1,8 @@
 // Serves each tool subdomain at its own root.
 //
-// WHY AN EDGE FUNCTION: the tool subdomains are domain aliases of the same
-// Netlify project as haus.fund, so every hostname resolves to the same publish
-// directory. Without this, cores.haus.fund/ would serve the marketing
+// WHY AN EDGE FUNCTION: the tool subdomains are domain aliases of the Netlify
+// project that deploys this repo, so every hostname resolves to the same
+// publish directory. Without this, cores.haus.fund/ would serve the marketing
 // homepage. Netlify's _redirects file cannot branch on the Host header — only
 // on path — so the host check has to happen here.
 //
@@ -10,12 +10,27 @@
 // facility JSON, the fonts and the shared assets all resolve normally on every
 // hostname.
 //
-// Adding another tool subdomain means adding a line to HOSTS and adding the
-// hostname as a domain alias in the Netlify project — nothing more.
+// Two kinds of target:
+//   - a static page (cores.html, visa.html, skilltree.html);
+//   - a server-rendered app mounted at a path prefix (/news, /homeroom). Only
+//     "/" is rewritten. The app renders its own links with the prefix, so the
+//     second request is news.haus.fund/news/... and the function that owns
+//     /news/* answers it on any hostname.
+//
+// NOT HERE ON PURPOSE: /lp. The LP section is behind the lp-auth edge function,
+// which is declared for /lp and /lp/*. A rewrite from "/" would reach the
+// files without passing through that check.
+//
+// Adding another tool subdomain means adding a line to HOSTS, adding the
+// hostname as a domain alias in the Netlify project, and adding a CNAME in the
+// haus.fund zone — see CONNECT-GIT.md, "Subdomains".
 
 const HOSTS = {
   "cores.haus.fund": "/cores.html",
   "visa.haus.fund": "/visa.html",
+  "skilltree.haus.fund": "/skilltree.html",
+  "news.haus.fund": "/news",
+  "homeroom.haus.fund": "/homeroom",
 };
 
 // Pure so it can be unit-tested without the edge runtime.
