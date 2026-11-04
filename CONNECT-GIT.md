@@ -11,13 +11,13 @@ git push
 
 That's the whole workflow. No zip uploads, no CLI deploy.
 
-> **Warning (2026-11-03): this repo is not what haus.fund serves right now.**
-> The current production deploy of the `haus-fund` Netlify project (deploy
-> `6ac6ef7695eb710008595e7f`, 2026-10-08) came from a Lovable/TanStack app in
-> `elia-boop/vista-hero-template`. It arrived through the Netlify API, not a git
-> build from this repo. Two sources publish to one project, and the last deploy
-> wins. Pick one source, disconnect the other, and route all changes through
-> pull requests. See `CONTRIBUTING.md`.
+> **Out of date (2026-11-04): this repo no longer deploys haus.fund.**
+> The team chose the Lovable app as the only source for haus.fund. Production
+> has come from that app since 2026-10-08. Merges here since then did not deploy,
+> and PRs here get no Netlify preview. The routes this repo serves (`/news`,
+> `/homeroom`, `/biopunk`, `/skilltree`, `/lp`) are offline on haus.fund until
+> they move to their own Netlify project and subdomain. The steps below describe
+> the old setup.
 
 ## The setup
 
