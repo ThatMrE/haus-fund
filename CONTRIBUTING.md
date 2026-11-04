@@ -2,7 +2,7 @@
 
 **This repo deploys to `news.haus.fund`, not haus.fund.** haus.fund is the
 Lovable app. This repo holds `/news`, `/homeroom`, the program pages, the design
-system and the tools. It deploys through its own Netlify project, `haus-news`.
+system and the tools. It deploys through its own Netlify project, `haus-homeroom`.
 See "news.haus.fund setup" in `CONNECT-GIT.md`.
 
 ## The one rule
