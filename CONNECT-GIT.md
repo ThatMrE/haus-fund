@@ -11,13 +11,39 @@ git push
 
 That's the whole workflow. No zip uploads, no CLI deploy.
 
-> **Out of date (2026-11-04): this repo no longer deploys haus.fund.**
-> The team chose the Lovable app as the only source for haus.fund. Production
-> has come from that app since 2026-10-08. Merges here since then did not deploy,
-> and PRs here get no Netlify preview. The routes this repo serves (`/news`,
-> `/homeroom`, `/biopunk`, `/skilltree`, `/lp`) are offline on haus.fund until
-> they move to their own Netlify project and subdomain. The steps below describe
-> the old setup.
+> **Changed (2026-11-04): this repo now deploys to `news.haus.fund`, not haus.fund.**
+> haus.fund is the Lovable app. This repo moves to its own Netlify project,
+> `haus-news`, on `news.haus.fund`. There, `/` redirects to `/news`, and
+> `/homeroom`, `/biopunk`, `/skilltree`, `/lp` and the tool pages keep their paths.
+> See "news.haus.fund setup" below. The rest of this file describes the old
+> haus.fund setup.
+
+## news.haus.fund setup
+
+One-time steps. Each needs an admin of the named service.
+
+1. **Netlify: link the repo.** Open the `haus-news` project → Project
+   configuration → Build & deploy → Link repository → `ThatMrE/haus-fund`,
+   branch `main`. `netlify.toml` sets the publish directory and functions.
+   Turn deploy previews on.
+2. **Netlify: copy the environment variables.** Copy every variable from the
+   `haus-fund` project that the functions read: the `HOMEROOM_*`, `NEWS_*`,
+   `BIOPUNK_*`, `SUPABASE_*`, `AIRTABLE_TOKEN`, `LUMA_*`, `DATABASE_URL` and
+   `LP_PASSWORD` keys. Then set `HOMEROOM_BASE_URL=https://news.haus.fund`
+   (mail links use it).
+3. **Netlify: add the domain.** `haus-news` → Domain management → add
+   `news.haus.fund`.
+4. **Cloudflare: add the DNS record.** Zone `haus.fund` → DNS → `CNAME news →
+   haus-news.netlify.app`, proxy **off** (DNS only), so Netlify can issue the
+   TLS certificate. `cores` and `visa` can point at the same target; the edge
+   function already serves them.
+5. **Supabase: allow the new origin.** Authentication → URL configuration → add
+   `https://news.haus.fund/**` to the redirect URLs.
+6. **Lovable app: forward old links.** Add 301 redirects on haus.fund:
+   `/news/*` → `https://news.haus.fund/news/:splat` and `/homeroom/*` →
+   `https://news.haus.fund/homeroom/:splat`.
+7. **Check.** `https://news.haus.fund/` lands on the feed. `/homeroom/login`
+   loads. A sign-in round trip works.
 
 ## The setup
 

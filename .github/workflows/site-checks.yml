@@ -21,6 +21,7 @@ jobs:
         with:
           node-version: 22
       - run: node scripts/check-site.mjs
+      - run: node --test scripts/host-routing.test.mjs
 
   news:
     name: News app tests

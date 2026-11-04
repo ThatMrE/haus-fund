@@ -1,8 +1,9 @@
 # Contributing to this repo
 
-**This repo does not deploy haus.fund.** haus.fund is the Lovable app. This repo
-holds `/news`, `/homeroom`, the program pages, the design system and the tools.
-Until they get their own Netlify project, they are not live on haus.fund.
+**This repo deploys to `news.haus.fund`, not haus.fund.** haus.fund is the
+Lovable app. This repo holds `/news`, `/homeroom`, the program pages, the design
+system and the tools. It deploys through its own Netlify project, `haus-news`.
+See "news.haus.fund setup" in `CONNECT-GIT.md`.
 
 ## The one rule
 
@@ -16,8 +17,7 @@ app publishes there.
 2. Edit. Each page is a single HTML file; design values live in `tokens/`.
 3. Run the checks: `node scripts/check-site.mjs`. No install is needed.
 4. Push and open a pull request. The template lists what to check.
-5. Once this repo has its own Netlify project, Netlify posts a **deploy
-   preview** link on each PR. Review the pages there.
+5. Netlify posts a **deploy preview** link on each PR. Review the pages there.
 6. A code owner (see `.github/CODEOWNERS`) reviews. When CI is green and the
    review is approved, merge.
 
@@ -37,7 +37,7 @@ The `Site checks` workflow runs on every PR:
 
 | Job | What it catches |
 |-----|-----------------|
-| Links and public files | Broken internal links and images. A `.md` file that `_redirects` does not block, which would go live. |
+| Links and public files | Broken internal links and images. A `.md` file that `_redirects` does not block, which would go live. Host routing for `news.haus.fund`, `cores` and `visa`. |
 | News app tests | Regressions in `/news`. |
 | Homeroom app tests | Regressions in `/homeroom`. |
 
@@ -49,6 +49,5 @@ These live in GitHub and Netlify settings, not in files:
   one approval, review from Code Owners, and the three `Site checks` jobs.
   Block force pushes.
 - GitHub → Settings → Collaborators: add each contributor with **Write** access.
-- Netlify: to bring `/news` and `/homeroom` back, create a separate Netlify
-  project for this repo with its own subdomain (for example `news.haus.fund`),
-  production branch `main`, deploy previews on.
+- Netlify, Cloudflare and Supabase: the one-time `news.haus.fund` setup in
+  `CONNECT-GIT.md`.

@@ -151,7 +151,7 @@ function footer(ctx) {
     <a href="/homeroom/publish">Publish to news</a>
     ${ctx.user?.is_admin ? '<a href="/homeroom/stewards/access">Front door</a>' : ''}
     <a href="/homeroom/about">About Homeroom</a>
-    <a href="/">Haus</a>
+    <a href="https://haus.fund/">Haus</a>
     ${out}
     <div class="line">Members only &mdash; what is said here stays here.</div>
   </div>
