@@ -143,3 +143,24 @@ test('an event can be pinned to a batch calendar', async () => {
     : await sql.all("SELECT name FROM pragma_table_info('hr_events')");
   assert.ok(cols.some((c) => c.name === 'batch_id'));
 });
+
+test('on Postgres, every Homeroom table is closed to the public Data API', { skip: PG_URL ? false : 'Postgres only' }, async () => {
+  const open = await sql.all(`SELECT c.relname AS name FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace
+    WHERE n.nspname = 'public' AND c.relkind = 'r' AND NOT c.relrowsecurity`);
+  assert.deepEqual(open.map((r) => r.name), [], 'a table without RLS is readable with the publishable key on Supabase');
+});
+
+test('on Postgres, a role that is not the owner reads nothing, even when granted SELECT', { skip: PG_URL ? false : 'Postgres only' }, async () => {
+  // Supabase grants the anon role SELECT on new public tables. Imitate that
+  // and confirm RLS, not the grant, is what keeps the rows in.
+  const rows = await sql.tx(async (q) => {
+    await q.run("DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'anon_probe') THEN CREATE ROLE anon_probe NOLOGIN; END IF; END $$;");
+    await q.run('GRANT USAGE ON SCHEMA public TO anon_probe; GRANT SELECT ON ALL TABLES IN SCHEMA public TO anon_probe;');
+    await q.run('SET LOCAL ROLE anon_probe');
+    const users = await q.all('SELECT id FROM users');
+    const investors = await q.all('SELECT email FROM hr_investors');
+    return { users: users.length, investors: investors.length };
+  });
+  assert.deepEqual(rows, { users: 0, investors: 0 });
+  assert.ok(Number(await sql.value('SELECT COUNT(*) FROM users')) > 0, 'the owner still sees every row');
+});
