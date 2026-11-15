@@ -1,9 +1,18 @@
 /**
  * Pulling the mentor onboarding form into Homeroom.
  *
- * A mentor fills in a public Airtable form; the row lands in the Mentors table;
- * this sweep brings it in as `state = 'pending'`, which is listed NOWHERE until
- * a steward vets it at /homeroom/stewards/mentors.
+ * Two tables in Haus Fund OS feed the roster:
+ *
+ *   Mentors              the curated roster, in the shape this module expects
+ *   Mentor Applications  where the public mentor form writes (since Nov 2026),
+ *                        reviewed in Airtable: New, Memo Ready, Call Scheduled,
+ *                        then Accepted, Waitlist or Declined
+ *
+ * An application comes in only once Airtable's own review has said Accepted,
+ * the applicant ticked Privacy Consent and Show on Directory, and it is not yet
+ * linked to a Mentors record (if it is, the Mentors row is the one that counts).
+ * Either way the row arrives as `state = 'pending'`, which is listed NOWHERE
+ * until a steward vets it at /homeroom/stewards/mentors.
  *
  * ── THE FORM IS A PUBLIC WRITE ENDPOINT ──────────────────────────────────
  *
@@ -58,6 +67,9 @@ import * as mentormail from './mentormail.js';
 // cited was dropped. A sync against it fails on every run.
 const BASE = () => process.env.HOMEROOM_MENTORS_BASE || 'appxqPp1CYEDNLXHS';
 const TABLE = () => process.env.HOMEROOM_MENTORS_TABLE || 'tblnV5zn3t2aQHQaX';
+// Mentor Applications, where the public form writes. HOMEROOM_MENTOR_APPLICATIONS_TABLE=off
+// turns this source off and leaves the curated Mentors table as the only one.
+const APPLICATIONS_TABLE = () => process.env.HOMEROOM_MENTOR_APPLICATIONS_TABLE || 'tblrHW0lkYSAonokn';
 const TIMEOUT_MS = 12_000;
 
 /**
@@ -75,6 +87,55 @@ export const FIELDS = [
   'Email', 'Capacity', 'Consent Mode', 'Tracks',
   'Vetted', 'Status',
 ];
+
+/**
+ * What is read from Mentor Applications. The table also holds CVs, headshots,
+ * referrers, diligence memos and call notes; none of it is requested.
+ */
+export const APPLICATION_FIELDS = [
+  'Full Name', 'Email', 'Current Title', 'Organization', 'Location',
+  'Short Bio', 'Domains', 'Can Help With', 'Track',
+  'Review Status', 'Privacy Consent', 'Show on Directory', 'Mentor Record',
+];
+
+/** Airtable's review must have said yes, and the applicant must have said yes. */
+export function applicationEligible(fields) {
+  const status = typeof fields['Review Status'] === 'object' ? fields['Review Status']?.name : fields['Review Status'];
+  if (String(status || '').toLowerCase() !== 'accepted') return false;
+  if (!fields['Privacy Consent'] || !fields['Show on Directory']) return false;
+  if (Array.isArray(fields['Mentor Record']) && fields['Mentor Record'].length) return false;
+  return true;
+}
+
+/** The form's tracks, in the words trackFor() understands. */
+function tracksFrom(value) {
+  const list = Array.isArray(value) ? value : (value ? [value] : []);
+  return list.map((t) => String(t || '')).filter(Boolean).join(',');
+}
+
+/** One application, flattened to the same keys as a Mentors row. */
+export function applicationToRow(record) {
+  const f = record.fields || {};
+  const list = (value) => (Array.isArray(value) ? value.join(',') : (value || ''));
+  return {
+    '__record_id': record.id,
+    name: f['Full Name'] || '',
+    role: f['Current Title'] || '',
+    org: f.Organization || '',
+    'area of expertise': '',
+    tags: [list(f.Domains), list(f['Can Help With'])].filter(Boolean).join(','),
+    location: typeof f.Location === 'object' ? (f.Location?.name || '') : (f.Location || ''),
+    bio: f['Short Bio'] || '',
+    scheduler: '',
+    format: '',
+    email: f.Email || '',
+    capacity: '',
+    'consent mode': '',
+    tracks: tracksFrom(f.Track),
+    vetted: '',
+    status: 'accepted',
+  };
+}
 
 export function token() {
   return process.env.HOMEROOM_MENTOR_SYNC_TOKEN || process.env.AIRTABLE_TOKEN || '';
@@ -108,17 +169,31 @@ function toRow(record) {
   };
 }
 
-/** Fetch every page. Throws rather than returning a short list on failure. */
+/** Fetch every page of both tables. Throws rather than returning a short list on failure. */
 export async function fetchRows() {
   if (!configured()) throw new Error('No Airtable token for the mentor sync.');
 
-  const rows = [];
+  const rows = (await fetchTable(TABLE(), FIELDS)).map(toRow);
+
+  // Applications: the same fail-closed fetch. An unreadable applications table
+  // fails the whole sweep rather than quietly syncing half the roster.
+  const applications = APPLICATIONS_TABLE();
+  if (applications && applications !== 'off') {
+    for (const record of await fetchTable(applications, APPLICATION_FIELDS)) {
+      if (applicationEligible(record.fields || {})) rows.push(applicationToRow(record));
+    }
+  }
+  return rows;
+}
+
+async function fetchTable(table, fields) {
+  const records = [];
   let offset = null;
   do {
-    const url = new URL(`https://api.airtable.com/v0/${BASE()}/${TABLE()}`);
+    const url = new URL(`https://api.airtable.com/v0/${BASE()}/${table}`);
     url.searchParams.set('pageSize', '100');
     if (offset) url.searchParams.set('offset', offset);
-    for (const field of FIELDS) url.searchParams.append('fields[]', field);
+    for (const field of fields) url.searchParams.append('fields[]', field);
 
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
@@ -129,7 +204,7 @@ export async function fetchRows() {
       });
       if (!res.ok) throw new Error(`Airtable returned ${res.status}`);
       const data = await res.json();
-      for (const record of data.records || []) rows.push(toRow(record));
+      records.push(...(data.records || []));
       offset = data.offset;
     } catch (err) {
       throw new Error(err?.name === 'AbortError' ? 'Airtable timed out.' : (err?.message || 'Airtable unreachable.'));
@@ -138,7 +213,7 @@ export async function fetchRows() {
     }
   } while (offset);
 
-  return rows;
+  return records;
 }
 
 /**

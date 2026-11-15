@@ -5,7 +5,7 @@
  *   # One address — "why can't this person sign in?"
  *   HOMEROOM_ROSTER_TOKEN=pat... node scripts/check-roster.js someone@example.org
  *
- *   # The whole table — what the gate will do to all 141 people
+ *   # The whole table — what the gate will do to everyone in it
  *   HOMEROOM_ROSTER_TOKEN=pat... node scripts/check-roster.js --audit
  *
  *   # Same, with addresses shown, for working the conflicts locally
@@ -18,20 +18,16 @@
  * before switching the mode to `roster` and the surprises happen on your
  * terminal rather than on somebody's first day.
  *
- * The audit reads the whole People table, so it prints nothing but names,
+ * The audit reads the whole roster table, so it prints nothing but names,
  * statuses and (opt-in) addresses. It writes nothing, to Airtable or to the
  * Homeroom database.
  */
 
-import { evaluate, maskEmail, token } from '../app/roster.js';
+import { evaluate, maskEmail, token, target } from '../app/roster.js';
 
-const BASE = process.env.HOMEROOM_ROSTER_BASE || 'app9STfjol4NHGEWj';
-const TABLE = process.env.HOMEROOM_ROSTER_TABLE || 'tblC1nB717HfTDEaa';
-
-const FIELDS = [
-  'First Name', 'Last Name', 'Email', 'Additional Email', 'Personal Email',
-  'Status', 'Lifecycle Status (Computed)', 'Resident type',
-];
+// The same base, table and field list the live gate reads (Fund OS Founders
+// by default; HOMEROOM_ROSTER_SOURCE=biopunk for the archived People table).
+const { base: BASE, table: TABLE, fields: FIELDS } = target();
 
 const args = process.argv.slice(2);
 const showEmails = args.includes('--emails');
@@ -182,7 +178,7 @@ async function main() {
     console.error('\nHOMEROOM_ROSTER_TOKEN (or AIRTABLE_TOKEN) is not set.\n');
     console.error('Create one at https://airtable.com/create/tokens with:');
     console.error('  scope  data.records:read');
-    console.error(`  base   ${BASE}  (the Biopunk base holding People)\n`);
+    console.error(`  base   ${BASE}  (the roster base)\n`);
     process.exitCode = 2;
     return;
   }

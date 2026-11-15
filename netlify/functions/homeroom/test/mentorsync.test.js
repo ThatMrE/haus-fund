@@ -245,17 +245,96 @@ test('an empty table is refused rather than believed', async () => {
 
 /* =========================================================== the allowlist */
 
-test('only the declared fields are ever requested', async () => {
-  let asked = null;
+test('only the declared fields are ever requested, from each table', async () => {
+  const asked = new Map();
   globalThis.fetch = async (url) => {
-    asked = new URL(url).searchParams.getAll('fields[]');
+    const u = new URL(url);
+    asked.set(u.pathname.split('/').pop(), u.searchParams.getAll('fields[]'));
     return { ok: true, json: async () => ({ records: [record('recAAA')] }) };
   };
   await sync.sync();
-  assert.deepEqual(asked, sync.FIELDS);
+  assert.deepEqual(asked.get('tblnV5zn3t2aQHQaX'), sync.FIELDS);
+  assert.deepEqual(asked.get('tblrHW0lkYSAonokn'), sync.APPLICATION_FIELDS);
   // The token is scoped to a base that also holds LPs, Investments and IC
-  // Reviews. Nothing outside the list leaves Airtable.
-  for (const forbidden of ['Notes', 'Investment', 'LP', 'Scorecard']) {
-    assert.ok(!asked.includes(forbidden), `${forbidden} must never be requested`);
+  // Reviews, and the applications table holds CVs, headshots, diligence memos
+  // and call notes. Nothing outside the lists leaves Airtable.
+  const everything = [...asked.values()].flat();
+  for (const forbidden of ['Notes', 'Investment', 'LP', 'Scorecard', 'CV / Resume', 'Headshot',
+    'Diligence Memo', 'Call Notes', 'Referred By', 'Score', 'Reviewer']) {
+    assert.ok(!everything.includes(forbidden), `${forbidden} must never be requested`);
+  }
+});
+
+/* ================================================== Mentor Applications */
+
+const application = (id, fields) => ({ id, fields: {
+  'Full Name': 'Grace Hopper', Email: 'grace@example.org', 'Current Title': 'Rear Admiral',
+  Organization: 'Navy', Location: 'San Francisco', 'Short Bio': 'Compilers.',
+  Domains: ['Software'], 'Can Help With': ['Hiring'], Track: ['Residency (early-stage founders)'],
+  'Review Status': 'Accepted', 'Privacy Consent': true, 'Show on Directory': true,
+  ...fields,
+} });
+
+function twoTables({ mentors = [record('recAAA')], applications = [] } = {}) {
+  globalThis.fetch = async (url) => {
+    const table = new URL(url).pathname.split('/').pop();
+    const records = table === 'tblrHW0lkYSAonokn' ? applications : mentors;
+    return { ok: true, json: async () => ({ records }) };
+  };
+}
+
+test('an accepted application with consent arrives pending, listed nowhere', async () => {
+  twoTables({ applications: [application('recAPP1')] });
+  const result = await sync.sync();
+  assert.equal(result.ok, true);
+  const row = getDb().prepare("SELECT state, name, email, role, org, airtable_id FROM hr_mentors WHERE airtable_id = 'recAPP1'").get();
+  assert.ok(row, 'the application came in');
+  assert.equal(row.state, 'pending', 'Airtable accepting them does not list them; a steward does');
+  assert.equal(row.name, 'Grace Hopper');
+  assert.equal(row.email, 'grace@example.org');
+  assert.equal(row.org, 'Navy');
+});
+
+test('an application Airtable has not accepted stays out', async () => {
+  for (const status of ['New', 'Memo Ready', 'Call Scheduled', 'Waitlist', 'Declined']) {
+    assert.equal(sync.applicationEligible(application('x', { 'Review Status': status }).fields), false, status);
+  }
+  assert.equal(sync.applicationEligible(application('x', { 'Review Status': { name: 'Accepted' } }).fields), true,
+    'a select may come back as an object');
+});
+
+test('no consent, or no wish to be listed, keeps an application out', async () => {
+  assert.equal(sync.applicationEligible(application('x', { 'Privacy Consent': false }).fields), false);
+  assert.equal(sync.applicationEligible(application('x', { 'Show on Directory': false }).fields), false);
+});
+
+test('an application already linked to a Mentors record is not synced twice', async () => {
+  assert.equal(sync.applicationEligible(application('x', { 'Mentor Record': ['recMENTOR'] }).fields), false);
+});
+
+test('an unreadable applications table changes nothing at all', async () => {
+  globalThis.fetch = async (url) => {
+    const table = new URL(url).pathname.split('/').pop();
+    if (table === 'tblrHW0lkYSAonokn') return { ok: false, status: 403, json: async () => ({}) };
+    return { ok: true, json: async () => ({ records: [record('recZZZ')] }) };
+  };
+  const before = getDb().prepare('SELECT COUNT(*) AS n FROM hr_mentors').get().n;
+  const result = await sync.sync();
+  assert.equal(result.ok, false, 'half a roster is not a roster');
+  assert.equal(getDb().prepare('SELECT COUNT(*) AS n FROM hr_mentors').get().n, before);
+});
+
+test('the applications source can be switched off', async () => {
+  process.env.HOMEROOM_MENTOR_APPLICATIONS_TABLE = 'off';
+  try {
+    const tables = [];
+    globalThis.fetch = async (url) => {
+      tables.push(new URL(url).pathname.split('/').pop());
+      return { ok: true, json: async () => ({ records: [record('recAAA')] }) };
+    };
+    await sync.sync();
+    assert.deepEqual([...new Set(tables)], ['tblnV5zn3t2aQHQaX']);
+  } finally {
+    delete process.env.HOMEROOM_MENTOR_APPLICATIONS_TABLE;
   }
 });

@@ -860,6 +860,285 @@ CREATE TABLE IF NOT EXISTS hr_li_connections (
 );
 
 CREATE INDEX IF NOT EXISTS idx_hr_li_connections_batch ON hr_li_connections(batch);
+
+/* ================================================== the program layer
+ *
+ * Everything above is the community: who is here and what they share. This is
+ * the program that runs around it, the part YC calls a batch: a cohort as a
+ * record rather than a text field, small groups with a lead, one number per
+ * company every week, goals, group sessions, Demo Day, and what happens after.
+ *
+ * Groundwork only: tables, no surfaces yet. Each block names the screen that
+ * will read it. Fund OS in Airtable stays the source of truth for people and
+ * cohorts; 'airtable_id' columns are for the sync, never shown to anyone.
+ *
+ * Text cohort fields ('hr_members.cohort', 'hr_orgs.cohort') stay as they are.
+ * They are what the yearbook and the roster already read, and a migration that
+ * rewrote them would break both. New code reads batches; old code keeps working.
+ */
+
+/* ---------------------------------------------------------------- batches */
+
+-- One residency cohort: Spring 2027 at PunkHaus is a batch. Screen: batch home.
+CREATE TABLE IF NOT EXISTS hr_batches (
+  id          INTEGER PRIMARY KEY AUTOINCREMENT,
+  slug        TEXT NOT NULL UNIQUE,
+  name        TEXT NOT NULL,
+  program     TEXT NOT NULL DEFAULT '',
+  house       TEXT NOT NULL DEFAULT '',
+  starts_at   INTEGER NOT NULL,
+  ends_at     INTEGER NOT NULL,
+  status      TEXT NOT NULL DEFAULT 'planned'
+              CHECK (status IN ('planned','active','alumni')),
+  airtable_id TEXT NOT NULL DEFAULT '',
+  created_at  INTEGER NOT NULL
+);
+
+-- The small group a company meets with every two weeks, and who leads it.
+-- YC splits a batch by partner, then by vertical; a Haus group is a house or a
+-- track. 'lead_id' is a member account: a house lead, a GP, a lead mentor.
+CREATE TABLE IF NOT EXISTS hr_groups (
+  id         INTEGER PRIMARY KEY AUTOINCREMENT,
+  batch_id   INTEGER NOT NULL REFERENCES hr_batches(id) ON DELETE CASCADE,
+  name       TEXT NOT NULL,
+  focus      TEXT NOT NULL DEFAULT '',
+  lead_id    TEXT REFERENCES users(id) ON DELETE SET NULL,
+  created_at INTEGER NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_hr_groups_batch ON hr_groups(batch_id);
+
+-- Which companies are in which batch, and in which group.
+CREATE TABLE IF NOT EXISTS hr_batch_companies (
+  batch_id  INTEGER NOT NULL REFERENCES hr_batches(id) ON DELETE CASCADE,
+  org_id    INTEGER NOT NULL REFERENCES hr_orgs(id) ON DELETE CASCADE,
+  group_id  INTEGER REFERENCES hr_groups(id) ON DELETE SET NULL,
+  status    TEXT NOT NULL DEFAULT 'active'
+            CHECK (status IN ('active','withdrawn','graduated')),
+  joined_at INTEGER NOT NULL,
+  PRIMARY KEY (batch_id, org_id)
+);
+
+-- Which people are in which batch. 'alumni' is a status, never a deletion:
+-- access does not expire when the batch ends, which is the YC rule.
+CREATE TABLE IF NOT EXISTS hr_batch_members (
+  batch_id    INTEGER NOT NULL REFERENCES hr_batches(id) ON DELETE CASCADE,
+  user_id     TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  org_id      INTEGER REFERENCES hr_orgs(id) ON DELETE SET NULL,
+  role        TEXT NOT NULL DEFAULT 'resident'
+              CHECK (role IN ('resident','lead','staff')),
+  status      TEXT NOT NULL DEFAULT 'active'
+              CHECK (status IN ('active','withdrawn','alumni')),
+  airtable_id TEXT NOT NULL DEFAULT '',
+  joined_at   INTEGER NOT NULL,
+  PRIMARY KEY (batch_id, user_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_hr_batch_members_user ON hr_batch_members(user_id);
+
+/* ------------------------------------------------- the weekly number */
+
+-- What a company counts. One is primary: the number the weekly check-in asks
+-- for and the group session looks at. Screen: company settings.
+CREATE TABLE IF NOT EXISTS hr_kpis (
+  id          INTEGER PRIMARY KEY AUTOINCREMENT,
+  org_id      INTEGER NOT NULL REFERENCES hr_orgs(id) ON DELETE CASCADE,
+  name        TEXT NOT NULL,
+  unit        TEXT NOT NULL DEFAULT '',
+  is_primary  INTEGER NOT NULL DEFAULT 0,
+  active      INTEGER NOT NULL DEFAULT 1,
+  created_at  INTEGER NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_hr_kpis_org ON hr_kpis(org_id, active);
+
+-- The weekly check-in, one per company per week. Structured on purpose:
+-- 'hr_updates' stays the free-text story, this is the row a chart can draw.
+-- 'week' is the Monday it covers, 'YYYY-MM-DD'. Screen: weekly check-in.
+CREATE TABLE IF NOT EXISTS hr_checkins (
+  id           INTEGER PRIMARY KEY AUTOINCREMENT,
+  org_id       INTEGER NOT NULL REFERENCES hr_orgs(id) ON DELETE CASCADE,
+  batch_id     INTEGER REFERENCES hr_batches(id) ON DELETE SET NULL,
+  author_id    TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  week         TEXT NOT NULL CHECK (length(week) = 10),
+  kpi_id       INTEGER REFERENCES hr_kpis(id) ON DELETE SET NULL,
+  kpi_value    REAL,
+  morale       INTEGER CHECK (morale IS NULL OR (morale BETWEEN 1 AND 10)),
+  users_talked INTEGER CHECK (users_talked IS NULL OR users_talked >= 0),
+  shipped      TEXT NOT NULL DEFAULT '',
+  blocker      TEXT NOT NULL DEFAULT '',
+  ask          TEXT NOT NULL DEFAULT '',
+  created_at   INTEGER NOT NULL,
+  UNIQUE (org_id, week)
+);
+
+CREATE INDEX IF NOT EXISTS idx_hr_checkins_batch ON hr_checkins(batch_id, week);
+
+/* ------------------------------------------------------ group sessions */
+
+-- Group office hours: one group, every two weeks, notes kept by the lead.
+-- Screen: group page. Declared before hr_goals, which points at it: Postgres
+-- checks a reference when the table is created, SQLite only when a row is.
+CREATE TABLE IF NOT EXISTS hr_sessions (
+  id         INTEGER PRIMARY KEY AUTOINCREMENT,
+  group_id   INTEGER NOT NULL REFERENCES hr_groups(id) ON DELETE CASCADE,
+  starts_at  INTEGER NOT NULL,
+  minutes    INTEGER NOT NULL DEFAULT 60,
+  place      TEXT NOT NULL DEFAULT '',
+  notes      TEXT NOT NULL DEFAULT '',
+  created_by TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  created_at INTEGER NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_hr_sessions_group ON hr_sessions(group_id, starts_at DESC);
+
+CREATE TABLE IF NOT EXISTS hr_session_attendance (
+  session_id INTEGER NOT NULL REFERENCES hr_sessions(id) ON DELETE CASCADE,
+  user_id    TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  attended   INTEGER NOT NULL DEFAULT 1,
+  PRIMARY KEY (session_id, user_id)
+);
+
+-- Goals set in a group session and checked at the next one.
+CREATE TABLE IF NOT EXISTS hr_goals (
+  id         INTEGER PRIMARY KEY AUTOINCREMENT,
+  org_id     INTEGER NOT NULL REFERENCES hr_orgs(id) ON DELETE CASCADE,
+  batch_id   INTEGER REFERENCES hr_batches(id) ON DELETE SET NULL,
+  session_id INTEGER REFERENCES hr_sessions(id) ON DELETE SET NULL,
+  title      TEXT NOT NULL,
+  kpi_id     INTEGER REFERENCES hr_kpis(id) ON DELETE SET NULL,
+  target     REAL,
+  due_at     INTEGER,
+  state      TEXT NOT NULL DEFAULT 'open'
+             CHECK (state IN ('open','met','missed','dropped')),
+  created_by TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  created_at INTEGER NOT NULL,
+  closed_at  INTEGER
+);
+
+CREATE INDEX IF NOT EXISTS idx_hr_goals_org ON hr_goals(org_id, state);
+
+-- Three to five mentors who stay with a company for the batch (Techstars'
+-- lead mentors). Assigned by a steward; the mentor desk still gates booking.
+CREATE TABLE IF NOT EXISTS hr_lead_mentors (
+  org_id      INTEGER NOT NULL REFERENCES hr_orgs(id) ON DELETE CASCADE,
+  mentor_id   INTEGER NOT NULL REFERENCES hr_mentors(id) ON DELETE CASCADE,
+  batch_id    INTEGER NOT NULL REFERENCES hr_batches(id) ON DELETE CASCADE,
+  assigned_by TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  assigned_at INTEGER NOT NULL,
+  ended_at    INTEGER,
+  PRIMARY KEY (org_id, mentor_id, batch_id)
+);
+
+/* ------------------------------------------------------------ Demo Day */
+
+-- The investor day at the end of a batch. Investors see profiles only while
+-- access is open. Screen: Demo Day site.
+CREATE TABLE IF NOT EXISTS hr_demo_days (
+  id               INTEGER PRIMARY KEY AUTOINCREMENT,
+  batch_id         INTEGER NOT NULL REFERENCES hr_batches(id) ON DELETE CASCADE,
+  title            TEXT NOT NULL,
+  starts_at        INTEGER NOT NULL,
+  place            TEXT NOT NULL DEFAULT '',
+  access_opens_at  INTEGER,
+  access_closes_at INTEGER,
+  status           TEXT NOT NULL DEFAULT 'draft'
+                   CHECK (status IN ('draft','open','closed')),
+  created_at       INTEGER NOT NULL
+);
+
+-- A company's page on the Demo Day site. Every word is the founder's own,
+-- 'raising' included: Haus publishes nothing about its own checks here.
+-- Nothing shows until the founder publishes it.
+CREATE TABLE IF NOT EXISTS hr_demo_profiles (
+  demo_day_id     INTEGER NOT NULL REFERENCES hr_demo_days(id) ON DELETE CASCADE,
+  org_id          INTEGER NOT NULL REFERENCES hr_orgs(id) ON DELETE CASCADE,
+  one_liner       TEXT NOT NULL DEFAULT '',
+  raising         TEXT NOT NULL DEFAULT '',
+  deck_url        TEXT NOT NULL DEFAULT '',
+  video_url       TEXT NOT NULL DEFAULT '',
+  contact_user_id TEXT REFERENCES users(id) ON DELETE SET NULL,
+  published       INTEGER NOT NULL DEFAULT 0,
+  updated_at      INTEGER NOT NULL,
+  PRIMARY KEY (demo_day_id, org_id)
+);
+
+/* ----------------------------------------------------------- investors */
+
+-- An investor who asked for access, and a steward's ruling on it. YC ties an
+-- invite to a named person; so does this. 'user_id' is set once they have an
+-- account. An investor account is NOT a member: access rules must keep them
+-- out of every member surface before a single one is approved.
+CREATE TABLE IF NOT EXISTS hr_investors (
+  id          INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id     TEXT UNIQUE REFERENCES users(id) ON DELETE SET NULL,
+  name        TEXT NOT NULL,
+  firm        TEXT NOT NULL DEFAULT '',
+  email       TEXT NOT NULL,
+  kind        TEXT NOT NULL DEFAULT 'fund'
+              CHECK (kind IN ('angel','fund','corporate','other')),
+  focus       TEXT NOT NULL DEFAULT '',
+  stages      TEXT NOT NULL DEFAULT '',
+  status      TEXT NOT NULL DEFAULT 'applied'
+              CHECK (status IN ('applied','approved','declined','revoked')),
+  vetted_by   TEXT REFERENCES users(id) ON DELETE SET NULL,
+  vetted_at   INTEGER,
+  note        TEXT NOT NULL DEFAULT '',
+  airtable_id TEXT NOT NULL DEFAULT '',
+  created_at  INTEGER NOT NULL
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_hr_investors_email ON hr_investors(lower(email));
+
+-- Which approved investors may see which Demo Day.
+CREATE TABLE IF NOT EXISTS hr_demo_access (
+  demo_day_id INTEGER NOT NULL REFERENCES hr_demo_days(id) ON DELETE CASCADE,
+  investor_id INTEGER NOT NULL REFERENCES hr_investors(id) ON DELETE CASCADE,
+  granted_by  TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  granted_at  INTEGER NOT NULL,
+  revoked     INTEGER NOT NULL DEFAULT 0,
+  PRIMARY KEY (demo_day_id, investor_id)
+);
+
+-- An investor saying "I want to follow" or "I want a meeting". The founder
+-- sees it and answers; nothing is sent to the investor until they say yes,
+-- the same double opt-in the intro desk uses.
+CREATE TABLE IF NOT EXISTS hr_investor_interest (
+  id           INTEGER PRIMARY KEY AUTOINCREMENT,
+  demo_day_id  INTEGER NOT NULL REFERENCES hr_demo_days(id) ON DELETE CASCADE,
+  investor_id  INTEGER NOT NULL REFERENCES hr_investors(id) ON DELETE CASCADE,
+  org_id       INTEGER NOT NULL REFERENCES hr_orgs(id) ON DELETE CASCADE,
+  level        TEXT NOT NULL DEFAULT 'following'
+               CHECK (level IN ('following','meeting')),
+  note         TEXT NOT NULL DEFAULT '',
+  founder_reply TEXT NOT NULL DEFAULT 'pending'
+               CHECK (founder_reply IN ('pending','accepted','declined')),
+  replied_at   INTEGER,
+  created_at   INTEGER NOT NULL,
+  UNIQUE (demo_day_id, investor_id, org_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_hr_interest_org ON hr_investor_interest(org_id, founder_reply);
+
+/* ---------------------------------------------------------------- alumni */
+
+-- What happened after: a raise, a launch, a hire, a grant. Private to the
+-- house unless the founder ticks 'public'. 'amount' is the founder's own
+-- words, never a figure Haus fills in.
+CREATE TABLE IF NOT EXISTS hr_milestones (
+  id          INTEGER PRIMARY KEY AUTOINCREMENT,
+  org_id      INTEGER NOT NULL REFERENCES hr_orgs(id) ON DELETE CASCADE,
+  kind        TEXT NOT NULL
+              CHECK (kind IN ('raised','launched','hired','partnership','grant','exit','other')),
+  title       TEXT NOT NULL,
+  happened_on TEXT NOT NULL DEFAULT '',
+  amount      TEXT NOT NULL DEFAULT '',
+  public      INTEGER NOT NULL DEFAULT 0,
+  posted_by   TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  created_at  INTEGER NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_hr_milestones_org ON hr_milestones(org_id, created_at DESC);
 `;
 
 
@@ -903,6 +1182,8 @@ CREATE INDEX IF NOT EXISTS idx_resets_user ON password_resets(user_id);
  * so there is one file to read when asking what shape a table actually is.
  */
 export const ADDED_COLUMNS = [
+  // The program layer: an event can belong to a batch's calendar.
+  ['hr_events', 'batch_id', 'INTEGER REFERENCES hr_batches(id) ON DELETE SET NULL'],
   // Rate My Funder: the axes a founder actually compares funders on.
   ['hr_funder_reviews', 'founder_friendly', 'INTEGER'],
   ['hr_funder_reviews', 'terms', 'INTEGER'],

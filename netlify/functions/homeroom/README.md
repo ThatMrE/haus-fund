@@ -188,8 +188,14 @@ never asked at all.
 ### Onboarding, and the front door for mentors
 
 Mentors self-onboard through a public Airtable form. `netlify/functions/
-mentor-sync.mjs` pulls the table every six hours, and a steward can fire it
-from `/homeroom/stewards/mentors`.
+mentor-sync.mjs` pulls two Fund OS tables every six hours, and a steward can
+fire it from `/homeroom/stewards/mentors`: **Mentors**, the curated roster, and
+**Mentor Applications**, where the public form writes. An application comes in
+only after Airtable's own review marks it Accepted, with Privacy Consent and
+Show on Directory ticked, and only while it is not linked to a Mentors record
+(once linked, the Mentors row is the one that counts). If either table cannot
+be read, the sweep changes nothing. `HOMEROOM_MENTOR_APPLICATIONS_TABLE=off`
+reads Mentors alone.
 
 **A submission is listed nowhere until a steward rules on it.** Not in the
 roster, not in the API, and not at its own URL — a pending profile 404s,
@@ -547,8 +553,22 @@ before ever seeing the page gets credit for it.
 
 Homeroom is members-only, and until the roster gate existed that meant "members
 only once you are inside" — anyone who found the URL could create an account.
-Signup is now checked against the Airtable People table, which is where the
-programme's own record of who was accepted already lives.
+Signup is checked against **Haus Fund OS / Founders**, which is where the
+programme's own record of who was admitted lives. Until November 2026 it read the
+Biopunk People table; that base became a read-only archive on Nov 9 and the
+Spring 2027 cohort exists only in Fund OS, so the default moved.
+`HOMEROOM_ROSTER_SOURCE=biopunk` still reads the archive.
+
+**Fund OS in one paragraph.** `Status` is Active, Graduated or Departed.
+`Lifecycle Status` is hand-set, so `roster.js` derives it from Move-in and
+Move-out exactly as Biopunk's formula did (moved out → Alumni, moved in →
+Resident, moving in later → Applicant) and falls back to the hand-set value
+when there are no dates. **An admitted founder who has not moved in yet gets in
+when the Accepted checkbox on Founders is ticked**, the way the Accepted status
+used to work; Status = Active does the same. Departed against a
+residency is a steward review, as Declined was. The house is the founder's
+cohort's House. The Biopunk rule below is unchanged and still applies to the
+archive.
 
 ### The rule
 
@@ -607,7 +627,7 @@ with, and how recently they were accepted — and gives them somewhere to write.
 
 ### Privacy
 
-The People table also holds medical notes, allergies, emergency contacts, home
+The roster table (Founders, and People before it) also holds medical notes, allergies, emergency contacts, home
 addresses, visa status and whether someone asked for financial help. `FIELDS` in
 `roster.js` is the complete list of what is ever requested, in the same spirit as
 the mentors edge function: nothing outside it is fetched, ever.
@@ -621,16 +641,17 @@ enough to be a mailing list.
 
 | Variable | Default | Notes |
 | --- | --- | --- |
-| `HOMEROOM_ROSTER_TOKEN` | falls back to `AIRTABLE_TOKEN` | Airtable PAT with read access to the People base. **Without it every signup is refused** when the mode is `roster`. |
+| `HOMEROOM_ROSTER_TOKEN` | falls back to `AIRTABLE_TOKEN` | Airtable PAT with read access to the Fund OS base. **Without it every signup is refused** when the mode is `roster`. |
+| `HOMEROOM_ROSTER_SOURCE` | `fundos` | `fundos` (Founders) or `biopunk` (the archived People table). Each brings its own tables and field list. |
 | `HOMEROOM_ACCESS` | `roster` with a token, `open` without | `roster` · `open` (anyone, for local development) · `closed` (no self-signup at all). |
-| `HOMEROOM_ALWAYS_ALLOW` | — | Comma-separated addresses that always get in, for staff who are not in the People table. |
+| `HOMEROOM_ALWAYS_ALLOW` | — | Comma-separated addresses that always get in, for staff who are not in the roster table. |
 | `HOMEROOM_ROSTER_TTL_DAYS` | `7` | How long a verdict is trusted before login re-checks it. |
-| `HOMEROOM_ROSTER_BASE` / `_TABLE` | the People base | Override to point at a different base. |
-| `HOMEROOM_ROSTER_STATUSES` | `accepted` | Statuses that grant access on their own. |
-| `HOMEROOM_ROSTER_LIFECYCLES` | `resident,alumni` | Lifecycles that grant access on their own. |
+| `HOMEROOM_ROSTER_BASE` / `_TABLE` | the source's base and table | Override to point at a different base. |
+| `HOMEROOM_ROSTER_STATUSES` | `accepted,active,graduated` | Statuses that grant access on their own. |
+| `HOMEROOM_ROSTER_LIFECYCLES` | `resident,alumni,subletter` | Lifecycles that grant access on their own. |
 | `HOMEROOM_ROSTER_TYPES` | `core resident,subletter,ra,alum,co-founder` | Resident types that grant access. |
 | `HOMEROOM_ROSTER_BLOCKED` | `rescinded,ready to reject` | Statuses that revoke regardless of the dates. |
-| `HOMEROOM_ROSTER_AMBIGUOUS` | `declined,deferred` | Statuses that conflict with a residency rather than settling it. |
+| `HOMEROOM_ROSTER_AMBIGUOUS` | `declined,deferred,departed` | Statuses that conflict with a residency rather than settling it. |
 
 `/homeroom/health` reports the mode, whether the token is set, whether Airtable
 answers, and how many decisions are waiting on a steward — so "is the door

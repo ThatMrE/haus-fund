@@ -78,6 +78,23 @@ function addedColumnsDdl() {
     .join('\n');
 }
 
+/**
+ * Row Level Security on every Homeroom table, with no policies.
+ *
+ * On Supabase, a table in the public schema without RLS can be read and
+ * written through the Data API by anyone holding the publishable key, and
+ * that key is semi-public by design. Homeroom never uses the Data API for
+ * these tables: it connects as the owner over the pooler, and an owner is not
+ * subject to RLS unless it is FORCEd. So switching it on with no policies
+ * closes the public door and changes nothing for the app, the same posture
+ * as homeroom_invites. Idempotent: enabling it twice is a no-op.
+ */
+export function lockdownDdl() {
+  const ddl = ACCOUNT_SCHEMA + HOMEROOM_SCHEMA;
+  const tables = [...ddl.matchAll(/CREATE TABLE IF NOT EXISTS (\w+)\s*\(/g)].map((m) => m[1]);
+  return tables.map((t) => `ALTER TABLE ${t} ENABLE ROW LEVEL SECURITY;`).join('\n');
+}
+
 let migrated = false;
 
 /**
@@ -102,6 +119,7 @@ export async function migrate({ force = false } = {}) {
   const backend = sql.backend();
   if (backend === 'postgres') {
     await sql.exec(schemaFor('postgres'));
+    await sql.exec(lockdownDdl());
   } else {
     await sql.exec(ACCOUNT_SCHEMA);
     await sql.exec(HOMEROOM_SCHEMA);
