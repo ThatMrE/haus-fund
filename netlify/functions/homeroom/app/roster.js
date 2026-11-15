@@ -1,10 +1,33 @@
 /**
- * The roster — deciding who is actually in the Biopunk programme.
+ * The roster — deciding who is actually in the programme.
  *
  * Homeroom is a members-only room whose whole value is that it is closed. Until
  * now anyone who found the URL could create an account. This module is the gate:
- * an address is checked against the Airtable People table before an account
- * exists, and re-checked periodically afterwards.
+ * an address is checked against Airtable before an account exists, and
+ * re-checked periodically afterwards.
+ *
+ * ── WHICH TABLE ──────────────────────────────────────────────────────────
+ *
+ * Haus Fund OS / Founders, since November 2026. The Biopunk base this used to
+ * read became a read-only archive on Nov 9, so anyone admitted after that (the
+ * whole Spring 2027 cohort) exists only in Fund OS and was being turned away.
+ * The Biopunk People table is still readable as the 'biopunk' source, for a
+ * steward checking an old verdict; set HOMEROOM_ROSTER_SOURCE=biopunk.
+ *
+ * The two tables speak different dialects, and `evaluate()` understands both:
+ *
+ *                  Biopunk People                    Fund OS Founders
+ *   Status         Accepted, Rescinded, Declined…    Active, Graduated, Departed
+ *   Lifecycle      a formula from the dates          a hand-set select, so this
+ *                  ('Lifecycle Status (Computed)')   module derives it from Move-in
+ *                                                    and Move-out the same way, and
+ *                                                    falls back to the select
+ *   Cohort, house  'Cohorts', 'House' links         'Cohort' link; the house is the
+ *                                                    cohort's House link
+ *
+ * Everything below about the eight conflicting rows describes the Biopunk data,
+ * where the rule was first worked out. The same three-valued rule applies to
+ * Fund OS: Departed plays the part Declined did.
  *
  * ── WHAT THE AIRTABLE ACTUALLY SAYS ──────────────────────────────────────
  *
@@ -56,17 +79,56 @@
 
 import { createHash } from 'node:crypto';
 
-const BASE = process.env.HOMEROOM_ROSTER_BASE || 'app9STfjol4NHGEWj';
-const TABLE = process.env.HOMEROOM_ROSTER_TABLE || 'tblC1nB717HfTDEaa';
+/**
+ * Where people live. Each source names its own tables and the complete list of
+ * fields this module is ever allowed to read: Airtable refuses a request that
+ * names a field the table does not have, so the list must match the table.
+ */
+const SOURCES = {
+  fundos: {
+    base: 'appxqPp1CYEDNLXHS',      // Haus Fund — Fund OS
+    table: 'tblhZB88Ab2jQyVxS',     // Founders
+    fields: [
+      'First Name', 'Last Name', 'Name',
+      'Email', 'Additional Email', 'Personal Email',
+      'Status', 'Lifecycle Status', 'Resident type',
+      'Move-in Date', 'Move-out Date',
+      'Cohort',
+    ],
+    cohorts: { table: 'tblxqV3oNpYUmofHF', fields: ['Cohort Name', 'House'] },  // Cohorts
+    homes: { table: 'tblwD7b5yXUIXa5Kl', fields: ['House'] },                   // Houses
+  },
+  biopunk: {
+    base: 'app9STfjol4NHGEWj',      // Biopunk (read-only archive since Nov 9, 2026)
+    table: 'tblC1nB717HfTDEaa',     // People
+    fields: [
+      'First Name', 'Last Name',
+      'Email', 'Additional Email', 'Personal Email',
+      'Status', 'Lifecycle Status (Computed)', 'Resident type',
+      'Cohorts', 'House',
+    ],
+    cohorts: { table: 'tblf3tH9obwWxrt8G', fields: ['Name', 'Abbreviation'] },
+    homes: { table: 'tblqx7eQnVkPmTBFj', fields: ['Name', 'Abbreviation'] },
+  },
+};
+
+export function source() {
+  const name = String(process.env.HOMEROOM_ROSTER_SOURCE || '').toLowerCase();
+  return SOURCES[name] ? name : 'fundos';
+}
+
+const SRC = () => SOURCES[source()];
+const BASE_ID = () => process.env.HOMEROOM_ROSTER_BASE || SRC().base;
+const TABLE_ID = () => process.env.HOMEROOM_ROSTER_TABLE || SRC().table;
 const TIMEOUT_MS = 8000;
 
 /** Everything this module is ever allowed to read. Nothing else leaves Airtable. */
-const FIELDS = [
-  'First Name', 'Last Name',
-  'Email', 'Additional Email', 'Personal Email',
-  'Status', 'Lifecycle Status (Computed)', 'Resident type',
-  'Cohorts', 'House',
-];
+const FIELDS = () => SRC().fields;
+
+/** Where the gate looks, for scripts/check-roster.js, so the two cannot drift. */
+export function target() {
+  return { source: source(), base: BASE_ID(), table: TABLE_ID(), fields: [...FIELDS()] };
+}
 
 /* ----------------------------------------------------------------- config */
 
@@ -101,13 +163,17 @@ const listFrom = (value, fallback) => {
   return raw.split(',').map((s) => s.trim().toLowerCase()).filter(Boolean);
 };
 
-/** Statuses that grant access on their own. */
+/**
+ * Statuses that grant access on their own. Accepted is Biopunk's; Active and
+ * Graduated are Fund OS's. An admitted founder who has not moved in yet is let
+ * in by Status = Active, the way Accepted used to do it.
+ */
 const ACCEPTED_STATUSES = () =>
-  listFrom(process.env.HOMEROOM_ROSTER_STATUSES, ['accepted']);
+  listFrom(process.env.HOMEROOM_ROSTER_STATUSES, ['accepted', 'active', 'graduated']);
 
 /** Lifecycles that grant access on their own. */
 const ACCEPTED_LIFECYCLES = () =>
-  listFrom(process.env.HOMEROOM_ROSTER_LIFECYCLES, ['resident', 'alumni']);
+  listFrom(process.env.HOMEROOM_ROSTER_LIFECYCLES, ['resident', 'alumni', 'subletter']);
 
 /** Resident types that grant access — people who physically live or worked there. */
 const ACCEPTED_TYPES = () =>
@@ -120,7 +186,7 @@ const BLOCKING_STATUSES = () =>
 
 /** Statuses that conflict with an active residency rather than settling it. */
 const AMBIGUOUS_STATUSES = () =>
-  listFrom(process.env.HOMEROOM_ROSTER_AMBIGUOUS, ['declined', 'deferred']);
+  listFrom(process.env.HOMEROOM_ROSTER_AMBIGUOUS, ['declined', 'deferred', 'departed']);
 
 /** Addresses that always get in, for staff who are not in the People table. */
 export function alwaysAllow() {
@@ -174,31 +240,38 @@ const SAFE_EMAIL = /^[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$/;
  * best-effort: if either lookup fails the gate still works and the member just
  * types their own cohort in.
  */
-const LINK_TABLES = {
-  cohorts: process.env.HOMEROOM_ROSTER_COHORTS_TABLE || 'tblf3tH9obwWxrt8G',
-  homes: process.env.HOMEROOM_ROSTER_HOMES_TABLE || 'tblqx7eQnVkPmTBFj',
-};
+const LINK_TABLES = () => ({
+  cohorts: { ...SRC().cohorts, table: process.env.HOMEROOM_ROSTER_COHORTS_TABLE || SRC().cohorts.table },
+  homes: { ...SRC().homes, table: process.env.HOMEROOM_ROSTER_HOMES_TABLE || SRC().homes.table },
+});
 const linkCache = new Map();
 
+/**
+ * Record id → { label, houseIds } for one linked table. Fund OS has no house
+ * link on a founder, so a cohort's own House link is kept to find it.
+ */
 async function linkNames(which) {
-  if (linkCache.has(which)) return linkCache.get(which);
+  const key = `${source()}:${which}`;
+  if (linkCache.has(key)) return linkCache.get(key);
   const names = new Map();
+  const link = LINK_TABLES()[which];
   try {
-    const url = new URL(`https://api.airtable.com/v0/${BASE}/${LINK_TABLES[which]}`);
+    const url = new URL(`https://api.airtable.com/v0/${BASE_ID()}/${link.table}`);
     url.searchParams.set('pageSize', '100');
-    for (const field of ['Name', 'Abbreviation']) url.searchParams.append('fields[]', field);
+    for (const field of link.fields) url.searchParams.append('fields[]', field);
     const res = await fetch(url, { headers: { authorization: `Bearer ${token()}` } });
     if (res.ok) {
       const data = await res.json();
       for (const record of data.records || []) {
-        const label = record.fields?.Abbreviation || record.fields?.Name;
-        if (label) names.set(record.id, String(label));
+        const f = record.fields || {};
+        const label = f.Abbreviation || f.Name || f['Cohort Name'] || (typeof f.House === 'string' ? f.House : '');
+        if (label) names.set(record.id, { label: String(label), houseIds: Array.isArray(f.House) ? f.House : [] });
       }
     }
   } catch {
     // Best effort. An empty map means "no prefill", never "no access".
   }
-  linkCache.set(which, names);
+  linkCache.set(key, names);
   return names;
 }
 
@@ -221,10 +294,10 @@ export async function lookup(email) {
     .map((field) => `LOWER({${field}}) = '${address}'`)
     .join(', ');
 
-  const url = new URL(`https://api.airtable.com/v0/${BASE}/${TABLE}`);
+  const url = new URL(`https://api.airtable.com/v0/${BASE_ID()}/${TABLE_ID()}`);
   url.searchParams.set('filterByFormula', `OR(${clauses})`);
   url.searchParams.set('pageSize', '5');
-  for (const field of FIELDS) url.searchParams.append('fields[]', field);
+  for (const field of FIELDS()) url.searchParams.append('fields[]', field);
 
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
@@ -263,14 +336,39 @@ export async function lookup(email) {
 async function decorate(person) {
   if (!person) return person;
   const [cohorts, homes] = await Promise.all([await linkNames('cohorts'), await linkNames('homes')]);
+  const cohort = (person.cohortIds || []).map((id) => cohorts.get(id)).filter(Boolean)[0];
+  // A Fund OS founder has no house of their own: it is their cohort's.
+  const houseIds = (person.houseIds || []).length ? person.houseIds : (cohort?.houseIds || []);
   return {
     ...person,
-    cohort: (person.cohortIds || []).map((id) => cohorts.get(id)).filter(Boolean)[0] || '',
-    house: (person.houseIds || []).map((id) => homes.get(id)).filter(Boolean)[0] || '',
+    cohort: cohort?.label || '',
+    house: houseIds.map((id) => homes.get(id)?.label).filter(Boolean)[0] || '',
   };
 }
 
 const nameOf = (value) => (typeof value === 'object' && value ? value.name : value);
+
+/**
+ * Lifecycle, as Biopunk's formula worked it out: move-out in the past is
+ * Alumni, move-in today or earlier is Resident, move-in in the future is
+ * Applicant, otherwise the hand-set value. Fund OS has only the hand-set
+ * select, so the dates are applied here instead of in a formula. `today` is
+ * 'YYYY-MM-DD' in Pacific time, which is where the houses are.
+ */
+export function lifecycleOf(fields, today = pacificToday()) {
+  const computed = fields['Lifecycle Status (Computed)'];
+  if (computed) return String(computed);
+  const moveIn = String(fields['Move-in Date'] || '').slice(0, 10);
+  const moveOut = String(fields['Move-out Date'] || '').slice(0, 10);
+  if (moveOut && moveOut < today) return 'Alumni';
+  if (moveIn && moveIn <= today) return 'Resident';
+  if (moveIn && moveIn > today) return 'Applicant';
+  return String(nameOf(fields['Lifecycle Status']) || '');
+}
+
+function pacificToday() {
+  return new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Los_Angeles' }).format(new Date());
+}
 
 /**
  * The rule, on one Airtable record.
@@ -282,18 +380,19 @@ const nameOf = (value) => (typeof value === 'object' && value ? value.name : val
  *   3. a residency-shaped lifecycle or resident type is enough on its own
  *   4. except when a negative status contradicts it, which is a `review`
  */
-export function evaluate(fields) {
+export function evaluate(fields, { today } = {}) {
   const status = String(nameOf(fields.Status) || '').trim().toLowerCase();
-  const lifecycle = String(fields['Lifecycle Status (Computed)'] || '').trim().toLowerCase();
+  const lifecycleLabel = lifecycleOf(fields, today);
+  const lifecycle = lifecycleLabel.trim().toLowerCase();
   const type = String(nameOf(fields['Resident type']) || '').trim().toLowerCase();
 
   const person = {
-    name: [fields['First Name'], fields['Last Name']].filter(Boolean).join(' ').trim(),
+    name: [fields['First Name'], fields['Last Name']].filter(Boolean).join(' ').trim() || String(fields.Name || '').trim(),
     status: nameOf(fields.Status) || '',
-    lifecycle: fields['Lifecycle Status (Computed)'] || '',
+    lifecycle: lifecycleLabel,
     residentType: nameOf(fields['Resident type']) || '',
-    cohortIds: fields.Cohorts || [],
-    houseIds: fields.House || [],
+    cohortIds: fields.Cohorts || fields.Cohort || [],
+    houseIds: Array.isArray(fields.House) ? fields.House : [],
   };
 
   if (BLOCKING_STATUSES().includes(status)) {
@@ -320,7 +419,7 @@ export function evaluate(fields) {
 /** Reachability probe for /homeroom/health. Never throws, never blocks a page. */
 export async function health() {
   if (!configured()) return { configured: false, mode: accessMode() };
-  const url = new URL(`https://api.airtable.com/v0/${BASE}/${TABLE}`);
+  const url = new URL(`https://api.airtable.com/v0/${BASE_ID()}/${TABLE_ID()}`);
   url.searchParams.set('pageSize', '1');
   url.searchParams.append('fields[]', 'Status');
   try {
