@@ -91,7 +91,7 @@ const SOURCES = {
     fields: [
       'First Name', 'Last Name', 'Name',
       'Email', 'Additional Email', 'Personal Email',
-      'Status', 'Lifecycle Status', 'Resident type',
+      'Status', 'Accepted', 'Lifecycle Status', 'Resident type',
       'Move-in Date', 'Move-out Date',
       'Cohort',
     ],
@@ -399,7 +399,9 @@ export function evaluate(fields, { today } = {}) {
     return { verdict: 'deny', reason: `status-${status.replace(/\s+/g, '-')}`, person };
   }
 
-  const byStatus = ACCEPTED_STATUSES().includes(status);
+  // Fund OS's Accepted checkbox: ticked when a founder is admitted, so they
+  // get in before move-in. Unticking it is how an offer is taken back.
+  const byStatus = ACCEPTED_STATUSES().includes(status) || fields.Accepted === true;
   const byLifecycle = ACCEPTED_LIFECYCLES().includes(lifecycle);
   const byType = ACCEPTED_TYPES().includes(type);
 

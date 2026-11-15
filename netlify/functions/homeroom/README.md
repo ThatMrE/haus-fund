@@ -564,7 +564,8 @@ Spring 2027 cohort exists only in Fund OS, so the default moved.
 Move-out exactly as Biopunk's formula did (moved out → Alumni, moved in →
 Resident, moving in later → Applicant) and falls back to the hand-set value
 when there are no dates. **An admitted founder who has not moved in yet gets in
-by setting Status to Active**, the way Accepted used to work. Departed against a
+when the Accepted checkbox on Founders is ticked**, the way the Accepted status
+used to work; Status = Active does the same. Departed against a
 residency is a steward review, as Declined was. The house is the founder's
 cohort's House. The Biopunk rule below is unchanged and still applies to the
 archive.

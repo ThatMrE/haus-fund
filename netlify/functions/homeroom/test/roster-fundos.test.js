@@ -59,6 +59,17 @@ test('an admitted founder who has not moved in yet is let in by Status = Active'
   assert.equal(verdict({ Status: sel('Active'), 'Move-in Date': '2027-01-15' }), 'allow');
 });
 
+test('the Accepted checkbox lets an admitted founder in before move-in', () => {
+  assert.equal(verdict({ Accepted: true, 'Move-in Date': '2027-01-15' }), 'allow');
+  assert.equal(verdict({ Accepted: false, 'Move-in Date': '2027-01-15' }), 'deny', 'unticked is no offer');
+  assert.ok(roster.target().fields.includes('Accepted'));
+});
+
+test('a ticked box settles it even when Status says Departed', () => {
+  assert.equal(verdict({ Accepted: true, Status: sel('Departed'), 'Lifecycle Status': sel('Applicant') }), 'allow',
+    'Accepted settles it, as the Accepted status did; a steward unticks it to take an offer back');
+});
+
 test('without Active, a future move-in is still an applicant', () => {
   assert.equal(verdict({ 'Move-in Date': '2027-01-15' }), 'deny');
   assert.equal(verdict({ 'Lifecycle Status': sel('Applicant') }), 'deny');
